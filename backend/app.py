@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 # Load environment variables
 load_dotenv()
 
-def create_app(config_name=None):
+def create_app(environ=None, start_response=None):
     """Create and configure the Flask app."""
     app = Flask(__name__)
 
