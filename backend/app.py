@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask, request, jsonify
+from flask import Flask, request
 from dotenv import load_dotenv
 from backend.extensions import db, migrate
 from backend.routes.chatbot import chatbot_bp  # Import chatbot route
@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 # Load environment variables
 load_dotenv()
 
-def create_app():
+def create_app(config_name=None):
     """Create and configure the Flask app."""
     app = Flask(__name__)
 
