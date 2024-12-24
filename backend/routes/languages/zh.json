@@ -1,27 +1,33 @@
 {
+    "choose_language_message": "🎉 欢迎使用 FinZo AI — 您的智能房贷再融资助手！🤖\n\n💼 *继续使用即表示您同意我们的 [服务条款](https://raw.githubusercontent.com/gorillago3318/refinancechatbotv2/refs/heads/main/terms-of-service.txt)。*\n\n💸 **发现您的节省潜力** – 快速估算通过房贷再融资您可以节省多少。\n💡 **专家指导触手可及** – 快速获取关于再融资和房贷的解答（最多 15 个问题）。\n🔄 **简单重启流程** – 需要重置？随时输入 'restart'。\n\n👉 让我们开始吧！请选择您的语言：\n\n🌐 **选择语言:**\n1️⃣ *英语* \n2️⃣ *马来语* \n3️⃣ *中文 (Chinese)*",
+
     "name_message": "📝 *步骤 1: 输入您的姓名* \n\n请输入您在*官方文件*上显示的*全名*。 \n\n💡 *示例*: 王大明",
-    
-    "age_message": "🎂 *步骤 2: 输入您的年龄* \n\n请输入您的*年龄*（必须介于 *18 至 70 岁*）。 \n\n💡 *示例*: 35",
-    
-    "loan_amount_message": "💸 *步骤 3: 输入您的贷款金额* \n\n请输入您*从银行获得的原始贷款金额*。 \n\n💡 *示例*: 250,000（无需使用逗号或符号 — 我们将为您格式化）",
-    
-    "loan_tenure_message": "📆 *步骤 4: 输入您的贷款期限* \n\n请输入您的*原始贷款期限*，这是银行批准的年数（通常为 30 年或 35 年）。 \n\n💡 *示例*: 30",
-    
-    "interest_rate_message": "📈 *步骤 6: 输入您的利率* \n\n如果您知道您的*当前贷款利率*，请输入（例如：3.85）。 \n\n如果您不确定，可以输入 *skip*。 \n\n💡 *示例*: 4.25 或 *skip*",
-    
-    "remaining_tenure_message": "📅 *步骤 7: 输入剩余的贷款期限* \n\n请输入您的贷款*剩余年数*。 \n\n💡 *提示*: 如果您不确定确切的年数，可以输入 *skip*。 \n\n💡 *示例*: 15 或 *skip*",
-    
-    "repayment_message": "💳 *步骤 5: 输入您的当前每月还款金额* \n\n请输入您每月支付的*还款金额*。 \n\n💡 *示例*: 2,500（无需使用逗号或符号 — 我们将为您格式化）",
-    
-    "completion_message": "🎉 *谢谢您!* 🎉\n\n感谢您提供的信息。我们正在处理您的请求。 \n\n📊 请稍候，我们将计算您的潜在节省金额并为您提供详细报告。",
-    
-    "choose_language_message": "🌐 *请选择您的语言* \n\n请输入相应的数字来选择您的语言： \n\n1️⃣ *英语* \n2️⃣ *马来语* \n3️⃣ *中文 (Chinese)*",
-    
-    "summary_title_1": "📊 *贷款重融资节省摘要* 📊",
-    
-    "summary_content_1": "💳 *当前每月还款*: RM {current_repayment:,} \n📉 *估计新每月还款*: RM {new_repayment:,} \n💸 *每月节省*: RM {monthly_savings:,}",
-    
+
+    "phone_number_message": "📞 *步骤 2: 输入您的电话号码* \n\n请输入您的*电话号码*（至少 10 位数字）。 \n\n💡 *示例*: 0123456789",
+
+    "age_message": "🎂 *步骤 3: 输入您的年龄* \n\n请输入您的*年龄*（必须介于 *18 至 70 岁*）。 \n\n💡 *示例*: 35",
+
+    "loan_amount_message": "💸 *步骤 4: 输入您的房贷金额* \n\n请输入您*从银行获得的原始房贷金额*。 \n\n💡 *示例*: 250000（无需使用逗号或符号）。",
+
+    "loan_tenure_message": "📆 *步骤 5: 输入您的房贷期限* \n\n请输入您的*原始房贷期限*，这是银行批准的年数（通常为 30 年或 35 年）。 \n\n💡 *示例*: 30",
+
+    "repayment_message": "💳 *步骤 6: 输入您当前的每月还款金额* \n\n请输入您每月支付的*还款金额*。 \n\n💡 *示例*: 2500（无需使用逗号或符号）。",
+
+    "interest_rate_message": "📈 *步骤 7: 输入您的贷款利率* \n\n如果您知道您的*当前利率*，请输入（例如：3.85）。 \n\n如果您不确定，可以输入 *skip*。\n\n💡 *示例*: 4.25 或 *skip*",
+
+    "remaining_tenure_message": "📅 *步骤 8: 输入剩余房贷期限* \n\n请输入您的房贷*剩余年数*。\n\n💡 *提示*: 如果您不确定确切的年数，可以输入 *skip*。\n\n💡 *示例*: 15 或 *skip*",
+
+    "completion_message": "🎉 *谢谢您!* 🎉\n\n感谢您提供的信息。我们正在处理您的请求。\n\n📊 请稍候，我们将计算您的潜在节省金额并为您提供详细报告。",
+
+    "summary_title_1": "📊 *房贷再融资节省摘要* 📊",
+
+    "summary_content_1": "💳 *当前每月还款*: RM {current_repayment:,.2f} \n📉 *估计新每月还款*: RM {new_repayment:,.2f} \n💸 *每月节省*: RM {monthly_savings:,.2f} \n💥 *每年节省*: RM {yearly_savings:,.2f} \n💰 *总节省金额*: RM {lifetime_savings:,.2f}",
+
     "summary_title_2": "🎉 *好消息!* 🎉",
-    
-    "summary_title_3": "🔍 *下一步是什么？*"
+
+    "summary_content_2": "🚀 *大笔节省等着您！* 🚀\n\n通过房贷再融资，您可以节省：\n\n💸 *每月节省 RM {monthly_savings:,.2f}*\n💰 *每年节省 RM {yearly_savings:,.2f}*\n💥 *总节省金额 RM {lifetime_savings:,.2f}*\n\n这相当于节省 *{years_saved} 年 {months_saved} 月* 的还款时间！🚀\n\n🎉 *立即抓住机会，降低贷款成本并大幅节省！*",
+
+    "summary_title_3": "🔍 *下一步是什么？*",
+
+    "summary_content_3": "✅ *将为您分配一位专家!* \n\n我们将为您准备 *详细报告* — *完全免费*且*无任何义务*！\n\n💡 我们的专家将指导您完成再融资流程，帮助您做出最佳决策。\n\n📞 *需要帮助或有疑问？* 直接联系管理员 *{whatsapp_link}*。\n\n💬 *有其他问题？* 向 FinZo AI 提问，我们将为您提供最佳解答！ 🚀"
 }

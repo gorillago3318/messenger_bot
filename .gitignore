@@ -20,6 +20,7 @@ ENV/
 *.db
 
 # Ignore all files in migrations/versions
+migrations/
 
 # But track version files (Python scripts)
 /migrations/versions/*.py
