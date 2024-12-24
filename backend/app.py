@@ -6,6 +6,9 @@ from backend.extensions import db, migrate
 from backend.routes.chatbot import chatbot_bp  # Import chatbot route
 import requests  # For Messenger API
 
+# Import all models to ensure Flask-Migrate detects them
+from backend.models import Users, Lead, ChatflowTemp, ChatLog, BankRate
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
