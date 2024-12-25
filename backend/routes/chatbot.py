@@ -87,10 +87,14 @@ def test():
 def validate_language_choice(input_text, user_data=None):
     """Validate that the user selects 1, 2, or 3 for language selection."""
     logging.debug(f"🔍 Validating language input: {input_text}")
+    if input_text.lower() in ['hi', 'hello', 'hey']:
+        return False  # Trigger language step again for greetings
+
     valid = input_text in ['1', '2', '3']
     if not valid:
         logging.warning(f"❌ Invalid language input: {input_text}")
     return valid
+
 
 
 def validate_name(input_text, user_data=None):
@@ -402,7 +406,10 @@ def process_user_input(current_step, user_data, message_body):
         validator = step_config.get('validator')
         if not validator or not validator(message_body):
             logging.warning(f"❌ Validation failed for step: {current_step} with input: {message_body}")
-            return {"status": "failed", "message_key": step_config.get('message'), "language_code": user_data.language_code}, 400
+            # Friendly prompt for invalid input
+            invalid_msg = get_message('invalid_input_message', user_data.language_code)
+            send_messenger_message(messenger_id, invalid_msg)
+            return {"status": "failed"}, 200
 
         # Determine the next step based on whether 'next_step_map' exists
         if 'next_step_map' in step_config:
@@ -903,6 +910,49 @@ def handle_gpt_query(question, user_data, messenger_id):
             logging.info(f"✅ Preset response found for query: {question}")
             reply = response
         else:
+            # ----------------------------
+            # Step 5.5: Check Question Complexity
+            # ----------------------------
+            complexity_prompt = (
+                "Determine if the following question requires a human expert or can be answered by a bot. "
+                "If it involves bank policies, legal terms, or financial agreements, classify it as 'Complex'. "
+                "Otherwise, classify it as 'Simple'.\n\n"
+                f"Question: {question}\nAnswer: "
+            )
+
+            try:
+                classification_res = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": complexity_prompt}]
+                )
+                classification = classification_res.choices[0].message.content.strip().lower()
+
+            except Exception as e:
+                logging.error(f"❌ GPT classification error: {str(e)}")
+                classification = "complex"  # Default to complex if GPT fails
+
+            # ----------------------------
+            # Handle Complex Questions
+            # ----------------------------
+            if "complex" in classification:
+                # Admin Notification
+                whatsapp_link = os.getenv('ADMIN_WHATSAPP_LINK', "https://wa.me/60167177813")
+                admin_msg = (
+                    f"📢 Admin Alert: User {user_data.phone_number or 'Unknown'} asked a complex question:\n\n"
+                    f"'{question}'\n\nPlease follow up via Messenger or WhatsApp."
+                )
+                send_messenger_message(os.getenv('ADMIN_MESSENGER_ID'), admin_msg)
+
+                # User Notification
+                msg = (
+                    "📢 This question may require further assistance. An admin has been notified.\n\n"
+                    f"If urgent, contact us directly at {whatsapp_link}."
+                )
+                send_messenger_message(messenger_id, msg)
+
+                # Return early for complex cases
+                return msg
+
             # ----------------------------
             # Step 6: Query GPT if No Preset Response
             # ----------------------------
