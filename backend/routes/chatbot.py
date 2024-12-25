@@ -174,6 +174,47 @@ def validate_process_completion(input_text, user_data=None):
     """Validation for process completion (always true)."""
     return True
 
+def log_chat(sender_id, user_message, bot_message, user_data=None):
+    """Logs user-bot conversations into ChatLog."""
+    try:
+        # Fallback values for user data
+        name = getattr(user_data, 'name', 'Unknown User') if user_data else 'Unknown User'
+        phone_number = getattr(user_data, 'phone_number', 'Unknown') if user_data else 'Unknown'
+
+        # Check if user already exists
+        user = User.query.filter_by(messenger_id=sender_id).first()
+
+        # If the user doesn't exist, create one
+        if not user:
+            user = User(
+                messenger_id=sender_id,
+                name=name,
+                phone_number=phone_number
+            )
+            db.session.add(user)
+            db.session.commit()  # Commit new user creation
+
+        # Create chat log entry
+        chat_log = ChatLog(
+            user_id=user.id,
+            sender_id=sender_id,
+            name=name,
+            phone_number=phone_number,
+            message_content=f"User: {user_message}\nBot: {bot_message}",
+            created_at=datetime.now(MYT)  # Correct datetime usage
+        )
+        db.session.add(chat_log)
+        db.session.commit()
+
+        # Log success
+        logging.info(f"✅ Chat logged for user {sender_id}")
+
+    except Exception as e:
+        # Log error and rollback if insertion fails
+        logging.error(f"❌ Error logging chat: {str(e)}")
+        db.session.rollback()
+
+
 # -------------------
 # 5) Step Configuration
 # -------------------
