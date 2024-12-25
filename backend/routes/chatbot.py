@@ -249,10 +249,11 @@ STEP_CONFIG = {
 
     # Inquiry Mode Activation
     'inquiry_mode': {
-        'message': 'Please provide your phone number for follow-up assistance.',
+        'message': 'inquiry_mode_message',
         'next_step': 'gpt_query_mode',
         'validator': validate_phone_number  # Validate phone number
     },
+    
     'gpt_query_mode': {
         'message': 'You may now ask your question!',
         'next_step': None,
