@@ -1,13 +1,15 @@
 {
-    "choose_mode_message": "👋 Welcome to FinZo AI — Your Smart Refinancing Assistant! 🤖\n\n💸 **Discover Your Savings Potential** – Instantly estimate how much you could save by refinancing your home loan.\n💡 **Expert Guidance at Your Fingertips** – Get quick answers to your refinancing and home loan questions (up to 15 inquiries).\n🔄 **Simple Restart** – Need to reset? Just type 'restart' anytime to start over.\n\n👉 *How can we assist you today?*\n\n1️⃣ *Estimate Loan Savings* – Let’s calculate how much you could save! 💰\n2️⃣ *Ask Questions* – Have queries about refinancing? Get instant answers! 💬\n\nPlease select an option (1 or 2).",
+    "choose_mode_message": "👋 Welcome to FinZo AI — Your Smart Refinancing Assistant! 🤖\n\n💼 *By continuing, you agree to our [Terms of Service](https://raw.githubusercontent.com/gorillago3318/refinancechatbotv2/refs/heads/main/terms-of-service.txt).*\n\n👉 *How can we assist you today?*\n\n1️⃣ *Estimate Loan Savings* – Let’s calculate how much you could save! 💰\n2️⃣ *Ask Questions* – Have queries about refinancing? Get instant answers! 💬\n\nPlease select an option (1 or 2).",
+
+    "inquiry_mode": "📞 *Step 2: Provide Your Phone Number* \n\nPlease enter your *phone number* for follow-up assistance (minimum 10 digits). \n\n💡 *Example*: 0123456789",
 
     "inquiry_mode_message": "💬 *Inquiry Mode Activated!* \n\nYou can now ask me any questions about refinancing or home loans. I’ll answer up to 15 inquiries. 🚀\n\n💡 Type 'restart' anytime to return to the main menu.",
 
     "gpt_query_prompt_message": "💬 Ask me anything about refinancing, home loans, or savings!",
 
-    "invalid_input_message": "Sorry, your input is invalid. Please try again or type 'restart' to start over.",
+    "invalid_input_message": "❌ Sorry, your input is invalid. Please try again or type 'restart' to start over.",
 
-    "choose_language_message": "🎉 Welcome to FinZo AI — Your Smart Refinancing Assistant! 🤖\n\n💼 *By continuing, you agree to our [Terms of Service](https://raw.githubusercontent.com/gorillago3318/refinancechatbotv2/refs/heads/main/terms-of-service.txt).*\n\n🔄 **Simple Restart** – Need to reset? Just type 'restart' anytime to start over.\n\n👉 Let’s get started! Please select your preferred language:\n\n🌐 **Choose Language:**\n1️⃣ *English* \n2️⃣ *Bahasa Malaysia* \n3️⃣ *中文 (Chinese)*",
+    "choose_language_message": "🎉 Welcome to FinZo AI — Your Smart Refinancing Assistant! 🤖\n\n💸 **Discover Your Savings Potential** – Instantly estimate how much you could save by refinancing your home loan.\n💡 **Expert Guidance at Your Fingertips** – Get quick answers to your refinancing and home loan questions (up to 15 inquiries).\n🔄 **Simple Restart** – Need to reset? Just type 'restart' anytime to start over.\n\n👉 Let’s get started! Please select your preferred language:\n\n🌐 **Choose Language:**\n1️⃣ *English* \n2️⃣ *Bahasa Malaysia* \n3️⃣ *中文 (Chinese)*",
 
     "name_message": "📝 *Step 1: Enter Your Name* \n\nPlease enter your *full name* as it appears on official documentation. \n\n💡 *Example*: John Doe",
 
