@@ -15,6 +15,8 @@
 
     "phone_number_message": "📞 *Step 2: Enter Your Phone Number* \n\nPlease enter your *phone number* (minimum 10 digits). \n\n💡 *Example*: 0123456789",
 
+    "phone_followup_message": "📞 *Step 2: Provide Your Phone Number* \n\nPlease enter your *phone number* for follow-up assistance (minimum 10 digits). \n\n💡 *Example*: 0123456789",
+
     "age_message": "🎂 *Step 3: Enter Your Age* \n\nPlease enter your *age in years* (must be between *18 and 70*). \n\n💡 *Example*: 35",
 
     "loan_amount_message": "💸 *Step 4: Enter Your Loan Amount* \n\nPlease enter the *original loan amount* that you initially took from the bank. \n\n💡 *Example*: 250000 (do not use commas or special symbols).",
