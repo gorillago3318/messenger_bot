@@ -1058,24 +1058,35 @@ def handle_gpt_query(question, user_data, messenger_id):
 # -------------------
 # 10) Logging Helpers
 # -------------------
-def log_chat(sender_id, user_message, bot_message, user_data):
+from backend.models import Users, ChatLog  # Ensure the correct model names
+from backend.extensions import db
+from datetime import datetime
+import logging
+
+def log_chat(sender_id, user_message, bot_message, user_data=None):
     """Logs user-bot conversations into ChatLog."""
     try:
         # Use fallback values for user data
-        name = getattr(user_data, 'name', 'Unknown User')
-        phone_number = getattr(user_data, 'phone_number', 'Unknown')
+        name = user_data.get('name', 'Unknown User') if user_data else 'Unknown User'
+        phone_number = user_data.get('phone_number', 'Unknown') if user_data else 'Unknown'
 
-        # Fetch existing user from Users table
-        user = User.query.filter_by(messenger_id=sender_id).first()
+        # Check if the user already exists in the Users table
+        user = Users.query.filter_by(sender_id=sender_id).first()
 
-        # Create chat log entry
+        # If the user doesn't exist, create a new user
+        if not user:
+            user = Users(sender_id=sender_id, name=name, phone_number=phone_number)
+            db.session.add(user)
+            db.session.commit()  # Commit new user creation
+        
+        # Create a chat log entry
         chat_log = ChatLog(
-            user_id=user.id if user else None,  # Allow null for now
+            user_id=user.id,  # Always associate the user_id
             sender_id=sender_id,
-            name=name,
-            phone_number=phone_number,
+            name=user.name,  # Use the stored name
+            phone_number=user.phone_number,  # Use the stored phone number
             message_content=f"User: {user_message}\nBot: {bot_message}",
-            created_at=datetime.now(MYT)
+            created_at=datetime.now()  # Use UTC or specific timezone if required
         )
         db.session.add(chat_log)
         db.session.commit()
