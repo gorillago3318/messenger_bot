@@ -358,25 +358,27 @@ def process_user_input(current_step, user_data, message_body):
         logging.debug(f"Processing step: {current_step} with input: {message_body}")
 
         # ----------------------------
+        # Handle 'Get Started' directly
+        # ----------------------------
+        if current_step == 'get_started':
+            # Redirect to language selection step
+            user_data.current_step = 'choose_language'
+            db.session.commit()
+            return {"status": "success", "next_step": 'choose_language'}, 200
+
+        # ----------------------------
         # 1. Handle 'skip' Command Before Validation
         # ----------------------------
         if message_body.lower() == 'skip':
             logging.info(f"🔄 Skipping input for step: {current_step}")
-            # Get the current step configuration
             step_config = STEP_CONFIG.get(current_step, {})
             next_step_config = step_config.get('next_step')
 
-            # Determine if 'next_step_map' exists
             if 'next_step_map' in step_config:
                 logging.error(f"❌ Cannot skip a step that requires a specific next step mapping.")
                 return {"status": "error", "message": "Cannot skip this step. Please provide a valid input."}, 400
             else:
                 next_step = next_step_config
-
-            # Handle missing configuration errors
-            if not next_step:
-                logging.error(f"❌ Missing next_step configuration for step: {current_step}")
-                return {"status": "error", "message": "Configuration error. Please restart the process."}, 500
 
             # Move user to the next step and commit changes
             user_data.current_step = next_step
@@ -405,7 +407,6 @@ def process_user_input(current_step, user_data, message_body):
 
         # Determine the next step based on whether 'next_step_map' exists
         if 'next_step_map' in step_config:
-            # Map the user input to the corresponding next step
             next_step = step_config['next_step_map'].get(message_body)
             if not next_step:
                 logging.error(f"❌ Invalid input '{message_body}' for step '{current_step}'")
@@ -421,13 +422,12 @@ def process_user_input(current_step, user_data, message_body):
             data_to_update['language_code'] = language_mapping.get(message_body, 'en')
 
         elif current_step == 'choose_mode':
-            # Set mode based on user selection
             if message_body == '1':
-                user_data.mode = 'flow'  # Loan Savings Estimation
-                next_step = 'get_name'  # Ensure next_step is set correctly
+                user_data.mode = 'flow'
+                next_step = 'get_name'
             elif message_body == '2':
-                user_data.mode = 'inquiry'  # Inquiry Mode
-                next_step = 'inquiry_mode'  # Ensure next_step is set correctly
+                user_data.mode = 'inquiry'
+                next_step = 'inquiry_mode'
 
         elif current_step == 'get_name':
             data_to_update['name'] = message_body.title()
@@ -460,25 +460,14 @@ def process_user_input(current_step, user_data, message_body):
                 data_to_update['remaining_tenure'] = int(message_body)
 
         elif current_step == 'process_completion':
-            # No need to set current_step here; handle in process_message
-            # Just return success and let process_message call handle_process_completion
             return {"status": "success", "next_step": 'process_completion'}, 200
 
         # ----------------------------
-        # 5. Update User Data in the Database
+        # 5. Update User Data in Database
         # ----------------------------
         for key, value in data_to_update.items():
-            # Validate and log type for debugging
-            if isinstance(value, (dict, list)):
-                logging.error(f"❌ Invalid data type for {key}: {type(value)} - {value}")
-                return {"status": "error", "message": f"Invalid data type for {key}"}, 500
-
-            # Update the user_data model only with valid types
             setattr(user_data, key, value)
 
-        # ----------------------------
-        # 6. Move to Next Step
-        # ----------------------------
         user_data.current_step = next_step
         db.session.commit()
 
@@ -490,109 +479,6 @@ def process_user_input(current_step, user_data, message_body):
         logging.error(f"Traceback: {traceback.format_exc()}")
         db.session.rollback()
         return {"status": "error", "message": "An error occurred while processing your input."}, 500
-
-def handle_process_completion(messenger_id):
-    """Handles the final step and calculates refinance savings."""
-    logging.debug(f"🚀 Entered handle_process_completion() for Messenger ID: {messenger_id}")
-
-    try:
-        # Step 1: Fetch user data
-        user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=messenger_id).first()
-        if not user_data:
-            logging.error(f"❌ No user_data found for messenger_id: {messenger_id}")
-            return jsonify({"status": "error", "message": "No user data found"}), 404
-
-        # Log user data for debugging
-        logging.debug(f"🔍 Messenger ID: {messenger_id}")
-        logging.debug(f"📊 User Data - Loan Amount: {user_data.original_loan_amount}, "
-                      f"Loan Tenure: {user_data.original_loan_tenure}, "
-                      f"Monthly Repayment: {user_data.current_repayment}")
-
-        # Step 2: Validate required inputs
-        if not all([user_data.original_loan_amount, user_data.original_loan_tenure, user_data.current_repayment]):
-            logging.error("❌ Missing required user data for calculation.")
-            send_messenger_message(
-                messenger_id,
-                "Sorry, we are missing some details. Please restart the process by typing 'restart'."
-            )
-            return jsonify({"status": "error", "message": "Missing required data"}), 400
-
-        # Step 3: Perform refinance savings calculation
-        results = calculate_refinance_savings(
-            user_data.original_loan_amount,
-            user_data.original_loan_tenure,
-            user_data.current_repayment
-        )
-
-        # Check if calculation returned results
-        if not results:
-            logging.error(f"❌ Calculation failed for messenger_id: {messenger_id}")
-            send_messenger_message(
-                messenger_id,
-                "We couldn't calculate your savings. Please try again later or contact our admin for assistance."
-            )
-            return jsonify({"status": "error", "message": "Calculation failed"}), 500
-
-        # Step 4: Extract savings data
-        monthly_savings = round(float(results.get('monthly_savings', 0.0)), 2)
-        yearly_savings = round(float(results.get('yearly_savings', 0.0)), 2)
-        lifetime_savings = round(float(results.get('lifetime_savings', 0.0)), 2)
-        years_saved = results.get('years_saved', 0)
-        months_saved = results.get('months_saved', 0)
-
-        logging.debug(f"💰 Savings - Monthly: {monthly_savings} RM, Yearly: {yearly_savings} RM, Lifetime: {lifetime_savings} RM")
-        logging.debug(f"⏱️ Time Saved - Years: {years_saved}, Months: {months_saved}")
-
-        # Step 5: Handle cases with no savings
-        if monthly_savings <= 0:
-            msg = (
-                "Thank you for using FinZo AI! Our analysis shows your current loan rates are already great. "
-                "We’ll be in touch if better offers become available.\n\n"
-                "💬 Need help? Contact our admin or type 'inquiry' to chat."
-            )
-            send_messenger_message(messenger_id, msg)
-            user_data.mode = 'inquiry'  # Corrected mode name
-            db.session.commit()
-            logging.info(f"✅ No savings found. Switched user {messenger_id} to inquiry mode.")
-            return jsonify({"status": "success"}), 200
-
-        # Step 6: Generate and send summary messages
-        summary_messages = prepare_summary_messages(user_data, results, user_data.language_code or 'en')
-        for m in summary_messages:
-            try:
-                send_messenger_message(messenger_id, m)
-            except Exception as e:
-                logging.error(f"❌ Failed to send summary message to {messenger_id}: {str(e)}")
-
-        # Step 7: Notify admin about the new lead
-        try:
-            send_new_lead_to_admin(messenger_id, user_data, results)
-        except Exception as e:
-            logging.error(f"❌ Failed to notify admin: {str(e)}")
-
-        # Step 8: Save results in the database
-        try:
-            update_database(messenger_id, user_data, results)
-        except Exception as e:
-            logging.error(f"❌ Failed to save results in database: {str(e)}")
-
-        # Step 9: Switch to inquiry mode
-        user_data.mode = 'inquiry'  # Corrected mode name
-        db.session.commit()
-        logging.info(f"✅ Process completed successfully for {messenger_id}. Switched to inquiry mode.")
-
-        return jsonify({"status": "success"}), 200
-
-    except Exception as e:
-        # Step 10: Error handling
-        logging.error(f"❌ Error in handle_process_completion: {str(e)}")
-        logging.error(f"Traceback: {traceback.format_exc()}")
-        db.session.rollback()
-        send_messenger_message(
-            messenger_id,
-            "An error occurred. Please restart the process by typing 'restart'."
-        )
-        return jsonify({"status": "error", "message": "An error occurred."}), 500
     
 @chatbot_bp.route('/process_message', methods=['POST'])
 def process_message():
