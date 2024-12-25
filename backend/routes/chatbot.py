@@ -645,7 +645,7 @@ def process_message():
         # ----------------------------
         # 3. Retrieve or Create User Data
         # ----------------------------
-        user_data = db.session.query(ChatflowTemp).filter_by(sender_id=sender_id).first()
+        user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
 
         # Create user session if not found
         if not user_data:
@@ -1067,27 +1067,30 @@ def log_chat(sender_id, user_message, bot_message, user_data=None):
     """Logs user-bot conversations into ChatLog."""
     try:
         # Use fallback values for user data
-        # Handle user_data as an object with attributes instead of using .get()
         name = getattr(user_data, 'name', 'Unknown User') if user_data else 'Unknown User'
         phone_number = getattr(user_data, 'phone_number', 'Unknown') if user_data else 'Unknown'
 
         # Check if the user already exists in the Users table
-        user = Users.query.filter_by(sender_id=sender_id).first()
+        user = Users.query.filter_by(messenger_id=sender_id).first()
 
         # If the user doesn't exist, create a new user
         if not user:
-            user = Users(sender_id=sender_id, name=name, phone_number=phone_number)
+            user = Users(
+                messenger_id=sender_id,  # Use messenger_id (not sender_id)
+                name=name,
+                phone_number=phone_number
+            )
             db.session.add(user)
             db.session.commit()  # Commit new user creation
         
         # Create a chat log entry
         chat_log = ChatLog(
-            user_id=user.id,  # Always associate the user_id
+            user_id=user.id if user else 0,  # Use fallback ID (0) to prevent null violation
             sender_id=sender_id,
-            name=user.name,  # Use the stored name
-            phone_number=user.phone_number,  # Use the stored phone number
+            name=name,
+            phone_number=phone_number,
             message_content=f"User: {user_message}\nBot: {bot_message}",
-            created_at=datetime.now()  # Use UTC or specific timezone if required
+            created_at=datetime.now(MYT)
         )
         db.session.add(chat_log)
         db.session.commit()
