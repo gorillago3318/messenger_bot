@@ -204,15 +204,14 @@ STEP_CONFIG = {
 
     # Inquiry Mode Activation
     'inquiry_mode': {
-        'message': 'inquiry_mode_message',
+        'message': 'Please provide your phone number for follow-up assistance.',
         'next_step': 'gpt_query_mode',
-        'validator': lambda x: True
+        'validator': validate_phone_number  # Validate phone number
     },
-
     'gpt_query_mode': {
-        'message': 'gpt_query_prompt_message',
+        'message': 'You may now ask your question!',
         'next_step': None,
-        'validator': lambda x: True
+     'validator': lambda x: True
     },
 
     # Savings Estimation Steps
@@ -854,7 +853,7 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # 9) GPT Query Handling
 # -------------------
 def handle_gpt_query(question, user_data, messenger_id):
-    """Handles GPT-based queries with a daily limit and reminders at 5 and 10 questions."""
+    """Handles GPT-based queries with admin notifications for deeper questions."""
     GPT_QUERY_LIMIT = 15
     REMINDER_THRESHOLDS = [5, 10]  # Send reminders at 5 and 10 questions
     current_time = datetime.now()
@@ -918,11 +917,30 @@ def handle_gpt_query(question, user_data, messenger_id):
                     reply = openai_res.choices[0].message.content.strip()
                     logging.info(f"✅ GPT response received for user {messenger_id}")
                 else:
+                    # Notify admin for deeper questions
                     logging.error(f"❌ GPT API returned an empty response for user {messenger_id}")
-                    reply = "Sorry, I couldn't process your query at the moment. Please try again later."
+                    notify_admin_about_gpt_query(messenger_id, question, user_data)
+
+                    # Inform user about admin follow-up
+                    urgent_contact = os.getenv('ADMIN_WHATSAPP_LINK', 'https://wa.me/60167177813')
+                    follow_up_msg = (
+                        "📢 This question may require further assistance. An admin has been notified.\n\n"
+                        f"If urgent, you can contact us directly at {urgent_contact}."
+                    )
+                    send_messenger_message(messenger_id, follow_up_msg)
+                    return follow_up_msg
             except Exception as gpt_error:
                 logging.error(f"❌ GPT API error: {str(gpt_error)}")
-                reply = "Sorry, I couldn't process your query at the moment. Please try again later."
+                notify_admin_about_gpt_query(messenger_id, question, user_data)
+
+                # Inform user about admin follow-up
+                urgent_contact = os.getenv('ADMIN_WHATSAPP_LINK', 'https://wa.me/60167177813')
+                follow_up_msg = (
+                    "📢 This question may require further assistance. An admin has been notified.\n\n"
+                    f"If urgent, you can contact us directly at {urgent_contact}."
+                )
+                send_messenger_message(messenger_id, follow_up_msg)
+                return follow_up_msg
 
         # ----------------------------
         # Step 7: Log and Send Response
@@ -938,53 +956,19 @@ def handle_gpt_query(question, user_data, messenger_id):
         logging.error(f"❌ GPT query failed: {str(e)}")
         logging.error(traceback.format_exc())
         db.session.rollback()
-        send_messenger_message(messenger_id, "Sorry, we're facing issues. Please try again later.")
-        return "Error in processing query."
 
-# -------------------
-# 10) Logging Helpers
-# -------------------
-from backend.models import Users, ChatLog  # Ensure the correct model names
-from backend.extensions import db
-from datetime import datetime
-import logging
+        # Notify admin about failure
+        notify_admin_about_gpt_query(messenger_id, question, user_data)
 
-def log_chat(sender_id, user_message, bot_message, user_data=None):
-    """Logs user-bot conversations into ChatLog."""
-    try:
-        # Use fallback values for user data
-        name = getattr(user_data, 'name', 'Unknown User') if user_data else 'Unknown User'
-        phone_number = getattr(user_data, 'phone_number', 'Unknown') if user_data else 'Unknown'
-
-        # Check if the user already exists in the Users table
-        user = Users.query.filter_by(messenger_id=sender_id).first()
-
-        # If the user doesn't exist, create a new user
-        if not user:
-            user = Users(
-                messenger_id=sender_id,  # Use messenger_id (not sender_id)
-                name=name,
-                phone_number=phone_number
-            )
-            db.session.add(user)
-            db.session.commit()  # Commit new user creation
-        
-        # Create a chat log entry
-        chat_log = ChatLog(
-            user_id=user.id if user else 0,  # Use fallback ID (0) to prevent null violation
-            sender_id=sender_id,
-            name=name,
-            phone_number=phone_number,
-            message_content=f"User: {user_message}\nBot: {bot_message}",
-            created_at=datetime.now(MYT)
+        # Inform user about admin follow-up
+        urgent_contact = os.getenv('ADMIN_WHATSAPP_LINK', 'https://wa.me/60167177813')
+        follow_up_msg = (
+            "📢 This question may require further assistance. An admin has been notified.\n\n"
+            f"If urgent, you can contact us directly at {urgent_contact}."
         )
-        db.session.add(chat_log)
-        db.session.commit()
-        logging.info(f"✅ Chat logged for user {sender_id}")
+        send_messenger_message(messenger_id, follow_up_msg)
+        return follow_up_msg
 
-    except Exception as e:
-        logging.error(f"❌ Error logging chat: {str(e)}")
-        db.session.rollback()
 
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
@@ -1065,3 +1049,30 @@ def reset_query_count(user_data):
     except Exception as e:
         logging.error(f"❌ Error resetting query count for user {user_data.messenger_id}: {str(e)}")
         db.session.rollback()
+
+def notify_admin_about_gpt_query(messenger_id, question, user_data):
+    """Sends a notification to admin about complex queries requiring attention."""
+    try:
+        # Get admin ID from environment variables
+        admin_messenger_id = os.getenv('ADMIN_MESSENGER_ID')
+
+        if not admin_messenger_id:
+            logging.error("⚠️ ADMIN_MESSENGER_ID not set in environment variables.")
+            return
+
+        # Admin message with user details
+        admin_msg = (
+            f"📢 **Admin Alert - New Inquiry**\n\n"
+            f"👤 **Name:** {user_data.name or 'Unknown'}\n"
+            f"📱 **Phone Number:** {user_data.phone_number or 'N/A'}\n"
+            f"❓ **Question:** {question}\n"
+            f"🆔 **Messenger ID:** {messenger_id}\n\n"
+            "📢 Please follow up with the user."
+        )
+
+        # Send message to admin
+        send_messenger_message(admin_messenger_id, admin_msg)
+        logging.info(f"✅ Admin notified for user {messenger_id}")
+
+    except Exception as e:
+        logging.error(f"❌ Failed to notify admin: {str(e)}")
