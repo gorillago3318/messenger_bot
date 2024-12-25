@@ -5,6 +5,8 @@
 
     "gpt_query_prompt_message": "💬 Ask me anything about refinancing, home loans, or savings!",
 
+    "invalid_input_message": "Sorry, your input is invalid. Please try again or type 'restart' to start over.",
+
     "choose_language_message": "🎉 Welcome to FinZo AI — Your Smart Refinancing Assistant! 🤖\n\n💼 *By continuing, you agree to our [Terms of Service](https://raw.githubusercontent.com/gorillago3318/refinancechatbotv2/refs/heads/main/terms-of-service.txt).*\n\n🔄 **Simple Restart** – Need to reset? Just type 'restart' anytime to start over.\n\n👉 Let’s get started! Please select your preferred language:\n\n🌐 **Choose Language:**\n1️⃣ *English* \n2️⃣ *Bahasa Malaysia* \n3️⃣ *中文 (Chinese)*",
 
     "name_message": "📝 *Step 1: Enter Your Name* \n\nPlease enter your *full name* as it appears on official documentation. \n\n💡 *Example*: John Doe",

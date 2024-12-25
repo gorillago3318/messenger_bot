@@ -352,7 +352,8 @@ def reset_user_data(user_data, mode='flow'):
         db.session.rollback()
         logging.error(f"❌ Failed to reset user data for {user_data.messenger_id}: {str(e)}")
 
-def process_user_input(current_step, user_data, message_body):
+def process_user_input(current_step, user_data, message_body, messenger_id):
+
     """
     Process user input and store it in ChatflowTemp with separate columns.
     Supports Refinance Flow.
@@ -581,7 +582,7 @@ def process_message():
         # 6. Process Inputs
         # ----------------------------
         current_step = user_data.current_step
-        process_response, status = process_user_input(current_step, user_data, message_body)
+        process_response, status = process_user_input(current_step, user_data, message_body, messenger_id)
 
         if status != 200:
             send_messenger_message(sender_id, "Something went wrong. Please restart the process.")
