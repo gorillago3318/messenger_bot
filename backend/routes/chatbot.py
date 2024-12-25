@@ -1067,8 +1067,9 @@ def log_chat(sender_id, user_message, bot_message, user_data=None):
     """Logs user-bot conversations into ChatLog."""
     try:
         # Use fallback values for user data
-        name = user_data.get('name', 'Unknown User') if user_data else 'Unknown User'
-        phone_number = user_data.get('phone_number', 'Unknown') if user_data else 'Unknown'
+        # Handle user_data as an object with attributes instead of using .get()
+        name = getattr(user_data, 'name', 'Unknown User') if user_data else 'Unknown User'
+        phone_number = getattr(user_data, 'phone_number', 'Unknown') if user_data else 'Unknown'
 
         # Check if the user already exists in the Users table
         user = Users.query.filter_by(sender_id=sender_id).first()
@@ -1095,7 +1096,6 @@ def log_chat(sender_id, user_message, bot_message, user_data=None):
     except Exception as e:
         logging.error(f"❌ Error logging chat: {str(e)}")
         db.session.rollback()
-
 
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
