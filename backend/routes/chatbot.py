@@ -39,7 +39,7 @@ logging.basicConfig(
 # -------------------
 # 2) Initialize OpenAI client
 # -------------------
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = os.getenv("OPENAI_API_KEY").strip()
 logging.debug(f"API Key: {openai.api_key}") # Set it directly or via environment variable
 
 # -------------------
@@ -776,12 +776,13 @@ def prepare_summary_messages(user_data, calc_results, language_code):
         # Calculate equivalent years and months saved (ensure months_saved is correct)
         months_saved = calc_results.get('months_saved', 0)
 
-        # If months_saved is missing, calculate it
+        # If months_saved is missing, calculate it from lifetime savings and monthly savings
         if months_saved == 0 and calc_results.get('lifetime_savings') and calc_results.get('monthly_savings'):
             months_saved = calc_results['lifetime_savings'] / calc_results['monthly_savings']
 
-        years_saved = months_saved // 12  # Calculate full years
-        remaining_months = months_saved % 12  # Calculate remaining months
+        # Calculate years saved and remaining months
+        years_saved = months_saved // 12  # Full years saved
+        remaining_months = months_saved % 12  # Remaining months saved
 
         # Combined Summary (Merges Summary 1 and 2)
         summary_msg = (
@@ -807,6 +808,7 @@ def prepare_summary_messages(user_data, calc_results, language_code):
     except Exception as e:
         logging.error(f"❌ Error preparing summary messages: {str(e)}")
         return ["Error: Failed to generate summary messages. Please contact support."]
+
 
 def update_database(messenger_id, user_data, calc_results):
     """Save user data and calculations to the database."""
