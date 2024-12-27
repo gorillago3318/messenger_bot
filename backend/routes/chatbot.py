@@ -638,7 +638,15 @@ def process_message():
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
-        # 5. Handle Inquiry Mode (GPT Queries)
+        # 5. **Prevent GPT from Acting Before Language Selection**
+        # ----------------------------
+        if user_data.current_step == 'choose_language':
+            logging.info(f"🔒 User {sender_id} has not selected a language yet. Blocking GPT response.")
+            send_messenger_message(sender_id, "Please select a language to proceed.")
+            return jsonify({"status": "success"}), 200
+
+        # ----------------------------
+        # 6. Handle Inquiry Mode (GPT Queries)
         # ----------------------------
         if user_data.mode == 'inquiry' and message_body != 'get_started':
             response = handle_gpt_query(message_body, user_data, sender_id)
@@ -647,7 +655,7 @@ def process_message():
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
-        # 6. Process Regular Flow Inputs
+        # 7. Process Regular Flow Inputs
         # ----------------------------
         current_step = user_data.current_step
         process_response, status = process_user_input(current_step, user_data, message_body, messenger_id)
@@ -678,6 +686,7 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
+
 
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
