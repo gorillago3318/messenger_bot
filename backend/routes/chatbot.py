@@ -16,7 +16,7 @@ chatbot_bp = Blueprint('chatbot', __name__)
 # Custom project imports
 from backend.utils.calculation import calculate_refinance_savings
 from backend.utils.messenger import send_messenger_message
-from backend.models import Users as User, Lead, ChatflowTemp, ChatLog
+from backend.models import Users as User, Lead, ChatflowTemp, ChatLog, GPTLead
 from backend.extensions import db
 import openai  # Correctly import the openai module
 from backend.utils.presets import get_preset_response
@@ -808,6 +808,7 @@ def prepare_summary_messages(user_data, calc_results, language_code):
     except Exception as e:
         logging.error(f"❌ Error preparing summary messages: {str(e)}")
         return ["Error: Failed to generate summary messages. Please contact support."]
+
 
 
 def update_database(messenger_id, user_data, calc_results):
