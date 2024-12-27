@@ -896,17 +896,22 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # 9) GPT Query Handling
 # -------------------
 def handle_gpt_query(question, user_data, messenger_id):
-    """Handles GPT queries and sends responses, directing the user to admin if necessary."""
-
+    """Handles GPT queries and sends responses, ensuring no duplicate messages are sent."""
     try:
-        # Step 1: Check for preset responses (if any are configured)
+        # Debugging the API Key
+        if not openai.api_key:
+            logging.error("❌ OpenAI API key is not set!")
+            send_messenger_message(messenger_id, "Error: OpenAI API key is not set.")
+            return "Error: OpenAI API key is not set."
+
+        # ---------------------------- Step 1: Check Preset Responses ----------------------------
         response = get_preset_response(question, user_data.language_code or 'en')
         if response:
             logging.info(f"✅ Preset response found for query: {question}")
             send_messenger_message(messenger_id, response)
             return response  # Return preset response if found
 
-        # Step 2: Query GPT for a refined answer
+        # ---------------------------- Step 2: Query GPT for Response ----------------------------
         logging.info(f"❌ No preset match. Querying GPT for: {question}")
         prompt = f"Question: {question}\nAnswer:"
 
@@ -923,7 +928,6 @@ def handle_gpt_query(question, user_data, messenger_id):
         logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
 
         # Step 3: Check if the response requires admin intervention or further help
-        # If the question is about refinancing or applying for a loan, we might want to redirect to an admin.
         admin_needed = "refinance" in question.lower() or "apply" in question.lower()
 
         # If admin help is needed, notify the admin via WhatsApp
@@ -949,6 +953,7 @@ def handle_gpt_query(question, user_data, messenger_id):
         logging.error(f"❌ Error in handle_gpt_query: {str(e)}")
         send_messenger_message(messenger_id, "Sorry, something went wrong. Please try again later.")
         return "Sorry, something went wrong!"
+
 
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
