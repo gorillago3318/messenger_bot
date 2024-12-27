@@ -872,7 +872,22 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
             logging.error("⚠️ ADMIN_MESSENGER_ID not set in environment variables.")
             return
 
-        # Format message with safe defaults and 2 decimal places
+        # Calculate equivalent years and months saved (ensure months_saved is correct)
+        months_saved = 0
+        years_saved = 0
+        remaining_months = 0
+
+        # If current repayment is 0, handle as no savings
+        if user_data.current_repayment > 0:
+            months_saved = calc_results.get('lifetime_savings', 0) / user_data.current_repayment
+            years_saved = months_saved // 12  # Calculate full years
+            remaining_months = months_saved % 12  # Calculate remaining months
+        else:
+            months_saved = 0
+            years_saved = 0
+            remaining_months = 0
+
+        # Format message with the correct savings data
         msg = (
             f"📢 **New Lead Alert!** 📢\n\n"
             f"👤 **Name:** {getattr(user_data, 'name', 'Unknown')}\n"
@@ -884,11 +899,11 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
             f"💸 **Monthly Savings:** RM {float(calc_results.get('monthly_savings', 0)):,.2f}\n"
             f"💰 **Yearly Savings:** RM {float(calc_results.get('yearly_savings', 0)):,.2f}\n"
             f"🎉 **Total Savings:** RM {float(calc_results.get('lifetime_savings', 0)):,.2f}\n"
-            f"🕒 **Years Saved:** {calc_results.get('years_saved', 0)} years\n"
+            f"🕒 **Years Saved:** {int(years_saved)} years\n"  # Using calculated years_saved
             f"📱 **Messenger ID:** {messenger_id}"
         )
 
-        # Send message and log success or error
+        # Send message to admin
         send_messenger_message(admin_messenger_id, msg)
         logging.info(f"✅ Lead sent to admin successfully: {admin_messenger_id}")
 
