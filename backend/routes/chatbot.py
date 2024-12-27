@@ -16,7 +16,7 @@ chatbot_bp = Blueprint('chatbot', __name__)
 # Custom project imports
 from backend.utils.calculation import calculate_refinance_savings
 from backend.utils.messenger import send_messenger_message
-from backend.models import Users as User, Lead, ChatflowTemp, ChatLog, GPTLead
+from backend.models import Users as User, Lead, ChatflowTemp, ChatLog
 from backend.extensions import db
 import openai  # Correctly import the openai module
 from backend.utils.presets import get_preset_response
@@ -655,6 +655,7 @@ def process_message():
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
 
+
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
     logging.debug(f"🚀 Entered handle_process_completion() for Messenger ID: {messenger_id}")
@@ -914,7 +915,6 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # 9) GPT Query Handling
 # -------------------
 def handle_gpt_query(question, user_data, messenger_id):
-    """Handles GPT queries and saves potential leads in GPTLeads."""
     try:
         # Step 1: Check if the question is the "Get Started" payload
         if question.strip().lower() == 'get_started':
