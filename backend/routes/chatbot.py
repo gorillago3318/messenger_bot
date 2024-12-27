@@ -644,7 +644,7 @@ def process_message():
                 # Process completion step and generate summary
                 send_messenger_message(sender_id, "🎉 Thank you for providing your details. Processing your request now!")
                 result = handle_process_completion(messenger_id)
-                if result.status_code != 200:
+                if result[1] != 200:
                     send_messenger_message(sender_id, "Sorry, we encountered an error processing your request. Please restart the process.")
                 else:
                     send_messenger_message(sender_id, "You can now ask any refinancing questions!")
@@ -656,8 +656,6 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
-
-
 
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
