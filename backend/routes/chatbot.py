@@ -683,7 +683,6 @@ def process_message():
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
 
-
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
     logging.debug(f"🚀 Entered handle_process_completion() for Messenger ID: {messenger_id}")
