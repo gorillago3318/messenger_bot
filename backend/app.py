@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 from dotenv import load_dotenv
 from backend.extensions import db, migrate
 from backend.routes.chatbot import chatbot_bp  # Import chatbot route
@@ -35,6 +35,11 @@ def create_app(environ=None, start_response=None):
 
     # Register chatbot routes
     app.register_blueprint(chatbot_bp, url_prefix='/chatbot')
+
+    # Serve index.html at the root URL ("/")
+    @app.route('/')
+    def home():
+        return send_from_directory('static', 'index.html')
 
     # Webhook setup and routing
     @app.route('/webhook', methods=['GET', 'POST'])
