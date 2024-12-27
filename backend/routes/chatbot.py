@@ -39,7 +39,7 @@ logging.basicConfig(
 # -------------------
 # 2) Initialize OpenAI client
 # -------------------
-openai.api_key = os.getenv("OPENAI_API_KEY")  # Set it directly or via environment variable
+openai.api_key = os.getenv("OPENAI_API_KEY") # Set it directly or via environment variable
 
 # -------------------
 # 3) Load Language Files
