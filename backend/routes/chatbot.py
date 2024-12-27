@@ -642,12 +642,13 @@ def process_message():
                 log_chat(sender_id, message_body, next_message, user_data)
             else:
                 # Process completion step and generate summary
-                send_messenger_message(sender_id, "🎉 Thank you for providing your details. Processing your request now!")
+                send_messenger_message(sender_id, get_message('completion_message', user_data.language_code))
                 result = handle_process_completion(messenger_id)
                 if result[1] != 200:
                     send_messenger_message(sender_id, "Sorry, we encountered an error processing your request. Please restart the process.")
                 else:
-                    send_messenger_message(sender_id, "You can now ask any refinancing questions!")
+                    follow_up_message = get_message('inquiry_mode_message', user_data.language_code)
+                    send_messenger_message(sender_id, follow_up_message)
                 return jsonify({"status": "success"}), 200
 
         return jsonify({"status": "success"}), 200
@@ -656,6 +657,7 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
+
 
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
