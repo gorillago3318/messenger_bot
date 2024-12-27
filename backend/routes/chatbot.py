@@ -583,21 +583,7 @@ def process_message():
             send_messenger_message(sender_id, welcome_message)
             return jsonify({"status": "success"}), 200
 
-        # ---------------------------- 5. Extract Message Body (for Regular Queries) ----------------------------
-        if 'quick_reply' in message_data:
-            message_body = message_data['quick_reply']['payload'].strip().lower()
-        elif 'text' in message_data:
-            message_body = message_data['text'].strip()
-        elif 'payload' in postback_data:
-            message_body = postback_data['payload'].strip().lower()
-        else:
-            logging.warning(f"❌ Unsupported message type from {sender_id}: {message_data}")
-            send_messenger_message(sender_id, "Sorry, I can only process text messages for now.")
-            return jsonify({"status": "unsupported_message_type"}), 200
-
-        logging.info(f"💎 Incoming message from {sender_id}: {message_body}")
-
-        # ---------------------------- 6. Retrieve or Create User Data ----------------------------
+        # ---------------------------- 5. Retrieve or Create User Data ----------------------------
         user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
 
         # Create user session if not found
@@ -606,7 +592,7 @@ def process_message():
             user_data = ChatflowTemp(
                 sender_id=sender_id,
                 messenger_id=messenger_id,
-                current_step='choose_language',
+                current_step='choose_language',  # Start with language selection
                 language_code='en',
                 mode='flow'
             )
@@ -619,23 +605,20 @@ def process_message():
             log_chat(sender_id, "New session started", welcome_message, user_data)
             return jsonify({"status": "success"}), 200
 
-        # ---------------------------- 7. Handle Restart Commands ----------------------------
-        if message_body.lower() in ['restart', 'reset', 'start over']:
-            logging.info(f"🔄 Restarting flow for user {sender_id}")
-            reset_user_data(user_data, mode='flow')  # Use helper function to reset
-            restart_msg = get_message('choose_language_message', 'en')  # Start with language selection
-            send_messenger_message(sender_id, restart_msg)
-            log_chat(sender_id, message_body, restart_msg, user_data)
+        # ---------------------------- 6. Block GPT Query If Language Not Chosen ----------------------------
+        if user_data.current_step == 'choose_language':
+            logging.info(f"❌ User {sender_id} hasn't selected a language yet. Blocking GPT query.")
+            send_messenger_message(sender_id, "Please select a language first.")
             return jsonify({"status": "success"}), 200
 
-        # ---------------------------- 8. Handle Inquiry Mode (GPT Queries) ----------------------------
+        # ---------------------------- 7. Handle Inquiry Mode (GPT Queries) ----------------------------
         if user_data.mode == 'inquiry' and message_body != 'get_started':
             response = handle_gpt_query(message_body, user_data, sender_id)
             log_chat(sender_id, message_body, response, user_data)
             send_messenger_message(sender_id, response)
             return jsonify({"status": "success"}), 200
 
-        # ---------------------------- 9. Process Regular Flow Inputs ----------------------------
+        # ---------------------------- 8. Process Regular Flow Inputs ----------------------------
         current_step = user_data.current_step
         process_response, status = process_user_input(current_step, user_data, message_body, messenger_id)
 
@@ -665,7 +648,6 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
-
 
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
