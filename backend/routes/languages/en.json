@@ -1,21 +1,13 @@
 {
     "choose_mode_message": "👋 Welcome to FinZo AI — Your Smart Refinancing Assistant! 🤖\n\n💼 *By continuing, you agree to our [Terms of Service](https://raw.githubusercontent.com/gorillago3318/refinancechatbotv2/refs/heads/main/terms-of-service.txt).*\n\n👉 *How can we assist you today?*\n\n1️⃣ *Estimate Loan Savings* – Let’s calculate how much you could save! 💰\n2️⃣ *Ask Questions* – Have queries about refinancing? Get instant answers! 💬\n\nPlease select an option (1 or 2).",
 
-    "inquiry_mode": "📞 *Step 2: Provide Your Phone Number* \n\nPlease enter your *phone number* for follow-up assistance (minimum 10 digits). \n\n💡 *Example*: 0123456789",
+    "choose_language_message": "🎉 Welcome to FinZo AI — Your Smart Refinancing Assistant! 🤖\n\n💸 **Discover Your Savings Potential** – Instantly estimate how much you could save by refinancing your home loan.\n💡 **Expert Guidance at Your Fingertips** – Get quick answers to your refinancing and home loan questions (up to 15 inquiries).\n🔄 **Simple Restart** – Need to reset? Just type 'restart' anytime to start over.\n\n👉 Let’s get started! Please select your preferred language:\n\n🌐 **Choose Language:**\n1️⃣ *English* \n2️⃣ *Bahasa Malaysia* \n3️⃣ *中文 (Chinese)*",
 
     "inquiry_mode_message": "💬 *Inquiry Mode Activated!* \n\nYou can now ask me any questions about refinancing or home loans. I’ll answer up to 15 inquiries. 🚀\n\n💡 Type 'restart' anytime to return to the main menu.",
-
-    "gpt_query_prompt_message": "💬 Ask me anything about refinancing, home loans, or savings!",
-
-    "invalid_input_message": "❌ Sorry, your input is invalid. Please try again or type 'restart' to start over.",
-
-    "choose_language_message": "🎉 Welcome to FinZo AI — Your Smart Refinancing Assistant! 🤖\n\n💸 **Discover Your Savings Potential** – Instantly estimate how much you could save by refinancing your home loan.\n💡 **Expert Guidance at Your Fingertips** – Get quick answers to your refinancing and home loan questions (up to 15 inquiries).\n🔄 **Simple Restart** – Need to reset? Just type 'restart' anytime to start over.\n\n👉 Let’s get started! Please select your preferred language:\n\n🌐 **Choose Language:**\n1️⃣ *English* \n2️⃣ *Bahasa Malaysia* \n3️⃣ *中文 (Chinese)*",
 
     "name_message": "📝 *Step 1: Enter Your Name* \n\nPlease enter your *full name* as it appears on official documentation. \n\n💡 *Example*: John Doe",
 
     "phone_number_message": "📞 *Step 2: Enter Your Phone Number* \n\nPlease enter your *phone number* (minimum 10 digits). \n\n💡 *Example*: 0123456789",
-
-    "phone_followup_message": "📞 *Step 2: Provide Your Phone Number* \n\nPlease enter your *phone number* for follow-up assistance (minimum 10 digits). \n\n💡 *Example*: 0123456789",
 
     "age_message": "🎂 *Step 3: Enter Your Age* \n\nPlease enter your *age in years* (must be between *18 and 70*). \n\n💡 *Example*: 35",
 
@@ -31,15 +23,11 @@
 
     "completion_message": "🎉 *Thank You!* 🎉\n\nThank you for providing your details. We are now processing your request. \n\n📊 Please wait for a moment while we calculate your potential savings and send you a detailed report.",
 
-    "summary_title_1": "📊 *Refinance Savings Summary* 📊",
+    "summary_title": "📊 *Refinance Savings Summary* 📊",
 
-    "summary_content_1": "💳 *Current Monthly Repayment*: RM {current_repayment} \n📉 *Estimated New Repayment*: RM {new_repayment} \n💸 *Monthly Savings*: RM {monthly_savings} \n💥 *Yearly Savings*: RM {yearly_savings} \n💰 *Total Savings Over the Loan Term*: RM {lifetime_savings}.",
-    
-    "summary_title_2": "🎉 *GOOD NEWS!* 🎉",
+    "summary_content": "💳 *Current Monthly Repayment*: RM {current_repayment}\n📉 *Estimated New Repayment*: RM {new_repayment}\n💸 *Monthly Savings*: RM {monthly_savings}\n💥 *Yearly Savings*: RM {yearly_savings}\n💰 *Lifetime Savings*: RM {lifetime_savings}\n\n🎉 *Equivalent to saving {years_saved} year(s) and {months_saved} month(s)* of repayments! 🚀",
 
-    "summary_content_2": "🚀 *Big Savings Await You!* 🚀\n\nBy refinancing, you could save up to: \n\n💸 *RM {monthly_savings} every month* \n💰 *RM {yearly_savings} every year* \n💥 *RM {lifetime_savings} over the entire loan term* \n\nThis is like saving *{years_saved} year(s) and {months_saved} month(s)* worth of repayments! 🚀\n\n🎉 *It’s your chance to lower your loan cost and save big!*",
+    "whats_next_title": "🔍 *What's next?*",
 
-    "summary_title_3": "🔍 *What's next?*",
-
-    "summary_content_3": "✅ *A Specialist Will Be Assigned To You!* \n\nWe will prepare a *FULL DETAILED REPORT* for you — *completely free of charge* and with *no obligations*! \n\n💡 Our specialist can guide you on the refinancing process and help you make the best decision. \n\n📞 *Need help or have questions?* Contact our admin directly at *{whatsapp_link}*.\n\n💬 *Got more questions about refinancing or home loans?* Ask away! FinZo AI is here to provide the best possible answers for you! 🚀"
+    "whats_next_content": "✅ *A Specialist Will Be Assigned To You!* \n\nWe will prepare a *FULL DETAILED REPORT* for you — *completely free of charge* and with *no obligations*! \n\n💡 Our specialist can guide you on the refinancing process and help you make the best decision. \n\n📞 *Need help or have questions?* Contact our admin directly at *{whatsapp_link}*.\n\n💬 *Got more questions about refinancing or home loans?* Ask away! FinZo AI is here to provide the best possible answers for you! 🚀"
 }

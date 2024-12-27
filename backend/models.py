@@ -6,7 +6,9 @@ from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, Tex
 # Malaysia timezone
 MYT = pytz.timezone('Asia/Kuala_Lumpur')
 
+# ----------------------------
 # ChatflowTemp Model
+# ----------------------------
 class ChatflowTemp(db.Model):
     __tablename__ = 'chatflow_temp'
 
@@ -31,7 +33,9 @@ class ChatflowTemp(db.Model):
     updated_at = Column(DateTime, default=lambda: datetime.now(MYT), onupdate=lambda: datetime.now(MYT))
 
 
+# ----------------------------
 # Users Model
+# ----------------------------
 class Users(db.Model):
     __tablename__ = 'users'
 
@@ -46,7 +50,9 @@ class Users(db.Model):
     updated_at = db.Column(DateTime, default=lambda: datetime.now(MYT), onupdate=lambda: datetime.now(MYT))
 
 
+# ----------------------------
 # Lead Model
+# ----------------------------
 class Lead(db.Model):
     __tablename__ = 'leads'
 
@@ -72,7 +78,23 @@ class Lead(db.Model):
     updated_at = db.Column(DateTime, default=lambda: datetime.now(MYT), onupdate=lambda: datetime.now(MYT))
 
 
+# ----------------------------
+# GPT Lead Model (NEW)
+# ----------------------------
+class GPTLead(db.Model):
+    __tablename__ = 'gpt_leads'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Link to users table
+    sender_id = db.Column(db.String(50), nullable=False)  # Messenger ID
+    name = db.Column(db.String(100), nullable=False)  # Name
+    phone_number = db.Column(db.String(20), nullable=False)  # Phone number
+    question = db.Column(db.Text, nullable=False)  # User's inquiry
+    created_at = db.Column(db.DateTime, default=datetime.now(MYT))  # Timestamp
+
+# ----------------------------
 # ChatLog Model
+# ----------------------------
 class ChatLog(db.Model):
     __tablename__ = 'chat_logs'
 
@@ -85,7 +107,9 @@ class ChatLog(db.Model):
     created_at = db.Column(DateTime, default=lambda: datetime.now(MYT))  # Corrected datetime call
 
 
+# ----------------------------
 # BankRate Model
+# ----------------------------
 class BankRate(db.Model):
     __tablename__ = 'bank_rates'
 

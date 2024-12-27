@@ -759,63 +759,48 @@ def handle_process_completion(messenger_id):
 
 
 def prepare_summary_messages(user_data, calc_results, language_code):
-    """Builds summary messages about the user's savings."""
-    # Retrieve WhatsApp link from environment variable
-    whatsapp_link = os.getenv('ADMIN_WHATSAPP_LINK', "https://wa.me/60167177813")
+    """Builds shortened summary messages about the user's savings."""
 
     try:
-        # Force conversion to float and format
+        # Retrieve WhatsApp link from environment variable
+        whatsapp_link = os.getenv('ADMIN_WHATSAPP_LINK', "https://wa.me/60167177813")
+
+        # Format values
         current_repayment = f"RM {float(user_data.current_repayment):,.2f}"
         new_repayment = f"RM {float(calc_results.get('new_monthly_repayment', 0.0)):,.2f}"
         monthly_savings = f"RM {float(calc_results.get('monthly_savings', 0.0)):,.2f}"
         yearly_savings = f"RM {float(calc_results.get('yearly_savings', 0.0)):,.2f}"
         lifetime_savings = f"RM {float(calc_results.get('lifetime_savings', 0.0)):,.2f}"
-        years_saved = int(calc_results.get('years_saved', 0))
-        months_saved = int(calc_results.get('months_saved', 0))
 
-        logging.debug(f"✅ Formatted Values: {current_repayment}, {new_repayment}, {monthly_savings}")
+        # Calculate equivalent years and months saved
+        months_saved = calc_results.get('months_saved', 0)
+        years_saved = months_saved // 12  # Calculate full years
+        remaining_months = months_saved % 12  # Calculate remaining months
+
+        # Combined Summary (Merges Summary 1 and 2)
+        summary_msg = (
+            f"📊 Savings Summary:\n\n"
+            f"💸 **Current Repayment:** {current_repayment}\n"
+            f"💸 **New Repayment:** {new_repayment}\n"
+            f"💰 **Monthly Savings:** {monthly_savings}\n"
+            f"💰 **Yearly Savings:** {yearly_savings}\n"
+            f"🎉 **Lifetime Savings:** {lifetime_savings}\n\n"
+            f"⏳ *Equivalent to saving {years_saved} year(s) and {remaining_months} month(s) of repayments!* 🚀"
+        )
+
+        # What's Next Message
+        whats_next_msg = (
+            "🔜 **What's Next?**\n\n"
+            "One of our specialists will contact you shortly to assist with your refinancing options.\n"
+            f"If you need urgent assistance, contact us directly at {whatsapp_link}."
+        )
+
+        # Return merged messages
+        return [summary_msg, whats_next_msg]
 
     except Exception as e:
-        logging.error(f"❌ Error formatting values: {str(e)}")
+        logging.error(f"❌ Error preparing summary messages: {str(e)}")
         return ["Error: Failed to generate summary messages. Please contact support."]
-
-    # Prepare Message 1
-    m1 = (
-        f"{get_message('summary_title_1', language_code)}\n\n" +
-        get_message('summary_content_1', language_code).format(
-            current_repayment=current_repayment,
-            new_repayment=new_repayment,
-            monthly_savings=monthly_savings,
-            yearly_savings=yearly_savings,
-            lifetime_savings=lifetime_savings
-        )
-    )
-
-    # Prepare Message 2
-    m2 = (
-        f"{get_message('summary_title_2', language_code)}\n\n" +
-        get_message('summary_content_2', language_code).format(
-            monthly_savings=f"{float(calc_results.get('monthly_savings', 0.0)):,.2f}",
-            yearly_savings=f"{float(calc_results.get('yearly_savings', 0.0)):,.2f}",
-            lifetime_savings=f"{float(calc_results.get('lifetime_savings', 0.0)):,.2f}",
-            years_saved=calc_results.get('years_saved', 0),
-            months_saved=calc_results.get('months_saved', 0)
-        )
-    )
-
-    # Prepare Message 3
-    m3 = (
-        f"{get_message('summary_title_3', language_code)}\n\n" +
-        get_message('summary_content_3', language_code).format(
-            whatsapp_link=whatsapp_link
-        )
-    )
-
-    logging.debug(f"📝 Message 1: {m1}")
-    logging.debug(f"📝 Message 2: {m2}")
-    logging.debug(f"📝 Message 3: {m3}")
-
-    return [m1, m2, m3]
 
 
 def update_database(messenger_id, user_data, calc_results):
@@ -903,165 +888,109 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # 9) GPT Query Handling
 # -------------------
 def handle_gpt_query(question, user_data, messenger_id):
-    """Handles GPT-based queries with admin notifications for deeper questions."""
-    GPT_QUERY_LIMIT = 15
-    REMINDER_THRESHOLDS = [5, 10]  # Send reminders at 5 and 10 questions
-    current_time = datetime.now()
+    """Handles GPT queries and saves potential leads in GPTLeads."""
 
     try:
         # ----------------------------
-        # Step 1: Reset Query Count (after 24 hours)
-        # ----------------------------
-        if user_data.last_question_time:
-            time_diff = current_time - user_data.last_question_time
-            if time_diff.total_seconds() > 86400:  # Reset if > 24 hours
-                user_data.gpt_query_count = 0
-                user_data.last_question_time = current_time
-                db.session.commit()
-                logging.info(f"✅ Query count reset for user {messenger_id} after 24 hours.")
-
-        # ----------------------------
-        # Step 2: Check Query Limit
-        # ----------------------------
-        query_count = user_data.gpt_query_count or 0
-        if query_count >= GPT_QUERY_LIMIT:
-            send_limit_reached_message(messenger_id)
-            logging.warning(f"⚠️ Query limit reached for user {messenger_id}")
-            return "You've reached the daily query limit. Please try again tomorrow."
-
-        # ----------------------------
-        # Step 3: Increment Query Count
-        # ----------------------------
-        query_count += 1
-        user_data.gpt_query_count = query_count
-        user_data.last_question_time = current_time
-        db.session.commit()
-        logging.info(f"✅ Query count updated for user {messenger_id}: {query_count}/{GPT_QUERY_LIMIT}")
-
-        # ----------------------------
-        # Step 4: Send Reminders at Thresholds (5, 10)
-        # ----------------------------
-        if query_count in REMINDER_THRESHOLDS:
-            questions_left = GPT_QUERY_LIMIT - query_count
-            send_remaining_query_notification(messenger_id, questions_left)
-
-        # ----------------------------
-        # Step 5: Check Preset Responses
+        # Step 1: Check Preset Responses First
         # ----------------------------
         response = get_preset_response(question, user_data.language_code or 'en')
         if response:
             logging.info(f"✅ Preset response found for query: {question}")
-            reply = response
-        else:
-            # ----------------------------
-            # Step 5.5: Check Question Complexity
-            # ----------------------------
-            complexity_prompt = (
-                "Determine if the following question requires a human expert or can be answered by a bot. "
-                "If it involves bank policies, legal terms, or financial agreements, classify it as 'Complex'. "
-                "Otherwise, classify it as 'Simple'.\n\n"
-                f"Question: {question}\nAnswer: "
+            send_messenger_message(messenger_id, response)
+            return response  # Return preset response
+
+        # ----------------------------
+        # Step 2: No Preset Found - Use GPT for Refinancing & Mortgage Only
+        # ----------------------------
+        logging.info(f"❌ No preset match. Querying GPT for: {question}")
+        prompt = (
+            "You are a mortgage salesperson working for Finzo AI. "
+            "Answer questions related to refinancing and mortgage loans only. "
+            "Avoid off-topic responses and escalate unrelated queries to an admin. "
+            "Be helpful and professional. Focus on generating leads.\n\n"
+            f"Question: {question}\nAnswer:"
+        )
+
+        # Query GPT for response
+        openai_res = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        reply = openai_res.choices[0].message.content.strip()
+        logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
+
+        # ----------------------------
+        # Step 3: Check If Lead Intent Detected
+        # ----------------------------
+        lead_prompt = (
+            "Analyze the following question to determine if the user is expressing "
+            "intent to proceed with refinancing or applying for a loan. "
+            "Respond 'YES' for a lead and 'NO' otherwise.\n\n"
+            f"Question: {question}\nAnswer:"
+        )
+
+        lead_res = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": lead_prompt}]
+        )
+
+        lead_decision = lead_res.choices[0].message.content.strip().upper()
+        logging.info(f"🔍 GPT lead decision: {lead_decision}")
+
+        # ----------------------------
+        # Step 4: If Lead Detected, Collect Details and Save to GPTLeads
+        # ----------------------------
+        if lead_decision == "YES":
+            logging.info(f"🌟 Lead detected for user {messenger_id}")
+
+            # Collect details if missing
+            if not user_data.name:
+                send_messenger_message(messenger_id, "📝 May I have your full name to proceed?")
+                user_data.current_step = 'get_name'  # Ask for name
+                db.session.commit()
+                return "Awaiting user name."
+
+            if not user_data.phone_number:
+                send_messenger_message(messenger_id, "📞 Can I have your phone number for follow-up? (10 digits)")
+                user_data.current_step = 'get_phone_number'  # Ask for phone
+                db.session.commit()
+                return "Awaiting phone number."
+
+            # Save GPT Lead in the new table
+            gpt_lead = GPTLead(
+                user_id=user_data.id if user_data.name and user_data.phone_number else None,  # Link user if available
+                sender_id=user_data.messenger_id,
+                name=user_data.name,
+                phone_number=user_data.phone_number,
+                question=question
             )
+            db.session.add(gpt_lead)
+            db.session.commit()
+            logging.info(f"✅ GPT Lead saved for user {messenger_id}")
 
-            try:
-                classification_res = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": complexity_prompt}]
-                )
-                classification = classification_res.choices[0].message.content.strip().lower()
-
-            except Exception as e:
-                logging.error(f"❌ GPT classification error: {str(e)}")
-                classification = "complex"  # Default to complex if GPT fails
-
-            # ----------------------------
-            # Handle Complex Questions
-            # ----------------------------
-            if "complex" in classification:
-                # Admin Notification
-                whatsapp_link = os.getenv('ADMIN_WHATSAPP_LINK', "https://wa.me/60167177813")
-                admin_msg = (
-                    f"📢 Admin Alert: User {user_data.phone_number or 'Unknown'} asked a complex question:\n\n"
-                    f"'{question}'\n\nPlease follow up via Messenger or WhatsApp."
-                )
-                send_messenger_message(os.getenv('ADMIN_MESSENGER_ID'), admin_msg)
-
-                # User Notification
-                msg = (
-                    "📢 This question may require further assistance. An admin has been notified.\n\n"
-                    f"If urgent, contact us directly at {whatsapp_link}."
-                )
-                send_messenger_message(messenger_id, msg)
-
-                # Return early for complex cases
-                return msg
-
-            # ----------------------------
-            # Step 6: Query GPT if No Preset Response
-            # ----------------------------
-            logging.info(f"❌ No preset match. Querying GPT for: {question}")
-            try:
-                openai_res = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": question}]
-                )
-                # Validate GPT Response
-                if openai_res and openai_res.choices and len(openai_res.choices) > 0:
-                    reply = openai_res.choices[0].message.content.strip()
-                    logging.info(f"✅ GPT response received for user {messenger_id}")
-                else:
-                    # Notify admin for deeper questions
-                    logging.error(f"❌ GPT API returned an empty response for user {messenger_id}")
-                    notify_admin_about_gpt_query(messenger_id, question, user_data)
-
-                    # Inform user about admin follow-up
-                    urgent_contact = os.getenv('ADMIN_WHATSAPP_LINK', 'https://wa.me/60167177813')
-                    follow_up_msg = (
-                        "📢 This question may require further assistance. An admin has been notified.\n\n"
-                        f"If urgent, you can contact us directly at {urgent_contact}."
-                    )
-                    send_messenger_message(messenger_id, follow_up_msg)
-                    return follow_up_msg
-            except Exception as gpt_error:
-                logging.error(f"❌ GPT API error: {str(gpt_error)}")
-                notify_admin_about_gpt_query(messenger_id, question, user_data)
-
-                # Inform user about admin follow-up
-                urgent_contact = os.getenv('ADMIN_WHATSAPP_LINK', 'https://wa.me/60167177813')
-                follow_up_msg = (
-                    "📢 This question may require further assistance. An admin has been notified.\n\n"
-                    f"If urgent, you can contact us directly at {urgent_contact}."
-                )
-                send_messenger_message(messenger_id, follow_up_msg)
-                return follow_up_msg
+            # Notify Admin
+            admin_msg = (
+                f"📢 **Lead Alert!**\n\n"
+                f"👤 **Name:** {user_data.name}\n"
+                f"📱 **Phone Number:** {user_data.phone_number}\n"
+                f"💬 **Question:** {question}\n\n"
+                "📢 Please follow up with this lead."
+            )
+            admin_id = os.getenv('ADMIN_MESSENGER_ID')
+            send_messenger_message(admin_id, admin_msg)
 
         # ----------------------------
-        # Step 7: Log and Send Response
+        # Step 5: Send GPT Response to User
         # ----------------------------
-        log_gpt_query(messenger_id, question, reply)
         send_messenger_message(messenger_id, reply)
         return reply
 
     except Exception as e:
-        # ----------------------------
-        # Error Handling
-        # ----------------------------
-        logging.error(f"❌ GPT query failed: {str(e)}")
-        logging.error(traceback.format_exc())
-        db.session.rollback()
-
-        # Notify admin about failure
-        notify_admin_about_gpt_query(messenger_id, question, user_data)
-
-        # Inform user about admin follow-up
-        urgent_contact = os.getenv('ADMIN_WHATSAPP_LINK', 'https://wa.me/60167177813')
-        follow_up_msg = (
-            "📢 This question may require further assistance. An admin has been notified.\n\n"
-            f"If urgent, you can contact us directly at {urgent_contact}."
-        )
-        send_messenger_message(messenger_id, follow_up_msg)
-        return follow_up_msg
-
+        logging.error(f"❌ Error in handle_gpt_query: {str(e)}")
+        send_messenger_message(messenger_id, "Sorry, something went wrong. Please try again later.")
+        return "Sorry, something went wrong!"
 
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
