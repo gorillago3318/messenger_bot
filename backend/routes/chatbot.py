@@ -39,7 +39,8 @@ logging.basicConfig(
 # -------------------
 # 2) Initialize OpenAI client
 # -------------------
-openai.api_key = os.getenv("OPENAI_API_KEY") # Set it directly or via environment variable
+openai.api_key = os.getenv("OPENAI_API_KEY")
+logging.debug(f"API Key: {openai.api_key}") # Set it directly or via environment variable
 
 # -------------------
 # 3) Load Language Files
@@ -894,27 +895,27 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 def handle_gpt_query(question, user_data, messenger_id):
     """Handles GPT queries and saves potential leads in GPTLeads."""
     try:
-        # Step 1: Check Preset Responses First
+        # Debugging the API Key
+        if not openai.api_key:
+            logging.error("❌ OpenAI API key is not set!")
+            send_messenger_message(messenger_id, "Error: OpenAI API key is not set.")
+            return "Error: OpenAI API key is not set."
+
+        # ---------------------------- Step 1: Check Preset Responses ----------------------------
         response = get_preset_response(question, user_data.language_code or 'en')
         if response:
             logging.info(f"✅ Preset response found for query: {question}")
             send_messenger_message(messenger_id, response)
             return response  # Return preset response
 
-        # Step 2: No Preset Found - Use GPT for Refinancing & Mortgage Only
+        # ---------------------------- Step 2: Query GPT for Response ----------------------------
         logging.info(f"❌ No preset match. Querying GPT for: {question}")
-        prompt = (
-            "You are a mortgage salesperson working for Finzo AI. "
-            "Answer questions related to refinancing and mortgage loans only. "
-            "Avoid off-topic responses and escalate unrelated queries to an admin. "
-            "Be helpful and professional. Focus on generating leads.\n\n"
-            f"Question: {question}\nAnswer:"
-        )
+        prompt = f"Question: {question}\nAnswer:"
 
-        # Query GPT for response using openai.ChatCompletion.create (version 0.28)
+        # Making the GPT request
         openai_res = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Correct model for v0.28
-            messages=[
+            model="gpt-3.5-turbo",  # Model type
+            messages=[  # Messages to send to GPT
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
             ]
@@ -923,7 +924,7 @@ def handle_gpt_query(question, user_data, messenger_id):
         reply = openai_res['choices'][0]['message']['content'].strip()
         logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
 
-        # Step 3: Check If Lead Intent Detected
+        # ---------------------------- Step 3: Lead Intent Detection ----------------------------
         lead_prompt = (
             "Analyze the following question to determine if the user is expressing "
             "intent to proceed with refinancing or applying for a loan. "
@@ -940,7 +941,7 @@ def handle_gpt_query(question, user_data, messenger_id):
         lead_decision = lead_res['choices'][0]['message']['content'].strip().upper()
         logging.info(f"🔍 GPT lead decision: {lead_decision}")
 
-        # Step 4: If Lead Detected, Collect Details and Save to GPTLeads
+        # ---------------------------- Step 4: If Lead Detected, Collect Details ----------------------------
         if lead_decision == "YES":
             logging.info(f"🌟 Lead detected for user {messenger_id}")
 
@@ -980,7 +981,7 @@ def handle_gpt_query(question, user_data, messenger_id):
             admin_id = os.getenv('ADMIN_MESSENGER_ID')
             send_messenger_message(admin_id, admin_msg)
 
-        # Step 5: Send GPT Response to User
+        # ---------------------------- Step 5: Send GPT Response to User ----------------------------
         send_messenger_message(messenger_id, reply)
         return reply
 
