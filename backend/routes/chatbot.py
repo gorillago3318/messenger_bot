@@ -532,7 +532,9 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
 @chatbot_bp.route('/process_message', methods=['POST'])
 def process_message():
     try:
-        # ---------------------------- 1. Parse Incoming Data ----------------------------
+        # ----------------------------
+        # 1. Parse Incoming Data
+        # ----------------------------
         data = request.get_json()
         logging.debug(f"🛬 Received raw request data:\n{json.dumps(data, indent=2)}")
 
@@ -550,40 +552,47 @@ def process_message():
             logging.error("❌ Missing sender ID in incoming request.")
             return jsonify({"status": "error", "message": "Missing sender ID"}), 400
 
-        # ---------------------------- 2. Handle Read/Delivery Receipts ----------------------------
-        if 'delivery' in messaging_event or 'read' in messaging_event:
-            logging.debug(f"📩 Delivery/Read Receipt received from {sender_id}. Ignored.")
-            return jsonify({"status": "ignored"}), 200
-
-        # ---------------------------- 3. Extract Message Content ----------------------------
+        # ----------------------------
+        # 2. Extract Message Content
+        # ----------------------------
         message_data = messaging_event.get('message', {})
         postback_data = messaging_event.get('postback', {})
 
-        # ---------------------------- 4. Handle 'Get Started' Payload ----------------------------
-        if postback_data and postback_data.get('payload') == 'get_started':
-            logging.info(f"🌟 User {sender_id} clicked the 'Get Started' button.")
-            user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
+        # Extract Text Content from the message
+        if 'quick_reply' in message_data:
+            message_body = message_data['quick_reply']['payload'].strip().lower()
+        elif 'text' in message_data:
+            message_body = message_data['text'].strip()
+        elif 'payload' in postback_data:
+            message_body = postback_data['payload'].strip().lower()
 
-            if user_data:
-                # Reset user's state to 'choose_language'
-                reset_user_data(user_data, mode='flow')
-            else:
-                # Create a new user session
-                user_data = ChatflowTemp(
-                    sender_id=sender_id,
-                    messenger_id=messenger_id,
-                    current_step='choose_language',  # Start with language selection
-                    language_code='en',
-                    mode='flow'
-                )
-                db.session.add(user_data)
-                db.session.commit()
+            # Handle "Get Started" Payload
+            if message_body == 'get_started':
+                logging.info(f"🌟 User {sender_id} clicked the 'Get Started' button.")
+                user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
 
-            welcome_message = get_message('choose_language_message', 'en')
-            send_messenger_message(sender_id, welcome_message)
-            return jsonify({"status": "success"}), 200
+                if user_data:
+                    # Reset user's state to choose language
+                    reset_user_data(user_data, mode='flow')
+                else:
+                    # Create new user session
+                    user_data = ChatflowTemp(
+                        sender_id=sender_id,
+                        messenger_id=messenger_id,
+                        current_step='choose_language',
+                        language_code='en',
+                        mode='flow'
+                    )
+                    db.session.add(user_data)
+                    db.session.commit()
 
-        # ---------------------------- 5. Retrieve or Create User Data ----------------------------
+                welcome_message = get_message('choose_language_message', 'en')
+                send_messenger_message(sender_id, welcome_message)
+                return jsonify({"status": "success"}), 200
+
+        # ----------------------------
+        # 3. Retrieve or Create User Data
+        # ----------------------------
         user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
 
         # Create user session if not found
@@ -594,31 +603,34 @@ def process_message():
                 messenger_id=messenger_id,
                 current_step='choose_language',  # Start with language selection
                 language_code='en',
-                mode='flow'
+                mode='flow'  # Initial mode remains 'flow'
             )
             db.session.add(user_data)
             db.session.commit()
 
-            # Send welcome message (language selection prompt)
+            # Send welcome message
             welcome_message = get_message('choose_language_message', 'en')
             send_messenger_message(sender_id, welcome_message)
             log_chat(sender_id, "New session started", welcome_message, user_data)
             return jsonify({"status": "success"}), 200
 
-        # ---------------------------- 6. Block GPT Query If Language Not Chosen ----------------------------
-        if user_data.current_step == 'choose_language':
-            logging.info(f"❌ User {sender_id} hasn't selected a language yet. Blocking GPT query.")
-            send_messenger_message(sender_id, "Please select a language first.")
+        # Handle "Restart" Commands (if user wants to reset the flow)
+        if message_body.lower() in ['restart', 'reset', 'start over']:
+            logging.info(f"🔄 Restarting flow for user {sender_id}")
+            reset_user_data(user_data, mode='flow')
+            restart_msg = get_message('choose_language_message', 'en')
+            send_messenger_message(sender_id, restart_msg)
+            log_chat(sender_id, message_body, restart_msg, user_data)
             return jsonify({"status": "success"}), 200
 
-        # ---------------------------- 7. Handle Inquiry Mode (GPT Queries) ----------------------------
+        # Process Input if it's not a "Get Started" message
         if user_data.mode == 'inquiry' and message_body != 'get_started':
             response = handle_gpt_query(message_body, user_data, sender_id)
             log_chat(sender_id, message_body, response, user_data)
             send_messenger_message(sender_id, response)
             return jsonify({"status": "success"}), 200
 
-        # ---------------------------- 8. Process Regular Flow Inputs ----------------------------
+        # Process user input normally
         current_step = user_data.current_step
         process_response, status = process_user_input(current_step, user_data, message_body, messenger_id)
 
@@ -648,6 +660,7 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
+
 
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
