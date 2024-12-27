@@ -656,6 +656,110 @@ def process_message():
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
 
 
+def handle_process_completion(messenger_id):
+    """Handles the final step and calculates refinance savings."""
+    logging.debug(f"🚀 Entered handle_process_completion() for Messenger ID: {messenger_id}")
+
+    try:
+        # Step 1: Fetch user data
+        user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=messenger_id).first()
+        if not user_data:
+            logging.error(f"❌ No user_data found for messenger_id: {messenger_id}")
+            return jsonify({"status": "error", "message": "No user data found"}), 404
+
+        # Log user data for debugging
+        logging.debug(f"🔍 Messenger ID: {messenger_id}")
+        logging.debug(f"📊 User Data - Loan Amount: {user_data.original_loan_amount}, "
+                      f"Loan Tenure: {user_data.original_loan_tenure}, "
+                      f"Monthly Repayment: {user_data.current_repayment}")
+
+        # Step 2: Validate required inputs
+        if not all([user_data.original_loan_amount, user_data.original_loan_tenure, user_data.current_repayment]):
+            logging.error("❌ Missing required user data for calculation.")
+            send_messenger_message(
+                messenger_id,
+                "Sorry, we are missing some details. Please restart the process by typing 'restart'."
+            )
+            return jsonify({"status": "error", "message": "Missing required data"}), 400
+
+        # Step 3: Perform refinance savings calculation
+        results = calculate_refinance_savings(
+            user_data.original_loan_amount,
+            user_data.original_loan_tenure,
+            user_data.current_repayment
+        )
+
+        # Check if calculation returned results
+        if not results:
+            logging.error(f"❌ Calculation failed for messenger_id: {messenger_id}")
+            send_messenger_message(
+                messenger_id,
+                "We couldn't calculate your savings. Please try again later or contact our admin for assistance."
+            )
+            return jsonify({"status": "error", "message": "Calculation failed"}), 500
+
+        # Step 4: Extract savings data
+        monthly_savings = round(float(results.get('monthly_savings', 0.0)), 2)
+        yearly_savings = round(float(results.get('yearly_savings', 0.0)), 2)
+        lifetime_savings = round(float(results.get('lifetime_savings', 0.0)), 2)
+        years_saved = results.get('years_saved', 0)
+        months_saved = results.get('months_saved', 0)
+
+        logging.debug(f"💰 Savings - Monthly: {monthly_savings} RM, Yearly: {yearly_savings} RM, Lifetime: {lifetime_savings} RM")
+        logging.debug(f"⏱️ Time Saved - Years: {years_saved}, Months: {months_saved}")
+
+        # Step 5: Handle cases with no savings
+        if monthly_savings <= 0:
+            msg = (
+                "Thank you for using FinZo AI! Our analysis shows your current loan rates are already great. "
+                "We’ll be in touch if better offers become available.\n\n"
+                "💬 Need help? Contact our admin or type 'inquiry' to chat."
+            )
+            send_messenger_message(messenger_id, msg)
+            user_data.mode = 'inquiry'  # Corrected mode name
+            db.session.commit()
+            logging.info(f"✅ No savings found. Switched user {messenger_id} to inquiry mode.")
+            return jsonify({"status": "success"}), 200
+
+        # Step 6: Generate and send summary messages
+        summary_messages = prepare_summary_messages(user_data, results, user_data.language_code or 'en')
+        for m in summary_messages:
+            try:
+                send_messenger_message(messenger_id, m)
+            except Exception as e:
+                logging.error(f"❌ Failed to send summary message to {messenger_id}: {str(e)}")
+
+        # Step 7: Notify admin about the new lead
+        try:
+            send_new_lead_to_admin(messenger_id, user_data, results)
+        except Exception as e:
+            logging.error(f"❌ Failed to notify admin: {str(e)}")
+
+        # Step 8: Save results in the database
+        try:
+            update_database(messenger_id, user_data, results)
+        except Exception as e:
+            logging.error(f"❌ Failed to save results in database: {str(e)}")
+
+        # Step 9: Switch to inquiry mode
+        user_data.mode = 'inquiry'  # Corrected mode name
+        db.session.commit()
+        logging.info(f"✅ Process completed successfully for {messenger_id}. Switched to inquiry mode.")
+
+        return jsonify({"status": "success"}), 200
+
+    except Exception as e:
+        # Step 10: Error handling
+        logging.error(f"❌ Error in handle_process_completion: {str(e)}")
+        logging.error(f"Traceback: {traceback.format_exc()}")
+        db.session.rollback()
+        send_messenger_message(
+            messenger_id,
+            "An error occurred. Please restart the process by typing 'restart'."
+        )
+        return jsonify({"status": "error", "message": "An error occurred."}), 500
+
+
 def prepare_summary_messages(user_data, calc_results, language_code):
     """Builds shortened summary messages about the user's savings."""
 
