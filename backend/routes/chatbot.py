@@ -894,18 +894,14 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 def handle_gpt_query(question, user_data, messenger_id):
     """Handles GPT queries and saves potential leads in GPTLeads."""
     try:
-        # ----------------------------
         # Step 1: Check Preset Responses First
-        # ----------------------------
         response = get_preset_response(question, user_data.language_code or 'en')
         if response:
             logging.info(f"✅ Preset response found for query: {question}")
             send_messenger_message(messenger_id, response)
             return response  # Return preset response
 
-        # ----------------------------
         # Step 2: No Preset Found - Use GPT for Refinancing & Mortgage Only
-        # ----------------------------
         logging.info(f"❌ No preset match. Querying GPT for: {question}")
         prompt = (
             "You are a mortgage salesperson working for Finzo AI. "
@@ -915,9 +911,9 @@ def handle_gpt_query(question, user_data, messenger_id):
             f"Question: {question}\nAnswer:"
         )
 
-        # Query GPT for response using the old method (openai.ChatCompletion.create for v0.28)
+        # Query GPT for response using openai.ChatCompletion.create (version 0.28)
         openai_res = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Using the GPT-3.5 model for testing
+            model="gpt-3.5-turbo",  # Correct model for v0.28
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
@@ -927,9 +923,7 @@ def handle_gpt_query(question, user_data, messenger_id):
         reply = openai_res['choices'][0]['message']['content'].strip()
         logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
 
-        # ----------------------------
         # Step 3: Check If Lead Intent Detected
-        # ----------------------------
         lead_prompt = (
             "Analyze the following question to determine if the user is expressing "
             "intent to proceed with refinancing or applying for a loan. "
@@ -946,9 +940,7 @@ def handle_gpt_query(question, user_data, messenger_id):
         lead_decision = lead_res['choices'][0]['message']['content'].strip().upper()
         logging.info(f"🔍 GPT lead decision: {lead_decision}")
 
-        # ----------------------------
         # Step 4: If Lead Detected, Collect Details and Save to GPTLeads
-        # ----------------------------
         if lead_decision == "YES":
             logging.info(f"🌟 Lead detected for user {messenger_id}")
 
@@ -967,7 +959,7 @@ def handle_gpt_query(question, user_data, messenger_id):
 
             # Save GPT Lead in the new table (GPTLeads)
             gpt_lead = GPTLead(
-                user_id=user_data.id if user_data.name and user_data.phone_number else None,  # Link user if available
+                user_id=user_data.id if user_data.name and user_data.phone_number else None,
                 sender_id=user_data.messenger_id,
                 name=user_data.name,
                 phone_number=user_data.phone_number,
@@ -977,7 +969,7 @@ def handle_gpt_query(question, user_data, messenger_id):
             db.session.commit()
             logging.info(f"✅ GPT Lead saved for user {messenger_id}")
 
-            # Notify Admin
+            # Notify admin
             admin_msg = (
                 f"📢 **Lead Alert!**\n\n"
                 f"👤 **Name:** {user_data.name}\n"
@@ -988,9 +980,7 @@ def handle_gpt_query(question, user_data, messenger_id):
             admin_id = os.getenv('ADMIN_MESSENGER_ID')
             send_messenger_message(admin_id, admin_msg)
 
-        # ----------------------------
         # Step 5: Send GPT Response to User
-        # ----------------------------
         send_messenger_message(messenger_id, reply)
         return reply
 
@@ -998,7 +988,7 @@ def handle_gpt_query(question, user_data, messenger_id):
         logging.error(f"❌ Error in handle_gpt_query: {str(e)}")
         send_messenger_message(messenger_id, "Sorry, something went wrong. Please try again later.")
         return "Sorry, something went wrong!"
-    
+
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
     try:
