@@ -654,6 +654,7 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
+    
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
     logging.debug(f"🚀 Entered handle_process_completion() for Messenger ID: {messenger_id}")
@@ -892,8 +893,7 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # 9) GPT Query Handling
 # -------------------
 def handle_gpt_query(question, user_data, messenger_id):
-    """Handles GPT queries and saves potential leads in GPTLeads."""
-
+    """Handles GPT queries and returns a response."""
     try:
         # ----------------------------
         # Step 1: Check Preset Responses First
