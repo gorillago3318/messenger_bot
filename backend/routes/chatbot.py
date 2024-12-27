@@ -561,11 +561,12 @@ def process_message():
         # Initialize message_body
         message_body = None
 
-        # Handle 'Get Started' Payload
+        # Handle 'Get Started' Payload (Postback)
         if 'payload' in postback_data:
             message_body = postback_data['payload'].strip().lower()
             if message_body == 'get_started':
                 logging.info(f"🌟 User {sender_id} clicked the 'Get Started' button.")
+                
                 # Reset or create user data here
                 user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
 
@@ -638,11 +639,156 @@ def process_message():
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
-        # 5. **Prevent GPT from Acting Before Language Selection**
+        # 5. Handle Inquiry Mode (GPT Queries)
         # ----------------------------
-        if user_data.current_step == 'choose_language':
-            logging.info(f"🔒 User {sender_id} has not selected a language yet. Blocking GPT response.")
-            send_messenger_message(sender_id, "Please select a language to proceed.")
+        if user_data.mode == 'inquiry' and message_body != 'get_started':
+            response = handle_gpt_query(message_body, user_data, sender_id)
+            log_chat(sender_id, message_body, response, user_data)
+            send_messenger_message(sender_id, response)
+            return jsonify({"status": "success"}), 200
+
+        # ----------------------------
+        # 6. Process Regular Flow Inputs
+        # ----------------------------
+        current_step = user_data.current_step
+        process_response, status = process_user_input(current_step, user_data, message_body, messenger_id)
+
+        if status != 200:
+            send_messenger_message(sender_id, "Something went wrong. Please restart the process.")
+            return jsonify({"status": "error"}), 500
+
+        # Handle next step
+        next_step = process_response.get("next_step")
+        if next_step:
+            user_data.current_step = next_step
+            db.session.commit()
+
+            # Send the next message
+            if next_step != 'process_completion':
+                next_message = get_message(next_step, user_data.language_code)
+                send_messenger_message(sender_id, next_message)
+                log_chat(sender_id, message_body, next_message, user_data)
+            else:
+                # Process completion step
+                send_messenger_message(sender_id, "🎉 Thank you for providing your details. Processing your request now!")
+                handle_process_completion(messenger_id)
+
+        return jsonify({"status": "success"}), 200
+
+    except Exception as e:
+        logging.error(f"❌ Error in process_message: {str(e)}")
+        logging.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({"status": "error", "message": "Something went wrong."}), 500
+
+
+@chatbot_bp.route('/process_message', methods=['POST'])
+def process_message():
+    try:
+        # ----------------------------
+        # 1. Parse Incoming Data
+        # ----------------------------
+        data = request.get_json()
+        logging.debug(f"🛬 Received raw request data:\n{json.dumps(data, indent=2)}")
+
+        # Extract Sender ID
+        sender_id = None
+        messenger_id = None
+
+        # Fix sender ID extraction
+        messaging_event = data.get('entry', [{}])[0].get('messaging', [{}])[0]
+        sender_id = messaging_event.get('sender', {}).get('id')
+        messenger_id = sender_id
+
+        # Validate sender ID
+        if not sender_id:
+            logging.error("❌ Missing sender ID in incoming request.")
+            return jsonify({"status": "error", "message": "Missing sender ID"}), 400
+
+        # ----------------------------
+        # 2. Handle Get Started Payload First
+        # ----------------------------
+        message_data = messaging_event.get('message', {})
+        postback_data = messaging_event.get('postback', {})
+
+        # Initialize message_body
+        message_body = None
+
+        # Handle 'Get Started' Payload
+        if 'payload' in postback_data:
+            message_body = postback_data['payload'].strip().lower()
+            if message_body == 'get_started':
+                logging.info(f"🌟 User {sender_id} clicked the 'Get Started' button.")
+                # Reset or create user data here
+                user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
+
+                if user_data:
+                    reset_user_data(user_data, mode='flow')  # Reset state
+                else:
+                    # Create new user session
+                    user_data = ChatflowTemp(
+                        sender_id=sender_id,
+                        messenger_id=messenger_id,
+                        current_step='choose_language',  # Start with language selection
+                        language_code='en',
+                        mode='flow'
+                    )
+                    db.session.add(user_data)
+                    db.session.commit()
+
+                # Send the "choose language" message
+                welcome_message = get_message('choose_language_message', 'en')
+                send_messenger_message(sender_id, welcome_message)
+                return jsonify({"status": "success"}), 200
+
+        # ----------------------------
+        # 3. Extract Message Body for Other Types
+        # ----------------------------
+        if not message_body:
+            if 'quick_reply' in message_data:
+                message_body = message_data['quick_reply']['payload'].strip().lower()
+            elif 'text' in message_data:
+                message_body = message_data['text'].strip()
+
+        # If no message content, log error and return error response
+        if not message_body:
+            logging.error(f"❌ No valid message found from {sender_id}")
+            send_messenger_message(sender_id, "Sorry, I can only process text or button replies for now.")
+            return jsonify({"status": "error", "message": "No valid message found"}), 400
+
+        logging.info(f"💎 Incoming message from {sender_id}: {message_body}")
+
+        # ----------------------------
+        # 4. Retrieve or Create User Data
+        # ----------------------------
+        user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
+
+        if not user_data:
+            logging.info(f"👤 Creating new session for user {sender_id}")
+            user_data = ChatflowTemp(
+                sender_id=sender_id,
+                messenger_id=messenger_id,
+                current_step='choose_language',  # Start with language selection
+                language_code='en',
+                mode='flow'  # Initial mode remains 'flow'
+            )
+            db.session.add(user_data)
+            db.session.commit()
+
+            # Send welcome message
+            welcome_message = get_message('choose_language_message', 'en')
+            send_messenger_message(sender_id, welcome_message)
+            log_chat(sender_id, "New session started", welcome_message, user_data)
+            return jsonify({"status": "success"}), 200
+
+        # ----------------------------
+        # 5. Handle "Restart" Commands
+        # ----------------------------
+        if message_body.lower() in ['restart', 'reset', 'start over']:
+            logging.info(f"🔄 Restarting flow for user {sender_id}")
+            reset_user_data(user_data, mode='flow')
+            restart_msg = get_message('choose_language_message', 'en')
+            send_messenger_message(sender_id, restart_msg)
+            log_chat(sender_id, message_body, restart_msg, user_data)
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
@@ -686,111 +832,6 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
-
-
-def handle_process_completion(messenger_id):
-    """Handles the final step and calculates refinance savings."""
-    logging.debug(f"🚀 Entered handle_process_completion() for Messenger ID: {messenger_id}")
-
-    try:
-        # Step 1: Fetch user data
-        user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=messenger_id).first()
-        if not user_data:
-            logging.error(f"❌ No user_data found for messenger_id: {messenger_id}")
-            return jsonify({"status": "error", "message": "No user data found"}), 404
-
-        # Log user data for debugging
-        logging.debug(f"🔍 Messenger ID: {messenger_id}")
-        logging.debug(f"📊 User Data - Loan Amount: {user_data.original_loan_amount}, "
-                      f"Loan Tenure: {user_data.original_loan_tenure}, "
-                      f"Monthly Repayment: {user_data.current_repayment}")
-
-        # Step 2: Validate required inputs
-        if not all([user_data.original_loan_amount, user_data.original_loan_tenure, user_data.current_repayment]):
-            logging.error("❌ Missing required user data for calculation.")
-            send_messenger_message(
-                messenger_id,
-                "Sorry, we are missing some details. Please restart the process by typing 'restart'."
-            )
-            return jsonify({"status": "error", "message": "Missing required data"}), 400
-
-        # Step 3: Perform refinance savings calculation
-        results = calculate_refinance_savings(
-            user_data.original_loan_amount,
-            user_data.original_loan_tenure,
-            user_data.current_repayment
-        )
-
-        # Check if calculation returned results
-        if not results:
-            logging.error(f"❌ Calculation failed for messenger_id: {messenger_id}")
-            send_messenger_message(
-                messenger_id,
-                "We couldn't calculate your savings. Please try again later or contact our admin for assistance."
-            )
-            return jsonify({"status": "error", "message": "Calculation failed"}), 500
-
-        # Step 4: Extract savings data
-        monthly_savings = round(float(results.get('monthly_savings', 0.0)), 2)
-        yearly_savings = round(float(results.get('yearly_savings', 0.0)), 2)
-        lifetime_savings = round(float(results.get('lifetime_savings', 0.0)), 2)
-        years_saved = results.get('years_saved', 0)
-        months_saved = results.get('months_saved', 0)
-
-        logging.debug(f"💰 Savings - Monthly: {monthly_savings} RM, Yearly: {yearly_savings} RM, Lifetime: {lifetime_savings} RM")
-        logging.debug(f"⏱️ Time Saved - Years: {years_saved}, Months: {months_saved}")
-
-        # Step 5: Handle cases with no savings
-        if monthly_savings <= 0:
-            msg = (
-                "Thank you for using FinZo AI! Our analysis shows your current loan rates are already great. "
-                "We’ll be in touch if better offers become available.\n\n"
-                "💬 Need help? Contact our admin or type 'inquiry' to chat."
-            )
-            send_messenger_message(messenger_id, msg)
-            user_data.mode = 'inquiry'  # Corrected mode name
-            db.session.commit()
-            logging.info(f"✅ No savings found. Switched user {messenger_id} to inquiry mode.")
-            return jsonify({"status": "success"}), 200
-
-        # Step 6: Generate and send summary messages
-        summary_messages = prepare_summary_messages(user_data, results, user_data.language_code or 'en')
-        for m in summary_messages:
-            try:
-                send_messenger_message(messenger_id, m)
-            except Exception as e:
-                logging.error(f"❌ Failed to send summary message to {messenger_id}: {str(e)}")
-
-        # Step 7: Notify admin about the new lead
-        try:
-            send_new_lead_to_admin(messenger_id, user_data, results)
-        except Exception as e:
-            logging.error(f"❌ Failed to notify admin: {str(e)}")
-
-        # Step 8: Save results in the database
-        try:
-            update_database(messenger_id, user_data, results)
-        except Exception as e:
-            logging.error(f"❌ Failed to save results in database: {str(e)}")
-
-        # Step 9: Switch to inquiry mode
-        user_data.mode = 'inquiry'  # Corrected mode name
-        db.session.commit()
-        logging.info(f"✅ Process completed successfully for {messenger_id}. Switched to inquiry mode.")
-
-        return jsonify({"status": "success"}), 200
-
-    except Exception as e:
-        # Step 10: Error handling
-        logging.error(f"❌ Error in handle_process_completion: {str(e)}")
-        logging.error(f"Traceback: {traceback.format_exc()}")
-        db.session.rollback()
-        send_messenger_message(
-            messenger_id,
-            "An error occurred. Please restart the process by typing 'restart'."
-        )
-        return jsonify({"status": "error", "message": "An error occurred."}), 500
-
 
 def prepare_summary_messages(user_data, calc_results, language_code):
     """Builds shortened summary messages about the user's savings."""
@@ -949,17 +990,22 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 def handle_gpt_query(question, user_data, messenger_id):
     """Handles GPT queries and saves potential leads in GPTLeads."""
     try:
+        # Step 1: Check if the question is the "Get Started" payload
+        if question.strip().lower() == 'get_started':
+            logging.info(f"🌟 User {messenger_id} clicked the 'Get Started' button. Ignoring GPT query.")
+            return "Starting the process... Please choose your language."  # Message for "Get Started" button click
+
         # Keywords related to refinancing and home loans
         refinancing_home_loan_keywords = ["refinance", "home loan", "loan savings", "apply for refinancing", "home loan options"]
 
-        # Step 1: Check if the question contains refinancing or home loan related keywords
+        # Step 2: Check if the question contains refinancing or home loan related keywords
         if not any(keyword in question.lower() for keyword in refinancing_home_loan_keywords):
             logging.warning(f"❌ Non-refinancing or non-home loan query detected: {question}")
             send_messenger_message(messenger_id, "Sorry, I can only assist with refinancing or home loan related questions. Please ask about refinancing or home loan options.")
             return "Non-refinancing or non-home loan query."
 
         # ----------------------------
-        # Step 2: Proceed with GPT query
+        # Step 3: Proceed with GPT query
         # ----------------------------
         response = get_preset_response(question, user_data.language_code or 'en')
         if response:
@@ -982,7 +1028,7 @@ def handle_gpt_query(question, user_data, messenger_id):
         reply = openai_res['choices'][0]['message']['content'].strip()
         logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
 
-        # Step 3: Send GPT Response to User
+        # Step 4: Send GPT Response to User
         send_messenger_message(messenger_id, reply)
         return reply
 
@@ -990,7 +1036,7 @@ def handle_gpt_query(question, user_data, messenger_id):
         logging.error(f"❌ Error in handle_gpt_query: {str(e)}")
         send_messenger_message(messenger_id, "Sorry, something went wrong. Please try again later.")
         return "Sorry, something went wrong!"
-
+    
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
     try:
