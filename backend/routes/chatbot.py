@@ -761,7 +761,6 @@ def handle_process_completion(messenger_id):
 
 def prepare_summary_messages(user_data, calc_results, language_code):
     """Builds shortened summary messages about the user's savings."""
-
     try:
         # Retrieve WhatsApp link from environment variable
         whatsapp_link = os.getenv('ADMIN_WHATSAPP_LINK', "https://wa.me/60167177813")
@@ -776,13 +775,14 @@ def prepare_summary_messages(user_data, calc_results, language_code):
         # Calculate equivalent years and months saved (ensure months_saved is correct)
         months_saved = calc_results.get('months_saved', 0)
 
-        # If months_saved is missing, calculate it from lifetime savings and monthly savings
+        # If months_saved is missing, calculate it from lifetime_savings and monthly_savings
         if months_saved == 0 and calc_results.get('lifetime_savings') and calc_results.get('monthly_savings'):
-            months_saved = calc_results['lifetime_savings'] / calc_results['monthly_savings']
+            if calc_results['monthly_savings'] != 0:  # Avoid division by zero
+                months_saved = calc_results['lifetime_savings'] / calc_results['monthly_savings']
 
-        # Calculate years saved and remaining months
-        years_saved = months_saved // 12  # Full years saved
-        remaining_months = months_saved % 12  # Remaining months saved
+        # Calculate years and remaining months
+        years_saved = months_saved // 12  # Full years
+        remaining_months = months_saved % 12  # Remaining months after full years
 
         # Combined Summary (Merges Summary 1 and 2)
         summary_msg = (
@@ -808,7 +808,6 @@ def prepare_summary_messages(user_data, calc_results, language_code):
     except Exception as e:
         logging.error(f"❌ Error preparing summary messages: {str(e)}")
         return ["Error: Failed to generate summary messages. Please contact support."]
-
 
 
 def update_database(messenger_id, user_data, calc_results):
@@ -898,27 +897,21 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 def handle_gpt_query(question, user_data, messenger_id):
     """Handles GPT queries and sends responses, ensuring no duplicate messages are sent."""
     try:
-        # Debugging the API Key
-        if not openai.api_key:
-            logging.error("❌ OpenAI API key is not set!")
-            send_messenger_message(messenger_id, "Error: OpenAI API key is not set.")
-            return "Error: OpenAI API key is not set."
-
-        # ---------------------------- Step 1: Check Preset Responses ----------------------------
+        # Step 1: Check if there is a preset response
         response = get_preset_response(question, user_data.language_code or 'en')
         if response:
             logging.info(f"✅ Preset response found for query: {question}")
             send_messenger_message(messenger_id, response)
-            return response  # Return preset response if found
+            return response  # Return preset response and avoid querying GPT
 
-        # ---------------------------- Step 2: Query GPT for Response ----------------------------
+        # Step 2: No preset match, proceed to query GPT
         logging.info(f"❌ No preset match. Querying GPT for: {question}")
         prompt = f"Question: {question}\nAnswer:"
 
-        # Send GPT query
+        # Query GPT
         openai_res = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Model type
-            messages=[  # Messages to send to GPT
+            model="gpt-3.5-turbo",  # Using the GPT-3.5 model
+            messages=[  # Send message to GPT model
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
             ]
@@ -927,33 +920,18 @@ def handle_gpt_query(question, user_data, messenger_id):
         reply = openai_res['choices'][0]['message']['content'].strip()
         logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
 
-        # Step 3: Check if the response requires admin intervention or further help
-        admin_needed = "refinance" in question.lower() or "apply" in question.lower()
-
-        # If admin help is needed, notify the admin via WhatsApp
-        if admin_needed:
-            admin_msg = (
-                f"📢 **Admin Alert!**\n\n"
-                f"💬 **User Question:** {question}\n\n"
-                "📢 This query may require further assistance from the admin. Please follow up with the user."
-            )
-            admin_id = os.getenv('ADMIN_MESSENGER_ID')
-            send_messenger_message(admin_id, admin_msg)
-
-        # Step 4: If the response is good, send it to the user. If not, suggest contacting admin.
-        if not reply:  # If GPT response is empty or doesn't make sense, ask the user to contact admin
+        # Step 3: If GPT response is empty, notify user to contact admin
+        if not reply:
             reply = "Sorry, I couldn't process your request correctly. For further assistance, please contact our admin via WhatsApp."
 
         # Send GPT response to user
         send_messenger_message(messenger_id, reply)
-
         return reply
 
     except Exception as e:
         logging.error(f"❌ Error in handle_gpt_query: {str(e)}")
         send_messenger_message(messenger_id, "Sorry, something went wrong. Please try again later.")
         return "Sorry, something went wrong!"
-
 
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
