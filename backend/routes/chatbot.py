@@ -896,37 +896,23 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # 9) GPT Query Handling
 # -------------------
 def handle_gpt_query(question, user_data, messenger_id):
-    """Handles GPT queries and saves potential leads in GPTLeads."""
+    """Handles GPT queries and sends responses, directing the user to admin if necessary."""
+
     try:
-        # Step 1: Check for missing name or phone number
-        if not user_data.name:
-            logging.info(f"❌ Name not provided. Asking for user name.")
-            send_messenger_message(messenger_id, "📝 May I have your full name to proceed?")
-            user_data.current_step = 'get_name'  # Ask for name
-            db.session.commit()
-            return "Awaiting user name."
-
-        if not user_data.phone_number:
-            logging.info(f"❌ Phone number not provided. Asking for phone number.")
-            send_messenger_message(messenger_id, "📞 Can I have your phone number for follow-up? (10 digits)")
-            user_data.current_step = 'get_phone_number'  # Ask for phone number
-            db.session.commit()
-            return "Awaiting phone number."
-
-        # ---------------------------- Step 2: Check Preset Responses ----------------------------
+        # Step 1: Check for preset responses (if any are configured)
         response = get_preset_response(question, user_data.language_code or 'en')
         if response:
             logging.info(f"✅ Preset response found for query: {question}")
             send_messenger_message(messenger_id, response)
-            return response  # Return preset response
+            return response  # Return preset response if found
 
-        # ---------------------------- Step 3: Query GPT for Response ----------------------------
+        # Step 2: Query GPT for a refined answer
         logging.info(f"❌ No preset match. Querying GPT for: {question}")
         prompt = f"Question: {question}\nAnswer:"
 
-        # Making the GPT request
+        # Send GPT query
         openai_res = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Correct model for v0.28
+            model="gpt-3.5-turbo",  # Model type
             messages=[  # Messages to send to GPT
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
@@ -936,52 +922,27 @@ def handle_gpt_query(question, user_data, messenger_id):
         reply = openai_res['choices'][0]['message']['content'].strip()
         logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
 
-        # ---------------------------- Step 4: Lead Intent Detection ----------------------------
-        lead_prompt = (
-            "Analyze the following question to determine if the user is expressing "
-            "intent to proceed with refinancing or applying for a loan. "
-            "Respond 'YES' for a lead and 'NO' otherwise.\n\n"
-            f"Question: {question}\nAnswer:"
-        )
+        # Step 3: Check if the response requires admin intervention or further help
+        # If the question is about refinancing or applying for a loan, we might want to redirect to an admin.
+        admin_needed = "refinance" in question.lower() or "apply" in question.lower()
 
-        lead_res = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": lead_prompt}],
-            max_tokens=10  # Limit the response length
-        )
-
-        lead_decision = lead_res['choices'][0]['message']['content'].strip().upper()
-        logging.info(f"🔍 GPT lead decision: {lead_decision}")
-
-        # ---------------------------- Step 5: If Lead Detected, Collect Details ----------------------------
-        if lead_decision == "YES":
-            logging.info(f"🌟 Lead detected for user {messenger_id}")
-
-            # Save GPT Lead in the new table (GPTLeads)
-            gpt_lead = GPTLead(
-                user_id=user_data.id if user_data.name and user_data.phone_number else None,
-                sender_id=user_data.messenger_id,
-                name=user_data.name,
-                phone_number=user_data.phone_number,
-                question=question
-            )
-            db.session.add(gpt_lead)
-            db.session.commit()
-            logging.info(f"✅ GPT Lead saved for user {messenger_id}")
-
-            # Notify admin
+        # If admin help is needed, notify the admin via WhatsApp
+        if admin_needed:
             admin_msg = (
-                f"📢 **Lead Alert!**\n\n"
-                f"👤 **Name:** {user_data.name}\n"
-                f"📱 **Phone Number:** {user_data.phone_number}\n"
-                f"💬 **Question:** {question}\n\n"
-                "📢 Please follow up with this lead."
+                f"📢 **Admin Alert!**\n\n"
+                f"💬 **User Question:** {question}\n\n"
+                "📢 This query may require further assistance from the admin. Please follow up with the user."
             )
             admin_id = os.getenv('ADMIN_MESSENGER_ID')
             send_messenger_message(admin_id, admin_msg)
 
-        # ---------------------------- Step 6: Send GPT Response to User ----------------------------
+        # Step 4: If the response is good, send it to the user. If not, suggest contacting admin.
+        if not reply:  # If GPT response is empty or doesn't make sense, ask the user to contact admin
+            reply = "Sorry, I couldn't process your request correctly. For further assistance, please contact our admin via WhatsApp."
+
+        # Send GPT response to user
         send_messenger_message(messenger_id, reply)
+
         return reply
 
     except Exception as e:
