@@ -39,7 +39,7 @@ logging.basicConfig(
 # -------------------
 # 2) Initialize OpenAI client
 # -------------------
-openai.api_key = os.getenv("OPENAI_API_KEY")  # Set it directly using openai.api_key
+openai.api_key = os.getenv("OPENAI_API_KEY")  # Set it directly or via environment variable
 
 # -------------------
 # 3) Load Language Files
@@ -893,7 +893,6 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # -------------------
 def handle_gpt_query(question, user_data, messenger_id):
     """Handles GPT queries and saves potential leads in GPTLeads."""
-
     try:
         # ----------------------------
         # Step 1: Check Preset Responses First
@@ -916,10 +915,13 @@ def handle_gpt_query(question, user_data, messenger_id):
             f"Question: {question}\nAnswer:"
         )
 
-        # Query GPT for response using the correct method (new SDK v1.0.0+)
-        openai_res = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}]
+        # Query GPT for response using the old method (openai.ChatCompletion.create for v0.28)
+        openai_res = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # Using the GPT-3.5 model for testing
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ]
         )
 
         reply = openai_res['choices'][0]['message']['content'].strip()
@@ -935,7 +937,7 @@ def handle_gpt_query(question, user_data, messenger_id):
             f"Question: {question}\nAnswer:"
         )
 
-        lead_res = openai.chat.completions.create(
+        lead_res = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": lead_prompt}],
             max_tokens=10  # Limit the response length
@@ -996,7 +998,7 @@ def handle_gpt_query(question, user_data, messenger_id):
         logging.error(f"❌ Error in handle_gpt_query: {str(e)}")
         send_messenger_message(messenger_id, "Sorry, something went wrong. Please try again later.")
         return "Sorry, something went wrong!"
-
+    
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
     try:
