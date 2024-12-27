@@ -578,7 +578,7 @@ def process_message():
                         messenger_id=messenger_id,
                         current_step='choose_language',  # Start with language selection
                         language_code='en',
-                        mode='flow'  # Set mode to 'flow', not 'inquiry'
+                        mode='flow'
                     )
                     db.session.add(user_data)
                     db.session.commit()
@@ -678,7 +678,6 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
-
 
 def prepare_summary_messages(user_data, calc_results, language_code):
     """Builds shortened summary messages about the user's savings."""
