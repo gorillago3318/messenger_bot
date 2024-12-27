@@ -586,9 +586,9 @@ def process_message():
                     db.session.add(user_data)
                     db.session.commit()
 
-                # Send a greeting message and prompt to choose language
-                welcome_message = "Hello! Please choose your language.\n1. English\n2. Malay\n3. Chinese"
-                send_messenger_message(sender_id, welcome_message)
+                # Send the choose language message
+                choose_language_message = get_message('choose_language_message', 'en')  # Fetch from en.json
+                send_messenger_message(sender_id, choose_language_message)
                 return jsonify({"status": "success"}), 200
 
         # Extract message body from other types of messages (text or quick replies)
@@ -615,7 +615,7 @@ def process_message():
         if message_body.lower() in ['restart', 'reset', 'start over']:
             logging.info(f"🔄 Restarting flow for user {sender_id}")
             reset_user_data(user_data, mode='flow')  # Use helper function to reset
-            restart_msg = "Please choose your language.\n1. English\n2. Malay\n3. Chinese"  # Start with language selection
+            restart_msg = get_message('choose_language_message', 'en')  # Start with language selection
             send_messenger_message(sender_id, restart_msg)
             log_chat(sender_id, message_body, restart_msg, user_data)
             return jsonify({"status": "success"}), 200
