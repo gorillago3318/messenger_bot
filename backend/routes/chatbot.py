@@ -570,6 +570,34 @@ def process_message():
             message_body = message_data['text'].strip()
         elif 'payload' in postback_data:
             message_body = postback_data['payload'].strip().lower()
+
+            # Handle "Get Started" Button click
+            if message_body == 'get_started':
+                logging.info(f"🌟 User {sender_id} clicked the 'Get Started' button.")
+                # Here you can reset user data and prompt them to choose a language
+                user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
+
+                if user_data:
+                    # Reset user's state to choose language
+                    reset_user_data(user_data, mode='flow')
+                    welcome_message = get_message('choose_language_message', 'en')  # Adjust based on language
+                    send_messenger_message(sender_id, welcome_message)
+                    return jsonify({"status": "success"}), 200
+                else:
+                    # If no user session exists, create one and send the language selection prompt
+                    user_data = ChatflowTemp(
+                        sender_id=sender_id,
+                        messenger_id=messenger_id,
+                        current_step='choose_language',  # Start with language selection
+                        language_code='en',
+                        mode='flow'  # Initial mode remains 'flow'
+                    )
+                    db.session.add(user_data)
+                    db.session.commit()
+                    welcome_message = get_message('choose_language_message', 'en')  # Language prompt
+                    send_messenger_message(sender_id, welcome_message)
+                    return jsonify({"status": "success"}), 200
+
         else:
             logging.warning(f"❌ Unsupported message type from {sender_id}: {message_data}")
             send_messenger_message(sender_id, "Sorry, I can only process text messages for now.")
@@ -654,7 +682,7 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
-    
+
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
     logging.debug(f"🚀 Entered handle_process_completion() for Messenger ID: {messenger_id}")
