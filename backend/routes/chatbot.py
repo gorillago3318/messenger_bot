@@ -533,7 +533,7 @@ def process_message():
         # 1. Parse Incoming Data
         # ----------------------------
         data = request.get_json()
-        logging.debug(f"🛬 Received raw request data:\n{json.dumps(data, indent=2)}")
+        logging.debug(f"🛢 Received raw request data:\n{json.dumps(data, indent=2)}")
 
         # Extract Sender ID
         sender_id = None
@@ -641,11 +641,13 @@ def process_message():
                 send_messenger_message(sender_id, next_message)
                 log_chat(sender_id, message_body, next_message, user_data)
             else:
-                # Process completion step and transition to gpt_query_mode
-                user_data.mode = 'inquiry'  # Transition to GPT mode after the flow is completed
-                db.session.commit()
+                # Process completion step and generate summary
                 send_messenger_message(sender_id, "🎉 Thank you for providing your details. Processing your request now!")
-                send_messenger_message(sender_id, "You can now ask any refinancing questions!")
+                result = handle_process_completion(messenger_id)
+                if result.status_code != 200:
+                    send_messenger_message(sender_id, "Sorry, we encountered an error processing your request. Please restart the process.")
+                else:
+                    send_messenger_message(sender_id, "You can now ask any refinancing questions!")
                 return jsonify({"status": "success"}), 200
 
         return jsonify({"status": "success"}), 200
@@ -654,6 +656,7 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
+
 
 
 def handle_process_completion(messenger_id):
