@@ -616,13 +616,6 @@ def process_message():
         # ----------------------------
         user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
 
-        # If the user is in inquiry mode, handle the inquiry
-        if user_data and user_data.mode == 'inquiry':
-            response = handle_gpt_query(message_body, user_data, sender_id)
-            log_chat(sender_id, message_body, response, user_data)
-            send_messenger_message(sender_id, response)
-            return jsonify({"status": "success"}), 200
-
         # Handle "Restart" Commands and further steps
         if message_body.lower() in ['restart', 'reset', 'start over']:
             logging.info(f"🔄 Restarting flow for user {sender_id}")
