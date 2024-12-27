@@ -1,0 +1,29 @@
+# .gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+*.swo
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Environment Variables
+.env
+
+# Database
+*.db
+
+# Ignore all files in migrations/versions
+
+# But track version files (Python scripts)
+/migrations/versions/*.py
+# Still ignore pycache files
+__pycache__/
+*.pyc
+heroku-x64.exe

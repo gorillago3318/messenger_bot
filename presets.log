@@ -1,0 +1,566 @@
+2024-12-18 23:23:13,172 [INFO] Successfully loaded en.json with 15 keys.
+2024-12-18 23:23:13,172 [INFO] Successfully loaded ms.json with 15 keys.
+2024-12-18 23:23:13,172 [INFO] Successfully loaded zh.json with 15 keys.
+2024-12-18 23:23:13,408 [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2024-12-18 23:23:13,408 [INFO] [33mPress CTRL+C to quit[0m
+2024-12-18 23:23:18,465 [INFO] 127.0.0.1 - - [18/Dec/2024 23:23:18] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:23:19,450 [INFO] 127.0.0.1 - - [18/Dec/2024 23:23:19] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:23:19,754 [INFO] 127.0.0.1 - - [18/Dec/2024 23:23:19] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:23:20,103 [INFO] 127.0.0.1 - - [18/Dec/2024 23:23:20] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:23:20,712 [INFO] Current step for 60126181683: choose_language
+2024-12-18 23:23:20,712 [INFO] User data for 60126181683: {'current_step': 'choose_language'}
+2024-12-18 23:23:20,712 [INFO] User selected language: en
+2024-12-18 23:23:20,712 [INFO] Sending next step message to 60126181683: Please enter your name.
+2024-12-18 23:23:21,829 [INFO] 127.0.0.1 - - [18/Dec/2024 23:23:21] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:23:22,879 [INFO] 127.0.0.1 - - [18/Dec/2024 23:23:22] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:23:23,075 [INFO] 127.0.0.1 - - [18/Dec/2024 23:23:23] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:23:23,335 [INFO] 127.0.0.1 - - [18/Dec/2024 23:23:23] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:23:23,384 [INFO] 127.0.0.1 - - [18/Dec/2024 23:23:23] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:23:28,202 [INFO] Current step for 60126181683: get_name
+2024-12-18 23:23:28,202 [INFO] User data for 60126181683: {'current_step': 'get_name', 'language_code': 'en'}
+2024-12-18 23:23:28,202 [INFO] Sending next step message to 60126181683: Please enter your age (must be between 18 and 70).
+2024-12-18 23:23:28,999 [INFO] 127.0.0.1 - - [18/Dec/2024 23:23:28] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:23:30,021 [INFO] 127.0.0.1 - - [18/Dec/2024 23:23:30] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:23:30,069 [INFO] 127.0.0.1 - - [18/Dec/2024 23:23:30] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:23:30,359 [INFO] 127.0.0.1 - - [18/Dec/2024 23:23:30] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:23:30,408 [INFO] 127.0.0.1 - - [18/Dec/2024 23:23:30] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:06,957 [INFO] Current step for 60126181683: get_age
+2024-12-18 23:24:06,957 [INFO] User data for 60126181683: {'current_step': 'get_age', 'language_code': 'en', 'name': 'Mak'}
+2024-12-18 23:24:06,957 [INFO] Sending next step message to 60126181683: Please enter your loan amount.
+2024-12-18 23:24:07,811 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:07] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:08,680 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:08] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:08,926 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:08] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:08,978 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:08] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:12,238 [INFO] Current step for 60126181683: get_loan_amount
+2024-12-18 23:24:12,238 [INFO] User data for 60126181683: {'current_step': 'get_loan_amount', 'language_code': 'en', 'name': 'Mak', 'age': 45}
+2024-12-18 23:24:12,238 [INFO] Sending next step message to 60126181683: Please enter your loan tenure (1-40 years).
+2024-12-18 23:24:13,140 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:13] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:13,971 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:13] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:14,165 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:14] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:14,323 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:14] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:20,190 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:20] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:24,406 [INFO] Current step for 60126181683: get_loan_tenure
+2024-12-18 23:24:24,406 [INFO] User data for 60126181683: {'current_step': 'get_loan_tenure', 'language_code': 'en', 'name': 'Mak', 'age': 45, 'original_loan_amount': 500000}
+2024-12-18 23:24:24,407 [INFO] Sending next step message to 60126181683: Please enter your current monthly repayment.
+2024-12-18 23:24:25,229 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:25] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:26,539 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:26] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:26,689 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:26] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:26,806 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:26] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:27,421 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:27] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:31,940 [INFO] Current step for 60126181683: get_monthly_repayment
+2024-12-18 23:24:31,940 [INFO] User data for 60126181683: {'current_step': 'get_monthly_repayment', 'language_code': 'en', 'name': 'Mak', 'age': 45, 'original_loan_amount': 500000, 'original_loan_tenure': 35}
+2024-12-18 23:24:31,940 [INFO] Sending next step message to 60126181683: Please enter your interest rate or type 'skip'.
+2024-12-18 23:24:32,739 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:32] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:33,672 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:33] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:34,039 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:34] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:34,097 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:34] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:34,100 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:34] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:37,139 [INFO] Current step for 60126181683: get_interest_rate
+2024-12-18 23:24:37,139 [INFO] User data for 60126181683: {'current_step': 'get_interest_rate', 'language_code': 'en', 'name': 'Mak', 'age': 45, 'original_loan_amount': 500000, 'original_loan_tenure': 35, 'current_repayment': 3500}
+2024-12-18 23:24:37,139 [INFO] Sending next step message to 60126181683: Please enter the remaining tenure for your loan.
+2024-12-18 23:24:37,858 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:37] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:38,806 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:38] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:38,937 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:38] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:39,174 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:39] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:39,182 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:39] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:41,757 [INFO] Current step for 60126181683: get_remaining_tenure
+2024-12-18 23:24:41,757 [INFO] User data for 60126181683: {'current_step': 'get_remaining_tenure', 'language_code': 'en', 'name': 'Mak', 'age': 45, 'original_loan_amount': 500000, 'original_loan_tenure': 35, 'current_repayment': 3500, 'interest_rate': 4.2}
+2024-12-18 23:24:41,757 [INFO] Handling process completion for 60126181683
+2024-12-18 23:24:43,937 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:43] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:44,150 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:44] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:44,662 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:44] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:45,000 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:45] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:45,397 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:45] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:45,450 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:45] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:45,849 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:45] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:45,894 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:45] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:46,218 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:46] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:46,660 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:46] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:46,668 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:46] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:51,522 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:51] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:51,555 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:51] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:51,600 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:51] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:51,649 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:51] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:56,650 [INFO] Current step for 60126181683: process_completion
+2024-12-18 23:24:56,655 [INFO] User data for 60126181683: {'current_step': 'process_completion', 'language_code': 'en', 'name': 'Mak', 'age': 45, 'original_loan_amount': 500000, 'original_loan_tenure': 35, 'current_repayment': 3500, 'interest_rate': 4.2, 'remaining_tenure': 30}
+2024-12-18 23:24:56,655 [ERROR] Message key 'None' not found in language file for en. Available keys: ['name_message', 'age_message', 'loan_amount_message', 'loan_tenure_message', 'interest_rate_message', 'remaining_tenure_message', 'repayment_message', 'completion_message', 'choose_language_message', 'summary_title_1', 'summary_content_1', 'summary_title_2', 'summary_content_2', 'summary_title_3', 'summary_content_3']
+2024-12-18 23:24:56,655 [INFO] Sending next step message to 60126181683: Message not found
+2024-12-18 23:24:57,576 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:57] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:58,350 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:58] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:58,740 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:58] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:58,799 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:58] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:24:58,805 [INFO] 127.0.0.1 - - [18/Dec/2024 23:24:58] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:25:08,962 [INFO] Current step for 60126181683: None
+2024-12-18 23:25:08,962 [INFO] User data for 60126181683: {'current_step': None, 'language_code': 'en', 'name': 'Mak', 'age': 45, 'original_loan_amount': 500000, 'original_loan_tenure': 35, 'current_repayment': 3500, 'interest_rate': 4.2, 'remaining_tenure': 30}
+2024-12-18 23:25:08,962 [ERROR] Error in process_message: 'NoneType' object is not subscriptable
+2024-12-18 23:25:08,962 [INFO] 127.0.0.1 - - [18/Dec/2024 23:25:08] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:44:59,249 [INFO] 127.0.0.1 - - [18/Dec/2024 23:44:59] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:47:39,491 [INFO] 127.0.0.1 - - [18/Dec/2024 23:47:39] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:47:40,430 [INFO] 127.0.0.1 - - [18/Dec/2024 23:47:40] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:47:40,786 [INFO] 127.0.0.1 - - [18/Dec/2024 23:47:40] "POST /webhook HTTP/1.1" 200 -
+2024-12-18 23:47:54,622 [INFO] Successfully loaded en.json with 15 keys.
+2024-12-18 23:47:54,623 [INFO] Successfully loaded ms.json with 15 keys.
+2024-12-18 23:47:54,623 [INFO] Successfully loaded zh.json with 15 keys.
+2024-12-18 23:47:54,657 [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2024-12-18 23:47:54,657 [INFO] [33mPress CTRL+C to quit[0m
+2024-12-18 23:47:54,922 [INFO] 127.0.0.1 - - [18/Dec/2024 23:47:54] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:49:09,826 [INFO] Successfully loaded en.json with 15 keys.
+2024-12-19 09:49:09,830 [INFO] Successfully loaded ms.json with 15 keys.
+2024-12-19 09:49:09,830 [INFO] Successfully loaded zh.json with 15 keys.
+2024-12-19 09:49:09,858 [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2024-12-19 09:49:09,858 [INFO] [33mPress CTRL+C to quit[0m
+2024-12-19 09:49:18,810 [INFO] 127.0.0.1 - - [19/Dec/2024 09:49:18] "GET /webhook?hub.mode=subscribe&hub.challenge=693196011&hub.verify_token=myverifytoken123 HTTP/1.1" 200 -
+2024-12-19 09:50:09,967 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:09] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:10,930 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:10] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:11,518 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:11] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:13,885 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:13] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:15,594 [INFO] Current step for 60126181683: choose_language
+2024-12-19 09:50:15,594 [INFO] User data for 60126181683: {'current_step': 'choose_language'}
+2024-12-19 09:50:15,594 [INFO] User selected language: en
+2024-12-19 09:50:15,594 [INFO] Sending next step message to 60126181683: Please enter your name.
+2024-12-19 09:50:16,406 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:16] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:17,439 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:17] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:17,561 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:17] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:17,849 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:17] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:18,252 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:18] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:22,152 [INFO] Current step for 60126181683: get_name
+2024-12-19 09:50:22,152 [INFO] User data for 60126181683: {'current_step': 'get_name', 'language_code': 'en'}
+2024-12-19 09:50:22,153 [INFO] Sending next step message to 60126181683: Please enter your age (must be between 18 and 70).
+2024-12-19 09:50:22,852 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:22] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:23,888 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:23] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:24,050 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:24] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:24,119 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:24] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:24,216 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:24] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:27,287 [INFO] Current step for 60126181683: get_age
+2024-12-19 09:50:27,287 [INFO] User data for 60126181683: {'current_step': 'get_age', 'language_code': 'en', 'name': 'Kkit'}
+2024-12-19 09:50:27,287 [INFO] Sending next step message to 60126181683: Please enter your loan amount.
+2024-12-19 09:50:28,182 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:28] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:29,109 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:29] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:29,256 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:29] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:29,305 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:29] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:29,316 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:29] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:32,106 [INFO] Current step for 60126181683: get_loan_amount
+2024-12-19 09:50:32,106 [INFO] User data for 60126181683: {'current_step': 'get_loan_amount', 'language_code': 'en', 'name': 'Kkit', 'age': 40}
+2024-12-19 09:50:32,106 [INFO] Sending next step message to 60126181683: Please enter your loan tenure (1-40 years).
+2024-12-19 09:50:32,996 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:32] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:33,930 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:33] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:34,245 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:34] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:34,249 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:34] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:34,252 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:34] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:42,837 [INFO] Current step for 60126181683: get_loan_tenure
+2024-12-19 09:50:42,838 [INFO] User data for 60126181683: {'current_step': 'get_loan_tenure', 'language_code': 'en', 'name': 'Kkit', 'age': 40, 'original_loan_amount': 300000}
+2024-12-19 09:50:42,838 [INFO] Sending next step message to 60126181683: Please enter your current monthly repayment.
+2024-12-19 09:50:43,744 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:43] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:44,673 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:44] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:44,850 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:44] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:44,870 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:44] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:49,182 [INFO] Current step for 60126181683: get_monthly_repayment
+2024-12-19 09:50:49,182 [INFO] User data for 60126181683: {'current_step': 'get_monthly_repayment', 'language_code': 'en', 'name': 'Kkit', 'age': 40, 'original_loan_amount': 300000, 'original_loan_tenure': 35}
+2024-12-19 09:50:49,182 [INFO] Sending next step message to 60126181683: Please enter your interest rate or type 'skip'.
+2024-12-19 09:50:50,090 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:50] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:50,936 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:50] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:51,337 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:51] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:51,337 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:51] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:51,370 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:51] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:57,068 [INFO] Current step for 60126181683: get_interest_rate
+2024-12-19 09:50:57,068 [INFO] User data for 60126181683: {'current_step': 'get_interest_rate', 'language_code': 'en', 'name': 'Kkit', 'age': 40, 'original_loan_amount': 300000, 'original_loan_tenure': 35, 'current_repayment': 1450}
+2024-12-19 09:50:57,068 [INFO] Sending next step message to 60126181683: Please enter the remaining tenure for your loan.
+2024-12-19 09:50:58,076 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:58] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:59,332 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:59] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:59,415 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:59] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:50:59,423 [INFO] 127.0.0.1 - - [19/Dec/2024 09:50:59] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:00,329 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:00] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:01,548 [INFO] Current step for 60126181683: get_remaining_tenure
+2024-12-19 09:51:01,549 [INFO] User data for 60126181683: {'current_step': 'get_remaining_tenure', 'language_code': 'en', 'name': 'Kkit', 'age': 40, 'original_loan_amount': 300000, 'original_loan_tenure': 35, 'current_repayment': 1450}
+2024-12-19 09:51:01,549 [INFO] Handling process completion for 60126181683
+2024-12-19 09:51:03,893 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:03] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:04,448 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:04] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:04,486 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:04] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:04,498 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:04] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:05,350 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:05] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:05,799 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:05] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:05,888 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:05] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:05,915 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:05] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:05,982 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:05] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:06,098 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:06] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:06,249 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:06] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:06,376 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:06] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:06,408 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:06] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:07,201 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:07] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:07,326 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:07] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:07,486 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:07] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:07,534 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:07] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:16,814 [INFO] Current step for 60126181683: process_completion
+2024-12-19 09:51:16,814 [INFO] User data for 60126181683: {'current_step': 'process_completion', 'language_code': 'en', 'name': 'Kkit', 'age': 40, 'original_loan_amount': 300000, 'original_loan_tenure': 35, 'current_repayment': 1450}
+2024-12-19 09:51:16,814 [ERROR] Message key 'None' not found in language file for en. Available keys: ['name_message', 'age_message', 'loan_amount_message', 'loan_tenure_message', 'interest_rate_message', 'remaining_tenure_message', 'repayment_message', 'completion_message', 'choose_language_message', 'summary_title_1', 'summary_content_1', 'summary_title_2', 'summary_content_2', 'summary_title_3', 'summary_content_3']
+2024-12-19 09:51:16,815 [INFO] Sending next step message to 60126181683: Message not found
+2024-12-19 09:51:17,728 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:17] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:18,560 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:18] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:51:19,173 [INFO] 127.0.0.1 - - [19/Dec/2024 09:51:19] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:00,831 [INFO] Successfully loaded en.json with 15 keys.
+2024-12-19 09:57:00,831 [INFO] Successfully loaded ms.json with 15 keys.
+2024-12-19 09:57:00,831 [INFO] Successfully loaded zh.json with 15 keys.
+2024-12-19 09:57:00,869 [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2024-12-19 09:57:00,869 [INFO] [33mPress CTRL+C to quit[0m
+2024-12-19 09:57:07,218 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:07] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:13,940 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:13] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:14,824 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:14] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:15,179 [INFO] Current step for 60126181683: choose_language
+2024-12-19 09:57:15,183 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:15] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:15,191 [INFO] User data for 60126181683: {'current_step': 'choose_language'}
+2024-12-19 09:57:15,197 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:15] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:15,199 [INFO] User selected language: en
+2024-12-19 09:57:15,200 [INFO] Sending next step message to 60126181683: Please enter your name.
+2024-12-19 09:57:16,034 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:16] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:17,172 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:17] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:17,224 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:17] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:17,231 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:17] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:20,249 [INFO] Current step for 60126181683: get_name
+2024-12-19 09:57:20,249 [INFO] User data for 60126181683: {'current_step': 'get_name', 'language_code': 'en'}
+2024-12-19 09:57:20,249 [INFO] Sending next step message to 60126181683: Please enter your age (must be between 18 and 70).
+2024-12-19 09:57:21,058 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:21] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:22,275 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:22] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:22,330 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:22] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:22,335 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:22] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:22,345 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:22] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:24,881 [INFO] Current step for 60126181683: get_age
+2024-12-19 09:57:24,884 [INFO] User data for 60126181683: {'current_step': 'get_age', 'language_code': 'en', 'name': 'Mak Wai Kit'}
+2024-12-19 09:57:24,884 [INFO] Sending next step message to 60126181683: Please enter your loan amount.
+2024-12-19 09:57:25,666 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:25] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:26,601 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:26] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:26,837 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:26] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:26,909 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:26] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:27,000 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:27] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:29,562 [INFO] Current step for 60126181683: get_loan_amount
+2024-12-19 09:57:29,562 [INFO] User data for 60126181683: {'current_step': 'get_loan_amount', 'language_code': 'en', 'name': 'Mak Wai Kit', 'age': 35}
+2024-12-19 09:57:29,562 [INFO] Sending next step message to 60126181683: Please enter your loan tenure (1-40 years).
+2024-12-19 09:57:30,341 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:30] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:31,236 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:31] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:31,475 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:31] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:31,521 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:31] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:34,666 [INFO] Current step for 60126181683: get_loan_tenure
+2024-12-19 09:57:34,666 [INFO] User data for 60126181683: {'current_step': 'get_loan_tenure', 'language_code': 'en', 'name': 'Mak Wai Kit', 'age': 35, 'original_loan_amount': 300000}
+2024-12-19 09:57:34,666 [INFO] Sending next step message to 60126181683: Please enter your current monthly repayment.
+2024-12-19 09:57:35,420 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:35] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:36,353 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:36] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:36,624 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:36] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:36,761 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:36] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:36,794 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:36] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:40,425 [INFO] Current step for 60126181683: get_monthly_repayment
+2024-12-19 09:57:40,425 [INFO] User data for 60126181683: {'current_step': 'get_monthly_repayment', 'language_code': 'en', 'name': 'Mak Wai Kit', 'age': 35, 'original_loan_amount': 300000, 'original_loan_tenure': 35}
+2024-12-19 09:57:40,425 [INFO] Sending next step message to 60126181683: Please enter your interest rate or type 'skip'.
+2024-12-19 09:57:41,174 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:41] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:42,301 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:42] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:42,316 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:42] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:42,348 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:42] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:42,381 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:42] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:46,407 [INFO] Current step for 60126181683: get_interest_rate
+2024-12-19 09:57:46,407 [INFO] User data for 60126181683: {'current_step': 'get_interest_rate', 'language_code': 'en', 'name': 'Mak Wai Kit', 'age': 35, 'original_loan_amount': 300000, 'original_loan_tenure': 35, 'current_repayment': 1600}
+2024-12-19 09:57:46,407 [INFO] Sending next step message to 60126181683: Please enter the remaining tenure for your loan.
+2024-12-19 09:57:47,266 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:47] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:48,200 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:48] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:48,530 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:48] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:48,532 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:48] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:49,802 [INFO] Current step for 60126181683: get_remaining_tenure
+2024-12-19 09:57:49,802 [INFO] User data for 60126181683: {'current_step': 'get_remaining_tenure', 'language_code': 'en', 'name': 'Mak Wai Kit', 'age': 35, 'original_loan_amount': 300000, 'original_loan_tenure': 35, 'current_repayment': 1600}
+2024-12-19 09:57:49,802 [INFO] Handling process completion for 60126181683
+2024-12-19 09:57:51,958 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:51] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:52,308 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:52] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:52,314 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:52] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:52,331 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:52] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:52,574 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:52] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:52,913 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:52] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:52,920 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:52] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:52,955 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:52] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:53,263 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:53] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:53,353 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:53] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:53,724 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:53] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:53,762 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:53] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:53,793 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:53] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:54,161 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:54] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:54,562 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:54] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:54,570 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:54] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:57:54,635 [INFO] 127.0.0.1 - - [19/Dec/2024 09:57:54] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:58:00,700 [INFO] Current step for 60126181683: process_completion
+2024-12-19 09:58:00,700 [INFO] User data for 60126181683: {'current_step': 'process_completion', 'language_code': 'en', 'name': 'Mak Wai Kit', 'age': 35, 'original_loan_amount': 300000, 'original_loan_tenure': 35, 'current_repayment': 1600}
+2024-12-19 09:58:00,700 [ERROR] Message key 'None' not found in language file for en. Available keys: ['name_message', 'age_message', 'loan_amount_message', 'loan_tenure_message', 'interest_rate_message', 'remaining_tenure_message', 'repayment_message', 'completion_message', 'choose_language_message', 'summary_title_1', 'summary_content_1', 'summary_title_2', 'summary_content_2', 'summary_title_3', 'summary_content_3']
+2024-12-19 09:58:00,700 [INFO] Sending next step message to 60126181683: Message not found
+2024-12-19 09:58:01,608 [INFO] 127.0.0.1 - - [19/Dec/2024 09:58:01] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:58:02,639 [INFO] 127.0.0.1 - - [19/Dec/2024 09:58:02] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:58:02,736 [INFO] 127.0.0.1 - - [19/Dec/2024 09:58:02] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:58:02,907 [INFO] 127.0.0.1 - - [19/Dec/2024 09:58:02] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 09:58:02,915 [INFO] 127.0.0.1 - - [19/Dec/2024 09:58:02] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:09:59,039 [INFO] Successfully loaded en.json with 15 keys.
+2024-12-19 10:09:59,047 [INFO] Successfully loaded ms.json with 15 keys.
+2024-12-19 10:09:59,065 [INFO] Successfully loaded zh.json with 15 keys.
+2024-12-19 10:09:59,130 [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2024-12-19 10:09:59,132 [INFO] [33mPress CTRL+C to quit[0m
+2024-12-19 10:10:46,783 [INFO] 127.0.0.1 - - [19/Dec/2024 10:10:46] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:10:47,867 [INFO] 127.0.0.1 - - [19/Dec/2024 10:10:47] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:10:47,914 [INFO] 127.0.0.1 - - [19/Dec/2024 10:10:47] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:10:47,984 [INFO] 127.0.0.1 - - [19/Dec/2024 10:10:47] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:10:53,198 [INFO] Current step for 60126181683: choose_language
+2024-12-19 10:10:53,198 [INFO] User data for 60126181683: {'current_step': 'choose_language'}
+2024-12-19 10:10:53,198 [INFO] User selected language: en
+2024-12-19 10:10:53,198 [INFO] Sending next step message to 60126181683: Please enter your name.
+2024-12-19 10:10:54,407 [INFO] 127.0.0.1 - - [19/Dec/2024 10:10:54] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:10:55,090 [INFO] 127.0.0.1 - - [19/Dec/2024 10:10:55] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:10:55,164 [INFO] 127.0.0.1 - - [19/Dec/2024 10:10:55] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:10:55,331 [INFO] 127.0.0.1 - - [19/Dec/2024 10:10:55] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:10:55,464 [INFO] 127.0.0.1 - - [19/Dec/2024 10:10:55] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:02,617 [INFO] Current step for 60126181683: get_name
+2024-12-19 10:11:02,617 [INFO] User data for 60126181683: {'current_step': 'get_name', 'language_code': 'en'}
+2024-12-19 10:11:02,617 [INFO] Sending next step message to 60126181683: Please enter your age (must be between 18 and 70).
+2024-12-19 10:11:03,447 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:03] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:04,371 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:04] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:04,664 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:04] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:04,722 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:04] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:04,837 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:04] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:15,053 [INFO] Current step for 60126181683: get_age
+2024-12-19 10:11:15,053 [INFO] User data for 60126181683: {'current_step': 'get_age', 'language_code': 'en', 'name': 'Dailou'}
+2024-12-19 10:11:15,053 [INFO] Sending next step message to 60126181683: Please enter your loan amount.
+2024-12-19 10:11:16,019 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:16] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:16,882 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:16] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:17,152 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:17] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:17,209 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:17] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:17,257 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:17] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:25,354 [INFO] Current step for 60126181683: get_loan_amount
+2024-12-19 10:11:25,354 [INFO] User data for 60126181683: {'current_step': 'get_loan_amount', 'language_code': 'en', 'name': 'Dailou', 'age': 35}
+2024-12-19 10:11:25,362 [INFO] Sending next step message to 60126181683: Please enter your loan tenure (1-40 years).
+2024-12-19 10:11:26,464 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:26] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:27,086 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:27] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:27,239 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:27] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:27,288 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:27] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:29,481 [INFO] Current step for 60126181683: get_loan_tenure
+2024-12-19 10:11:29,481 [INFO] User data for 60126181683: {'current_step': 'get_loan_tenure', 'language_code': 'en', 'name': 'Dailou', 'age': 35, 'original_loan_amount': 500000}
+2024-12-19 10:11:29,481 [INFO] Sending next step message to 60126181683: Please enter your current monthly repayment.
+2024-12-19 10:11:30,357 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:30] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:31,306 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:31] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:31,365 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:31] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:31,413 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:31] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:31,475 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:31] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:32,311 [INFO] Current step for 60126181683: get_monthly_repayment
+2024-12-19 10:11:32,311 [INFO] User data for 60126181683: {'current_step': 'get_monthly_repayment', 'language_code': 'en', 'name': 'Dailou', 'age': 35, 'original_loan_amount': 500000, 'original_loan_tenure': 35}
+2024-12-19 10:11:32,311 [INFO] Sending next step message to 60126181683: Please enter your interest rate or type 'skip'.
+2024-12-19 10:11:33,188 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:33] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:34,147 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:34] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:34,357 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:34] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:34,414 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:34] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:34,463 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:34] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:37,633 [INFO] Current step for 60126181683: get_interest_rate
+2024-12-19 10:11:37,633 [INFO] User data for 60126181683: {'current_step': 'get_interest_rate', 'language_code': 'en', 'name': 'Dailou', 'age': 35, 'original_loan_amount': 500000, 'original_loan_tenure': 35, 'current_repayment': 2500}
+2024-12-19 10:11:37,641 [INFO] Sending next step message to 60126181683: Please enter the remaining tenure for your loan.
+2024-12-19 10:11:38,447 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:38] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:39,372 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:39] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:39,733 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:39] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:39,741 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:39] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:39,767 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:39] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:41,319 [INFO] Current step for 60126181683: get_remaining_tenure
+2024-12-19 10:11:41,319 [INFO] User data for 60126181683: {'current_step': 'get_remaining_tenure', 'language_code': 'en', 'name': 'Dailou', 'age': 35, 'original_loan_amount': 500000, 'original_loan_tenure': 35, 'current_repayment': 2500}
+2024-12-19 10:11:41,319 [INFO] Handling process completion for 60126181683
+2024-12-19 10:11:43,313 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:43] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:43,587 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:43] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:43,587 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:43] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:43,697 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:43] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:44,163 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:44] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:44,387 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:44] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:44,552 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:44] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:44,597 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:44] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:44,746 [INFO] User 60126181683 has entered FAQ mode after process completion.
+2024-12-19 10:11:44,747 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:44] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:45,013 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:45] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:45,133 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:45] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:45,215 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:45] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:45,337 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:45] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:45,720 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:45] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:45,931 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:45] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:45,968 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:45] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:46,246 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:46] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:56,987 [INFO] Current step for 60126181683: faq_mode
+2024-12-19 10:11:56,987 [INFO] User data for 60126181683: {'current_step': 'faq_mode', 'language_code': 'en', 'name': 'Dailou', 'age': 35, 'original_loan_amount': 500000, 'original_loan_tenure': 35, 'current_repayment': 2500}
+2024-12-19 10:11:56,987 [INFO] User 60126181683 is in FAQ mode. Handling question: what is refinancing?
+2024-12-19 10:11:56,997 [ERROR] Error handling FAQ for 60126181683: string indices must be integers, not 'str'
+2024-12-19 10:11:58,114 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:58] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:58,776 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:58] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:58,882 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:58] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:11:58,931 [INFO] 127.0.0.1 - - [19/Dec/2024 10:11:58] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:15:43,925 [INFO] Successfully loaded en.json with 15 keys.
+2024-12-19 10:15:43,925 [INFO] Successfully loaded ms.json with 15 keys.
+2024-12-19 10:15:43,925 [INFO] Successfully loaded zh.json with 15 keys.
+2024-12-19 10:15:43,953 [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2024-12-19 10:15:43,953 [INFO] [33mPress CTRL+C to quit[0m
+2024-12-19 10:15:48,409 [INFO] 127.0.0.1 - - [19/Dec/2024 10:15:48] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:15:49,327 [INFO] 127.0.0.1 - - [19/Dec/2024 10:15:49] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:15:49,735 [INFO] 127.0.0.1 - - [19/Dec/2024 10:15:49] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:15:49,784 [INFO] 127.0.0.1 - - [19/Dec/2024 10:15:49] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:15:51,323 [INFO] Current step for 60126181683: choose_language
+2024-12-19 10:15:51,323 [INFO] User data for 60126181683: {'current_step': 'choose_language'}
+2024-12-19 10:15:51,325 [INFO] User selected language: en
+2024-12-19 10:15:51,325 [INFO] Sending next step message to 60126181683: Please enter your name.
+2024-12-19 10:15:52,117 [INFO] 127.0.0.1 - - [19/Dec/2024 10:15:52] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:15:53,159 [INFO] 127.0.0.1 - - [19/Dec/2024 10:15:53] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:15:53,593 [INFO] 127.0.0.1 - - [19/Dec/2024 10:15:53] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:15:53,600 [INFO] 127.0.0.1 - - [19/Dec/2024 10:15:53] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:15:53,600 [INFO] 127.0.0.1 - - [19/Dec/2024 10:15:53] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:14,112 [INFO] Current step for 60126181683: get_name
+2024-12-19 10:16:14,112 [INFO] User data for 60126181683: {'current_step': 'get_name', 'language_code': 'en'}
+2024-12-19 10:16:14,112 [INFO] Sending next step message to 60126181683: Please enter your age (must be between 18 and 70).
+2024-12-19 10:16:14,933 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:14] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:16,055 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:16] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:16,125 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:16] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:16,230 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:16] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:19,831 [INFO] Current step for 60126181683: get_age
+2024-12-19 10:16:19,831 [INFO] User data for 60126181683: {'current_step': 'get_age', 'language_code': 'en', 'name': 'Wai Kit Mak'}
+2024-12-19 10:16:19,831 [INFO] Sending next step message to 60126181683: Please enter your loan amount.
+2024-12-19 10:16:20,658 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:20] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:21,688 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:21] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:21,818 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:21] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:22,103 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:22] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:24,450 [INFO] Current step for 60126181683: get_loan_amount
+2024-12-19 10:16:24,450 [INFO] User data for 60126181683: {'current_step': 'get_loan_amount', 'language_code': 'en', 'name': 'Wai Kit Mak', 'age': 35}
+2024-12-19 10:16:24,450 [INFO] Sending next step message to 60126181683: Please enter your loan tenure (1-40 years).
+2024-12-19 10:16:25,268 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:25] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:26,300 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:26] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:26,425 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:26] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:26,475 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:26] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:26,610 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:26] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:33,808 [INFO] Current step for 60126181683: get_loan_tenure
+2024-12-19 10:16:33,808 [INFO] User data for 60126181683: {'current_step': 'get_loan_tenure', 'language_code': 'en', 'name': 'Wai Kit Mak', 'age': 35, 'original_loan_amount': 300000}
+2024-12-19 10:16:33,808 [INFO] Sending next step message to 60126181683: Please enter your current monthly repayment.
+2024-12-19 10:16:34,691 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:34] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:35,616 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:35] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:35,808 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:35] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:35,811 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:35] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:35,830 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:35] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:37,859 [INFO] Current step for 60126181683: get_monthly_repayment
+2024-12-19 10:16:37,859 [INFO] User data for 60126181683: {'current_step': 'get_monthly_repayment', 'language_code': 'en', 'name': 'Wai Kit Mak', 'age': 35, 'original_loan_amount': 300000, 'original_loan_tenure': 35}
+2024-12-19 10:16:37,859 [INFO] Sending next step message to 60126181683: Please enter your interest rate or type 'skip'.
+2024-12-19 10:16:38,579 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:38] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:39,418 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:39] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:39,710 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:39] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:39,724 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:39] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:39,833 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:39] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:42,375 [INFO] Current step for 60126181683: get_interest_rate
+2024-12-19 10:16:42,375 [INFO] User data for 60126181683: {'current_step': 'get_interest_rate', 'language_code': 'en', 'name': 'Wai Kit Mak', 'age': 35, 'original_loan_amount': 300000, 'original_loan_tenure': 35, 'current_repayment': 2000}
+2024-12-19 10:16:42,375 [INFO] Sending next step message to 60126181683: Please enter the remaining tenure for your loan.
+2024-12-19 10:16:43,187 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:43] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:44,137 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:44] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:44,429 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:44] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:44,475 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:44] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:44,481 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:44] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:50,625 [INFO] Current step for 60126181683: get_remaining_tenure
+2024-12-19 10:16:50,625 [INFO] User data for 60126181683: {'current_step': 'get_remaining_tenure', 'language_code': 'en', 'name': 'Wai Kit Mak', 'age': 35, 'original_loan_amount': 300000, 'original_loan_tenure': 35, 'current_repayment': 2000}
+2024-12-19 10:16:50,625 [INFO] Handling process completion for 60126181683
+2024-12-19 10:16:52,507 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:52] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:52,941 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:52] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:53,345 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:53] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:53,607 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:53] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:53,648 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:53] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:54,145 [INFO] User 60126181683 has entered FAQ mode after process completion.
+2024-12-19 10:16:54,145 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:54] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:54,355 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:54] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:54,758 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:54] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:54,815 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:54] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:55,202 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:55] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:55,293 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:55] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:16:55,359 [INFO] 127.0.0.1 - - [19/Dec/2024 10:16:55] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:17:03,774 [INFO] 127.0.0.1 - - [19/Dec/2024 10:17:03] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:17:03,831 [INFO] 127.0.0.1 - - [19/Dec/2024 10:17:03] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:17:03,838 [INFO] 127.0.0.1 - - [19/Dec/2024 10:17:03] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:17:03,842 [INFO] 127.0.0.1 - - [19/Dec/2024 10:17:03] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:17:07,911 [INFO] Current step for 60126181683: faq_mode
+2024-12-19 10:17:07,911 [INFO] User data for 60126181683: {'current_step': 'faq_mode', 'language_code': 'en', 'name': 'Wai Kit Mak', 'age': 35, 'original_loan_amount': 300000, 'original_loan_tenure': 35, 'current_repayment': 2000}
+2024-12-19 10:17:07,911 [INFO] User 60126181683 is in FAQ mode. Handling question: what is refinancing?
+2024-12-19 10:17:07,924 [ERROR] Error handling FAQ for 60126181683: string indices must be integers, not 'str'
+2024-12-19 10:17:08,791 [INFO] 127.0.0.1 - - [19/Dec/2024 10:17:08] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:17:09,811 [INFO] 127.0.0.1 - - [19/Dec/2024 10:17:09] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:17:09,982 [INFO] 127.0.0.1 - - [19/Dec/2024 10:17:09] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:17:10,011 [INFO] 127.0.0.1 - - [19/Dec/2024 10:17:10] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:17:10,071 [INFO] 127.0.0.1 - - [19/Dec/2024 10:17:10] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 10:34:44,973 [INFO] Successfully loaded en.json with 15 keys.
+2024-12-19 10:34:44,974 [INFO] Successfully loaded ms.json with 15 keys.
+2024-12-19 10:34:44,975 [INFO] Successfully loaded zh.json with 15 keys.
+2024-12-19 10:34:45,007 [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2024-12-19 10:34:45,008 [INFO] [33mPress CTRL+C to quit[0m
+2024-12-19 10:34:50,908 [INFO] 127.0.0.1 - - [19/Dec/2024 10:34:50] "POST /webhook HTTP/1.1" 200 -
+2024-12-19 11:13:14,616 [INFO] Successfully loaded en.json with 15 keys.
+2024-12-19 11:13:14,616 [INFO] Successfully loaded ms.json with 15 keys.
+2024-12-19 11:13:14,626 [INFO] Successfully loaded zh.json with 15 keys.
+2024-12-19 11:13:14,662 [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2024-12-19 11:13:14,662 [INFO] [33mPress CTRL+C to quit[0m
+2024-12-19 11:13:17,032 [INFO] 127.0.0.1 - - [19/Dec/2024 11:13:17] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:13:17,827 [INFO] 127.0.0.1 - - [19/Dec/2024 11:13:17] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:13:18,606 [INFO] 127.0.0.1 - - [19/Dec/2024 11:13:18] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:13:20,831 [INFO] 127.0.0.1 - - [19/Dec/2024 11:13:20] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:13:47,341 [INFO] 127.0.0.1 - - [19/Dec/2024 11:13:47] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:15:05,852 [INFO] 127.0.0.1 - - [19/Dec/2024 11:15:05] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:15:06,720 [INFO] 127.0.0.1 - - [19/Dec/2024 11:15:06] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:15:07,628 [INFO] 127.0.0.1 - - [19/Dec/2024 11:15:07] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:15:10,049 [INFO] 127.0.0.1 - - [19/Dec/2024 11:15:10] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:15:34,503 [INFO] 127.0.0.1 - - [19/Dec/2024 11:15:34] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:16:07,206 [INFO] 127.0.0.1 - - [19/Dec/2024 11:16:07] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:17:31,118 [INFO] 127.0.0.1 - - [19/Dec/2024 11:17:31] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:20:02,123 [INFO] Successfully loaded en.json with 15 keys.
+2024-12-19 11:20:02,124 [INFO] Successfully loaded ms.json with 15 keys.
+2024-12-19 11:20:02,124 [INFO] Successfully loaded zh.json with 15 keys.
+2024-12-19 11:20:02,180 [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2024-12-19 11:20:02,180 [INFO] [33mPress CTRL+C to quit[0m
+2024-12-19 11:20:05,037 [INFO] 127.0.0.1 - - [19/Dec/2024 11:20:05] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:20:05,543 [INFO] 127.0.0.1 - - [19/Dec/2024 11:20:05] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:20:05,818 [INFO] 127.0.0.1 - - [19/Dec/2024 11:20:05] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:20:06,582 [INFO] 127.0.0.1 - - [19/Dec/2024 11:20:06] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:20:08,880 [INFO] 127.0.0.1 - - [19/Dec/2024 11:20:08] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:20:33,987 [INFO] 127.0.0.1 - - [19/Dec/2024 11:20:33] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:21:33,109 [INFO] 127.0.0.1 - - [19/Dec/2024 11:21:33] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:21:41,455 [INFO] Successfully loaded en.json with 15 keys.
+2024-12-19 11:21:41,456 [INFO] Successfully loaded ms.json with 15 keys.
+2024-12-19 11:21:41,457 [INFO] Successfully loaded zh.json with 15 keys.
+2024-12-19 11:24:58,404 [INFO] Successfully loaded en.json with 15 keys.
+2024-12-19 11:24:58,405 [INFO] Successfully loaded ms.json with 15 keys.
+2024-12-19 11:24:58,406 [INFO] Successfully loaded zh.json with 15 keys.
+2024-12-19 11:28:08,575 [INFO] Successfully loaded en.json with 15 keys.
+2024-12-19 11:28:08,576 [INFO] Successfully loaded ms.json with 15 keys.
+2024-12-19 11:28:08,576 [INFO] Successfully loaded zh.json with 15 keys.
+2024-12-19 11:28:22,071 [INFO] Successfully loaded en.json with 15 keys.
+2024-12-19 11:28:22,071 [INFO] Successfully loaded ms.json with 15 keys.
+2024-12-19 11:28:22,071 [INFO] Successfully loaded zh.json with 15 keys.
+2024-12-19 11:29:18,340 [INFO] Successfully loaded en.json with 15 keys.
+2024-12-19 11:29:18,341 [INFO] Successfully loaded ms.json with 15 keys.
+2024-12-19 11:29:18,342 [INFO] Successfully loaded zh.json with 15 keys.
+2024-12-19 11:32:44,226 [INFO] Successfully loaded en.json with 15 keys.
+2024-12-19 11:32:44,226 [INFO] Successfully loaded ms.json with 15 keys.
+2024-12-19 11:32:44,226 [INFO] Successfully loaded zh.json with 15 keys.
+2024-12-19 11:32:44,227 [INFO] .env file loaded: postgresql://postgres:Mcmakwaikit1!@localhost:5432/finzo
+2024-12-19 11:32:44,243 [INFO] Successfully registered chatbot blueprint at '/chatbot'
+2024-12-19 11:32:44,243 [INFO] Listing all routes:
+2024-12-19 11:32:44,243 [INFO] Route: /static/<path:filename> | Methods: {'OPTIONS', 'GET', 'HEAD'} | Endpoint: static
+2024-12-19 11:32:44,243 [INFO] Route: /chatbot/process_message | Methods: {'POST', 'OPTIONS'} | Endpoint: chatbot.process_message
+2024-12-19 11:32:44,243 [INFO] Route: /webhook | Methods: {'POST', 'GET', 'HEAD', 'OPTIONS'} | Endpoint: webhook
+2024-12-19 11:32:44,243 [INFO] Successfully registered chatbot blueprint at '/chatbot'
+2024-12-19 11:34:01,907 [INFO] Successfully loaded en.json with 15 keys.
+2024-12-19 11:34:01,907 [INFO] Successfully loaded ms.json with 15 keys.
+2024-12-19 11:34:01,908 [INFO] Successfully loaded zh.json with 15 keys.
+2024-12-19 11:34:01,910 [INFO] .env file loaded: postgresql://postgres:Mcmakwaikit1!@localhost:5432/finzo
+2024-12-19 11:34:01,924 [INFO] Successfully registered chatbot blueprint at '/chatbot'
+2024-12-19 11:34:01,924 [INFO] Listing all routes:
+2024-12-19 11:34:01,925 [INFO] Route: /static/<path:filename> | Methods: {'OPTIONS', 'GET', 'HEAD'} | Endpoint: static
+2024-12-19 11:34:01,925 [INFO] Route: /chatbot/process_message | Methods: {'OPTIONS', 'POST'} | Endpoint: chatbot.process_message
+2024-12-19 11:34:01,925 [INFO] Route: /webhook | Methods: {'OPTIONS', 'GET', 'POST', 'HEAD'} | Endpoint: webhook
+2024-12-19 11:34:01,926 [INFO] Successfully registered chatbot blueprint at '/chatbot'
+2024-12-19 11:34:01,935 [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2024-12-19 11:34:01,937 [INFO] [33mPress CTRL+C to quit[0m
+2024-12-19 11:34:06,262 [INFO] 127.0.0.1 - - [19/Dec/2024 11:34:06] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:34:07,124 [INFO] 127.0.0.1 - - [19/Dec/2024 11:34:07] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:34:08,023 [INFO] 127.0.0.1 - - [19/Dec/2024 11:34:08] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:34:10,315 [INFO] 127.0.0.1 - - [19/Dec/2024 11:34:10] "[33mPOST /webhook HTTP/1.1[0m" 404 -
+2024-12-19 11:34:35,502 [INFO] 127.0.0.1 - - [19/Dec/2024 11:34:35] "[33mPOST /webhook HTTP/1.1[0m" 404 -

@@ -1,0 +1,48 @@
+{
+    "gpt3_role": "You are a mortgage specialist for Finzo AI, focusing on refinancing and housing loans in Malaysia. Your goal is to provide detailed, professional, and human-like responses to assist users with their refinancing inquiries, ensuring they understand the process, costs, eligibility, and benefits.",
+    "example_queries": [
+      "What is refinancing?",
+      "What documents do I need to refinance?",
+      "How much does refinancing cost?",
+      "How long does refinancing take?",
+      "What is CCRIS and CTOS?",
+      "Can I cash out from refinancing?",
+      "What are the interest rates for cash-out refinancing?",
+      "What happens after loan approval?"
+    ],
+    "language_handling": {
+      "ms": "Handle the conversation in Malay, provide professional answers.",
+      "zh": "Handle the conversation in Chinese, provide professional answers."
+    },
+    "en": {
+      "what is refinancing?": "Refinancing is the process of replacing your existing home loan with a new one, typically to secure better interest rates, lower monthly payments, or to cash out additional funds based on property value.",
+      "what documents do i need to refinance?": "You need to provide details and documents such as the Sales and Purchase Agreement, property title, income statements, and bank statements. After submission, our agents handle valuations, submissions, and notifications.",
+      "how much does refinancing cost?": "There are no processing charges. Refinancing costs mainly include legal documentation and stamp duty fees. Contact our admin at wa.me/60167177813 for detailed cost breakdowns.",
+      "how long does refinancing take?": "The process usually takes 1 to 3 months, depending on document preparation, property valuations, and bank approvals.",
+      "what is ccris and ctos?": "CCRIS is a record of repayment history, showing loan payments and delinquencies. CTOS checks for legal issues such as bankruptcy or court cases. These are used by banks to assess eligibility.",
+      "can i cash out from refinancing?": "Yes, you can cash out funds during refinancing. The interest rate is 3.8%, and the repayment period is up to 10 years. Our agents can assist you further if needed.",
+      "what are the interest rates for cash-out refinancing?": "The interest rate for cash-out refinancing is 3.8%, with a repayment period of up to 10 years. Contact our admin at wa.me/60167177813 for more details.",
+      "what happens after loan approval?": "Once approved, you'll be notified and can arrange to sign the loan offer letter. Our agents will assist in finalizing legal documents and completing the process."
+    },
+    "ms": {
+      "apa itu pembiayaan semula?": "Pembiayaan semula ialah proses menggantikan pinjaman rumah sedia ada dengan pinjaman baru untuk kadar faedah yang lebih rendah, bayaran bulanan lebih rendah, atau mengeluarkan tunai tambahan berdasarkan nilai hartanah.",
+      "dokumen apa yang diperlukan untuk pembiayaan semula?": "Anda perlu memberikan butiran seperti Perjanjian Jual Beli, hakmilik hartanah, penyata pendapatan, dan penyata bank. Ejen kami akan menguruskan penilaian, penghantaran dan pemberitahuan keputusan.",
+      "berapa kos pembiayaan semula?": "Tiada caj pemprosesan. Kos pembiayaan semula merangkumi dokumentasi undang-undang dan duti setem. Hubungi admin kami di wa.me/60167177813 untuk maklumat lanjut.",
+      "berapa lama proses pembiayaan semula?": "Proses biasanya mengambil masa 1 hingga 3 bulan, bergantung kepada penyediaan dokumen, penilaian hartanah, dan kelulusan bank.",
+      "apa itu ccris dan ctos?": "CCRIS ialah rekod pembayaran balik, manakala CTOS memeriksa isu undang-undang seperti kebankrapan atau kes mahkamah. Bank menggunakannya untuk menilai kelayakan pinjaman.",
+      "bolehkah saya mengeluarkan tunai melalui pembiayaan semula?": "Ya, anda boleh mengeluarkan tunai melalui pembiayaan semula. Kadar faedah ialah 3.8% dengan tempoh bayaran balik sehingga 10 tahun. Ejen kami boleh membantu lebih lanjut.",
+      "apakah kadar faedah untuk tunai keluar?": "Kadar faedah untuk tunai keluar ialah 3.8%, dengan tempoh bayaran balik sehingga 10 tahun. Hubungi admin kami di wa.me/60167177813 untuk maklumat lanjut.",
+      "apa yang berlaku selepas kelulusan pinjaman?": "Selepas diluluskan, anda akan dimaklumkan dan boleh menandatangani surat tawaran pinjaman. Ejen kami akan membantu menyelesaikan dokumen undang-undang."
+    },
+    "zh": {
+      "什么是再融资?": "再融资是将您现有的房贷更换为新的贷款，通常具有更低的利率、更低的每月还款额或从房产中提取额外资金。",
+      "再融资需要哪些文件?": "您需要提供房产买卖协议、产权文件、收入证明和银行账单等详细资料。我们的代理会负责评估、提交和通知审批结果。",
+      "再融资需要多少钱?": "再融资没有处理费用，主要包括法律文件和印花税费用。请联系管理员 wa.me/60167177813 获取详细费用信息。",
+      "再融资需要多长时间?": "通常需要1到3个月，取决于文件准备、房产评估和银行审批速度。",
+      "什么是CCRIS和CTOS?": "CCRIS 是还款记录，显示贷款支付和违约情况。CTOS 检查法律问题，例如破产或诉讼。银行使用这些数据评估贷款资格。",
+      "我可以通过再融资提取现金吗?": "可以，现金提取的利率为3.8%，还款期限最长为10年。如需更多信息，请联系管理员。",
+      "现金再融资的利率是多少?": "现金再融资的利率为3.8%，还款期限最长为10年。如需详细信息，请联系管理员 wa.me/60167177813。",
+      "贷款批准后会发生什么?": "批准后，您将收到通知并安排签署贷款合同。我们的代理将协助完成法律文件和流程。"
+    }
+  }
+  

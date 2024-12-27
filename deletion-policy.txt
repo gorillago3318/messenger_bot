@@ -1,0 +1,38 @@
+1️⃣ What Personal Data Do We Collect?
+We collect and store the following personal information when you interact with our services via WhatsApp:
+
+Name (as provided during the chat)
+Age (as provided during the chat)
+Phone Number (as provided by WhatsApp)
+Loan Details (loan amount, tenure, interest, and other details provided during your request)
+Chat History (messages exchanged with our WhatsApp chatbot)
+This data is collected to facilitate the refinancing process, generate loan calculation reports, and support follow-up assistance from our specialists. Your personal data will never be shared with third parties without your consent.
+
+2️⃣ How Can You Request Data Deletion?
+If you would like to request the deletion of your personal data, you can do so by using one of the following methods:
+
+Message Us on WhatsApp:
+Send a message to https://wa.me/60167177813 with the request “Delete My Data”. Our support team will handle your request promptly.
+Verification Note: For security reasons, we may verify your identity by confirming your phone number or sending a verification message.
+
+3️⃣ How Long Does It Take to Process My Request?
+We aim to process all data deletion requests within 12 months of receipt. This extended timeframe allows us to accommodate issues related to loan submissions, property titles, deeds, and potential project delays.
+
+During this period, we may retain your data for operational, business continuity, and compliance purposes. Once your data has been deleted, you will not receive a confirmation, but you can contact us at https://wa.me/60167177813 if you have any questions or concerns.
+
+4️⃣ What Data Will Be Deleted?
+When we process your request, we will delete the following identifiable personal data:
+
+Personal Information: Name, age, phone number, and other personal identifiers.
+Loan Details: Loan-related information you provided, such as loan amount, tenure, and interest rates.
+Chat History: Messages you exchanged with our WhatsApp chatbot will be permanently deleted.
+Note: We may retain some data in anonymized or aggregated form for internal analysis, auditing, and compliance purposes. This data will no longer be linked to your identity and will not be used to identify you in any way.
+
+5️⃣ Why Do We Need 12 Months to Process Deletion Requests?
+At FinZo Advisory, we process housing loans, which can involve lengthy administrative processes related to loan approvals, property title transfers, deeds, and potential project delays. These processes can affect the availability of data required for review, analysis, and customer support. Therefore, to protect the continuity of our services and ensure operational efficiency, we retain identifiable data for up to 12 months. This allows us to maintain business integrity while complying with data protection laws.
+
+6️⃣ Contact Us
+If you have any questions or would like to follow up on a data deletion request, you can contact us through the following channel:
+
+WhatsApp: https://wa.me/60167177813
+We are committed to protecting your privacy and ensuring you have full control over your personal data. Thank you for trusting FinZo Advisory with your information.
