@@ -898,26 +898,35 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 def handle_gpt_query(question, user_data, messenger_id):
     """Handles GPT queries and saves potential leads in GPTLeads."""
     try:
-        # Debugging the API Key
-        if not openai.api_key:
-            logging.error("❌ OpenAI API key is not set!")
-            send_messenger_message(messenger_id, "Error: OpenAI API key is not set.")
-            return "Error: OpenAI API key is not set."
+        # Step 1: Check for missing name or phone number
+        if not user_data.name:
+            logging.info(f"❌ Name not provided. Asking for user name.")
+            send_messenger_message(messenger_id, "📝 May I have your full name to proceed?")
+            user_data.current_step = 'get_name'  # Ask for name
+            db.session.commit()
+            return "Awaiting user name."
 
-        # ---------------------------- Step 1: Check Preset Responses ----------------------------
+        if not user_data.phone_number:
+            logging.info(f"❌ Phone number not provided. Asking for phone number.")
+            send_messenger_message(messenger_id, "📞 Can I have your phone number for follow-up? (10 digits)")
+            user_data.current_step = 'get_phone_number'  # Ask for phone number
+            db.session.commit()
+            return "Awaiting phone number."
+
+        # ---------------------------- Step 2: Check Preset Responses ----------------------------
         response = get_preset_response(question, user_data.language_code or 'en')
         if response:
             logging.info(f"✅ Preset response found for query: {question}")
             send_messenger_message(messenger_id, response)
             return response  # Return preset response
 
-        # ---------------------------- Step 2: Query GPT for Response ----------------------------
+        # ---------------------------- Step 3: Query GPT for Response ----------------------------
         logging.info(f"❌ No preset match. Querying GPT for: {question}")
         prompt = f"Question: {question}\nAnswer:"
 
         # Making the GPT request
         openai_res = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Model type
+            model="gpt-3.5-turbo",  # Correct model for v0.28
             messages=[  # Messages to send to GPT
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
@@ -927,7 +936,7 @@ def handle_gpt_query(question, user_data, messenger_id):
         reply = openai_res['choices'][0]['message']['content'].strip()
         logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
 
-        # ---------------------------- Step 3: Lead Intent Detection ----------------------------
+        # ---------------------------- Step 4: Lead Intent Detection ----------------------------
         lead_prompt = (
             "Analyze the following question to determine if the user is expressing "
             "intent to proceed with refinancing or applying for a loan. "
@@ -944,22 +953,9 @@ def handle_gpt_query(question, user_data, messenger_id):
         lead_decision = lead_res['choices'][0]['message']['content'].strip().upper()
         logging.info(f"🔍 GPT lead decision: {lead_decision}")
 
-        # ---------------------------- Step 4: If Lead Detected, Collect Details ----------------------------
+        # ---------------------------- Step 5: If Lead Detected, Collect Details ----------------------------
         if lead_decision == "YES":
             logging.info(f"🌟 Lead detected for user {messenger_id}")
-
-            # Collect details if missing
-            if not user_data.name:
-                send_messenger_message(messenger_id, "📝 May I have your full name to proceed?")
-                user_data.current_step = 'get_name'  # Ask for name
-                db.session.commit()
-                return "Awaiting user name."
-
-            if not user_data.phone_number:
-                send_messenger_message(messenger_id, "📞 Can I have your phone number for follow-up? (10 digits)")
-                user_data.current_step = 'get_phone_number'  # Ask for phone
-                db.session.commit()
-                return "Awaiting phone number."
 
             # Save GPT Lead in the new table (GPTLeads)
             gpt_lead = GPTLead(
@@ -984,7 +980,7 @@ def handle_gpt_query(question, user_data, messenger_id):
             admin_id = os.getenv('ADMIN_MESSENGER_ID')
             send_messenger_message(admin_id, admin_msg)
 
-        # ---------------------------- Step 5: Send GPT Response to User ----------------------------
+        # ---------------------------- Step 6: Send GPT Response to User ----------------------------
         send_messenger_message(messenger_id, reply)
         return reply
 
