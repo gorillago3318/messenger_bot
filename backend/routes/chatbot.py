@@ -722,7 +722,7 @@ def process_message():
                 user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
 
                 if user_data:
-                    reset_user_data(user_data, mode='flow')  # Reset state
+                    reset_user_data(user_data, mode='flow')  # Reset state to start the normal flow
                 else:
                     # Create new user session
                     user_data = ChatflowTemp(
@@ -730,7 +730,7 @@ def process_message():
                         messenger_id=messenger_id,
                         current_step='choose_language',  # Start with language selection
                         language_code='en',
-                        mode='flow'
+                        mode='flow'  # Set mode to 'flow', not 'inquiry'
                     )
                     db.session.add(user_data)
                     db.session.commit()
@@ -769,7 +769,7 @@ def process_message():
                 messenger_id=messenger_id,
                 current_step='choose_language',  # Start with language selection
                 language_code='en',
-                mode='flow'  # Initial mode remains 'flow'
+                mode='flow'  # Set mode to 'flow'
             )
             db.session.add(user_data)
             db.session.commit()
@@ -792,7 +792,7 @@ def process_message():
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
-        # 6. Handle Inquiry Mode (GPT Queries)
+        # 6. Handle Inquiry Mode (GPT Queries) Only If Mode is 'inquiry'
         # ----------------------------
         if user_data.mode == 'inquiry' and message_body != 'get_started':
             response = handle_gpt_query(message_body, user_data, sender_id)
