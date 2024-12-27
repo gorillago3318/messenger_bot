@@ -620,7 +620,7 @@ def process_message():
             db.session.add(user_data)
             db.session.commit()
 
-            # Send welcome message
+            # Send welcome message (language selection prompt)
             welcome_message = get_message('choose_language_message', 'en')
             send_messenger_message(sender_id, welcome_message)
             log_chat(sender_id, "New session started", welcome_message, user_data)
@@ -678,6 +678,7 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
+
 
 def prepare_summary_messages(user_data, calc_results, language_code):
     """Builds shortened summary messages about the user's savings."""
