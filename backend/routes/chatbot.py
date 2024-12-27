@@ -231,88 +231,86 @@ def validate_mode_selection(x, user_data=None):
 STEP_CONFIG = {
     # Step 1: Language Selection
     'choose_language': {
-        'message': "choose_language_message",
+        'message': "choose_language_message",  # The message that prompts the user to choose language
         'next_step_map': {
-            '1': 'choose_mode',
-            '2': 'choose_mode',
-            '3': 'choose_mode'
+            '1': 'get_name',  # English
+            '2': 'get_name',  # Malay
+            '3': 'get_name'   # Chinese
         },
         'next_step': None,
         'validator': lambda x: x in ['1', '2', '3']
     },
 
-    # Step 2: Choose Mode
-    'choose_mode': {
-        'message': "choose_mode_message",
-        'next_step_map': {
-            '1': 'get_name',
-            '2': 'inquiry_mode'
-        },
-        'next_step': None,
-        'validator': lambda x: x in ['1', '2']
-    },
-
-    # Inquiry Mode Activation
-    'inquiry_mode': {
-        'message': 'inquiry_mode_message',
-        'next_step': 'gpt_query_mode',
-        'validator': validate_phone_number  # Validate phone number
-    },
-    
-    'gpt_query_mode': {
-        'message': 'You may now ask your question!',
-        'next_step': None,
-     'validator': lambda x: True
-    },
-
-    # Savings Estimation Steps
+    # Step 2: Get Name
     'get_name': {
-        'message': 'name_message',
+        'message': 'name_message',  # Message asking for the user's name
         'next_step': 'get_phone_number',
-        'validator': lambda x: x.replace(' ', '').isalpha()
+        'validator': lambda x: x.replace(' ', '').isalpha()  # Ensure name is alphabetic
     },
+
+    # Step 3: Get Phone Number
     'get_phone_number': {
         'message': 'phone_number_message',
         'next_step': 'get_age',
-        'validator': lambda x: x.isdigit() and len(x) >= 10
+        'validator': lambda x: x.isdigit() and len(x) >= 10  # Validate phone number format
     },
+
+    # Step 4: Get Age
     'get_age': {
         'message': 'age_message',
         'next_step': 'get_loan_amount',
-        'validator': lambda x: x.isdigit() and 18 <= int(x) <= 70
+        'validator': lambda x: x.isdigit() and 18 <= int(x) <= 70  # Validate age
     },
+
+    # Step 5: Get Loan Amount
     'get_loan_amount': {
         'message': 'loan_amount_message',
         'next_step': 'get_loan_tenure',
-        'validator': lambda x: x.replace(',', '').isdigit()
+        'validator': lambda x: x.replace(',', '').isdigit()  # Validate loan amount format
     },
+
+    # Step 6: Get Loan Tenure
     'get_loan_tenure': {
         'message': 'loan_tenure_message',
         'next_step': 'get_monthly_repayment',
-        'validator': lambda x: x.isdigit() and 1 <= int(x) <= 40
+        'validator': lambda x: x.isdigit() and 1 <= int(x) <= 40  # Validate loan tenure
     },
+
+    # Step 7: Get Monthly Repayment
     'get_monthly_repayment': {
         'message': 'repayment_message',
         'next_step': 'get_interest_rate',
-        'validator': lambda x: x.replace('.', '', 1).isdigit()
+        'validator': lambda x: x.replace('.', '', 1).isdigit()  # Validate repayment amount
     },
+
+    # Step 8: Get Interest Rate
     'get_interest_rate': {
         'message': 'interest_rate_message',
         'next_step': 'get_remaining_tenure',
         'validator': lambda x: x.lower() == 'skip' or (x.replace('.', '', 1).isdigit() and 3 <= float(x) <= 10)
     },
+
+    # Step 9: Get Remaining Tenure
     'get_remaining_tenure': {
         'message': 'remaining_tenure_message',
         'next_step': 'process_completion',
         'validator': lambda x: x.lower() == 'skip' or (x.isdigit() and int(x) > 0)
     },
+
+    # Step 10: Process Completion (Final Step)
     'process_completion': {
-        'message': 'completion_message',
-        'next_step': None,
+        'message': 'completion_message',  # Thank you message
+        'next_step': 'gpt_query_mode',  # Only after completion, GPT can be triggered
+        'validator': lambda x: True
+    },
+
+    # Inquiry Mode for GPT Queries
+    'gpt_query_mode': {
+        'message': 'You can now ask your refinancing-related questions!',
+        'next_step': None,  # GPT queries are handled here after completion
         'validator': lambda x: True
     }
 }
-
 
 # -------------------
 # 6) Utility Functions
@@ -400,7 +398,6 @@ def reset_user_data(user_data, mode='flow'):
         logging.error(f"❌ Failed to reset user data for {user_data.messenger_id}: {str(e)}")
 
 def process_user_input(current_step, user_data, message_body, messenger_id):
-
     """
     Process user input and store it in ChatflowTemp with separate columns.
     Supports Refinance Flow.
@@ -418,7 +415,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             return {"status": "success", "next_step": 'choose_language'}, 200
 
         # ----------------------------
-        # 1. Handle 'skip' Command Before Validation
+        # Handle 'skip' Command Before Validation
         # ----------------------------
         if message_body.lower() == 'skip':
             logging.info(f"🔄 Skipping input for step: {current_step}")
@@ -475,14 +472,6 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             language_mapping = {'1': 'en', '2': 'ms', '3': 'zh'}
             data_to_update['language_code'] = language_mapping.get(message_body, 'en')
 
-        elif current_step == 'choose_mode':
-            if message_body == '1':
-                user_data.mode = 'flow'
-                next_step = 'get_name'
-            elif message_body == '2':
-                user_data.mode = 'inquiry'
-                next_step = 'inquiry_mode'
-
         elif current_step == 'get_name':
             data_to_update['name'] = message_body.title()
 
@@ -514,6 +503,9 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
                 data_to_update['remaining_tenure'] = int(message_body)
 
         elif current_step == 'process_completion':
+            # After the flow is completed, we transition the user to GPT query mode
+            user_data.mode = 'inquiry'
+            db.session.commit()
             return {"status": "success", "next_step": 'process_completion'}, 200
 
         # ----------------------------
@@ -533,7 +525,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.error(f"Traceback: {traceback.format_exc()}")
         db.session.rollback()
         return {"status": "error", "message": "An error occurred while processing your input."}, 500
-    
+
 @chatbot_bp.route('/process_message', methods=['POST'])
 def process_message():
     try:
@@ -591,7 +583,7 @@ def process_message():
                     db.session.add(user_data)
                     db.session.commit()
 
-                # Send the choose language message
+                # Send the "choose language" message
                 choose_language_message = get_message('choose_language_message', 'en')  # Fetch from en.json
                 send_messenger_message(sender_id, choose_language_message)
                 return jsonify({"status": "success"}), 200
@@ -649,9 +641,12 @@ def process_message():
                 send_messenger_message(sender_id, next_message)
                 log_chat(sender_id, message_body, next_message, user_data)
             else:
-                # Process completion step
+                # Process completion step and transition to gpt_query_mode
+                user_data.mode = 'inquiry'  # Transition to GPT mode after the flow is completed
+                db.session.commit()
                 send_messenger_message(sender_id, "🎉 Thank you for providing your details. Processing your request now!")
-                handle_process_completion(messenger_id)  # Call the completion handler
+                send_messenger_message(sender_id, "You can now ask any refinancing questions!")
+                return jsonify({"status": "success"}), 200
 
         return jsonify({"status": "success"}), 200
 
@@ -659,7 +654,6 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
-
 
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
@@ -925,20 +919,26 @@ def handle_gpt_query(question, user_data, messenger_id):
         # Step 1: Check if the question is the "Get Started" payload
         if question.strip().lower() == 'get_started':
             logging.info(f"🌟 User {messenger_id} clicked the 'Get Started' button. Ignoring GPT query.")
-            return "Starting the process... Please choose your language."  # Message for "Get Started" button click
+            # Return the prompt to choose language when the user clicks 'Get Started'
+            send_messenger_message(messenger_id, "Starting the process... Please choose your language.")
+            return "Starting the process... Please choose your language."  # Inform user that it's starting
+
+        # Step 2: Only proceed with GPT query if user is in 'inquiry' mode
+        if user_data.mode != 'inquiry':
+            logging.info(f"🚫 User {messenger_id} is not in inquiry mode. Ignoring GPT query.")
+            send_messenger_message(messenger_id, "Please complete the flow before asking questions.")
+            return "Please complete the flow before asking questions."
 
         # Keywords related to refinancing and home loans
         refinancing_home_loan_keywords = ["refinance", "home loan", "loan savings", "apply for refinancing", "home loan options"]
 
-        # Step 2: Check if the question contains refinancing or home loan related keywords
+        # Step 3: Check if the question contains refinancing or home loan-related keywords
         if not any(keyword in question.lower() for keyword in refinancing_home_loan_keywords):
             logging.warning(f"❌ Non-refinancing or non-home loan query detected: {question}")
             send_messenger_message(messenger_id, "Sorry, I can only assist with refinancing or home loan related questions. Please ask about refinancing or home loan options.")
             return "Non-refinancing or non-home loan query."
 
-        # ----------------------------
-        # Step 3: Proceed with GPT query
-        # ----------------------------
+        # Step 4: Proceed with GPT query
         response = get_preset_response(question, user_data.language_code or 'en')
         if response:
             logging.info(f"✅ Preset response found for query: {question}")
@@ -951,16 +951,14 @@ def handle_gpt_query(question, user_data, messenger_id):
         # Making the GPT request
         openai_res = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",  # Correct model for v0.28
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant for home refinancing and home loan queries."},
-                {"role": "user", "content": prompt}
-            ]
+            messages=[{"role": "system", "content": "You are a helpful assistant for home refinancing and home loan queries."},
+                      {"role": "user", "content": prompt}]
         )
 
         reply = openai_res['choices'][0]['message']['content'].strip()
         logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
 
-        # Step 4: Send GPT Response to User
+        # Step 5: Send GPT Response to User
         send_messenger_message(messenger_id, reply)
         return reply
 
@@ -968,7 +966,7 @@ def handle_gpt_query(question, user_data, messenger_id):
         logging.error(f"❌ Error in handle_gpt_query: {str(e)}")
         send_messenger_message(messenger_id, "Sorry, something went wrong. Please try again later.")
         return "Sorry, something went wrong!"
-    
+
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
     try:
