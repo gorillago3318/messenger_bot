@@ -17,7 +17,7 @@ load_dotenv()
 
 def create_app(environ=None, start_response=None):
     """Create and configure the Flask app."""
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='../static')  # Adjusted path to point to root-level static folder
 
     # Setup database config
     database_url = os.getenv('DATABASE_URL', 'sqlite:///local.db')
@@ -39,7 +39,7 @@ def create_app(environ=None, start_response=None):
     # Serve index.html at the root URL ("/")
     @app.route('/')
     def home():
-        return send_from_directory('static', 'index.html')
+        return send_from_directory('../static', 'index.html')  # This ensures static files are correctly found at the root
 
     # Webhook setup and routing
     @app.route('/webhook', methods=['GET', 'POST'])
