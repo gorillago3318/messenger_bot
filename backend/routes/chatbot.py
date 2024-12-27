@@ -561,12 +561,15 @@ def process_message():
         # Initialize message_body
         message_body = None
 
+        # ----------------------------
         # Handle 'Get Started' Payload
+        # ----------------------------
         if 'payload' in postback_data:
             message_body = postback_data['payload'].strip().lower()
+
             if message_body == 'get_started':
                 logging.info(f"🌟 User {sender_id} clicked the 'Get Started' button.")
-                # Reset or create user data here
+                # Create or reset user data here
                 user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
 
                 if user_data:
@@ -583,8 +586,8 @@ def process_message():
                     db.session.add(user_data)
                     db.session.commit()
 
-                # Send the "choose language" message
-                welcome_message = get_message('choose_language_message', 'en')
+                # Send a greeting message and prompt to choose language
+                welcome_message = "Hello! Please choose your language.\n1. English\n2. Malay\n3. Chinese"
                 send_messenger_message(sender_id, welcome_message)
                 return jsonify({"status": "success"}), 200
 
@@ -608,47 +611,20 @@ def process_message():
         # ----------------------------
         user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
 
-        if not user_data:
-            logging.info(f"👤 Creating new session for user {sender_id}")
-            user_data = ChatflowTemp(
-                sender_id=sender_id,
-                messenger_id=messenger_id,
-                current_step='choose_language',  # Start with language selection
-                language_code='en',
-                mode='flow'  # Initial mode remains 'flow'
-            )
-            db.session.add(user_data)
-            db.session.commit()
-
-            # Send welcome message (language selection prompt)
-            welcome_message = get_message('choose_language_message', 'en')
-            send_messenger_message(sender_id, welcome_message)
-            log_chat(sender_id, "New session started", welcome_message, user_data)
-            return jsonify({"status": "success"}), 200
-
-        # ----------------------------
-        # 4. Handle "Restart" Commands
-        # ----------------------------
+        # Handle "Restart" Commands and further steps
         if message_body.lower() in ['restart', 'reset', 'start over']:
             logging.info(f"🔄 Restarting flow for user {sender_id}")
-            reset_user_data(user_data, mode='flow')
-            restart_msg = get_message('choose_language_message', 'en')
+            reset_user_data(user_data, mode='flow')  # Use helper function to reset
+            restart_msg = "Please choose your language.\n1. English\n2. Malay\n3. Chinese"  # Start with language selection
             send_messenger_message(sender_id, restart_msg)
             log_chat(sender_id, message_body, restart_msg, user_data)
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
-        # 5. Handle Inquiry Mode (GPT Queries)
+        # Continue Processing the Regular Flow
         # ----------------------------
-        if user_data.mode == 'inquiry' and message_body != 'get_started':
-            response = handle_gpt_query(message_body, user_data, sender_id)
-            log_chat(sender_id, message_body, response, user_data)
-            send_messenger_message(sender_id, response)
-            return jsonify({"status": "success"}), 200
 
-        # ----------------------------
-        # 6. Process Regular Flow Inputs
-        # ----------------------------
+        # Process other user inputs, like choosing language or mode
         current_step = user_data.current_step
         process_response, status = process_user_input(current_step, user_data, message_body, messenger_id)
 
@@ -670,7 +646,7 @@ def process_message():
             else:
                 # Process completion step
                 send_messenger_message(sender_id, "🎉 Thank you for providing your details. Processing your request now!")
-                handle_process_completion(messenger_id)
+                handle_process_completion(messenger_id)  # Call the completion handler
 
         return jsonify({"status": "success"}), 200
 
