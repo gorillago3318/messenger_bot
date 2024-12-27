@@ -40,7 +40,7 @@ logging.basicConfig(
 # -------------------
 # 2) Initialize OpenAI client
 # -------------------
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai.api_key = os.getenv("OPENAI_API_KEY")  # Set it directly using openai.api_key
 
 # -------------------
 # 3) Load Language Files
@@ -613,11 +613,12 @@ def process_message():
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
-        # 5. Handle Inquiry Mode
+        # 5. Handle Inquiry Mode (GPT Queries)
         # ----------------------------
         if user_data.mode == 'inquiry':
             response = handle_gpt_query(message_body, user_data, sender_id)
             log_chat(sender_id, message_body, response, user_data)
+            send_messenger_message(sender_id, response)
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
@@ -653,7 +654,6 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
-
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
     logging.debug(f"🚀 Entered handle_process_completion() for Messenger ID: {messenger_id}")
@@ -772,8 +772,13 @@ def prepare_summary_messages(user_data, calc_results, language_code):
         yearly_savings = f"RM {float(calc_results.get('yearly_savings', 0.0)):,.2f}"
         lifetime_savings = f"RM {float(calc_results.get('lifetime_savings', 0.0)):,.2f}"
 
-        # Calculate equivalent years and months saved
+        # Calculate equivalent years and months saved (ensure months_saved is correct)
         months_saved = calc_results.get('months_saved', 0)
+
+        # If months_saved is missing, calculate it
+        if months_saved == 0 and calc_results.get('lifetime_savings') and calc_results.get('monthly_savings'):
+            months_saved = calc_results['lifetime_savings'] / calc_results['monthly_savings']
+
         years_saved = months_saved // 12  # Calculate full years
         remaining_months = months_saved % 12  # Calculate remaining months
 
@@ -801,7 +806,6 @@ def prepare_summary_messages(user_data, calc_results, language_code):
     except Exception as e:
         logging.error(f"❌ Error preparing summary messages: {str(e)}")
         return ["Error: Failed to generate summary messages. Please contact support."]
-
 
 def update_database(messenger_id, user_data, calc_results):
     """Save user data and calculations to the database."""
@@ -913,12 +917,13 @@ def handle_gpt_query(question, user_data, messenger_id):
         )
 
         # Query GPT for response
-        openai_res = client.chat.completions.create(
+        openai_res = openai.Completion.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}]
+            prompt=prompt,
+            max_tokens=100
         )
 
-        reply = openai_res.choices[0].message.content.strip()
+        reply = openai_res['choices'][0]['text'].strip()
         logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
 
         # ----------------------------
@@ -931,12 +936,13 @@ def handle_gpt_query(question, user_data, messenger_id):
             f"Question: {question}\nAnswer:"
         )
 
-        lead_res = client.chat.completions.create(
+        lead_res = openai.Completion.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": lead_prompt}]
+            prompt=lead_prompt,
+            max_tokens=10  # Limit the response length
         )
 
-        lead_decision = lead_res.choices[0].message.content.strip().upper()
+        lead_decision = lead_res['choices'][0]['text'].strip().upper()
         logging.info(f"🔍 GPT lead decision: {lead_decision}")
 
         # ----------------------------
@@ -958,7 +964,7 @@ def handle_gpt_query(question, user_data, messenger_id):
                 db.session.commit()
                 return "Awaiting phone number."
 
-            # Save GPT Lead in the new table
+            # Save GPT Lead in the new table (GPTLeads)
             gpt_lead = GPTLead(
                 user_id=user_data.id if user_data.name and user_data.phone_number else None,  # Link user if available
                 sender_id=user_data.messenger_id,
