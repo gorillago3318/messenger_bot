@@ -892,7 +892,8 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # 9) GPT Query Handling
 # -------------------
 def handle_gpt_query(question, user_data, messenger_id):
-    """Handles GPT queries and returns a response."""
+    """Handles GPT queries and saves potential leads in GPTLeads."""
+
     try:
         # ----------------------------
         # Step 1: Check Preset Responses First
@@ -911,23 +912,17 @@ def handle_gpt_query(question, user_data, messenger_id):
             "You are a mortgage salesperson working for Finzo AI. "
             "Answer questions related to refinancing and mortgage loans only. "
             "Avoid off-topic responses and escalate unrelated queries to an admin. "
-            "Be helpful and professional. Focus on generating leads."
+            "Be helpful and professional. Focus on generating leads.\n\n"
+            f"Question: {question}\nAnswer:"
         )
 
-        # Query GPT for response using the new API format
-        messages = [
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": question}
-        ]
-
-        openai_res = openai.ChatCompletion.create(
+        # Query GPT for response using the correct method (new SDK v1.0.0+)
+        openai_res = openai.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=messages,
-            max_tokens=100,
-            temperature=0.7
+            messages=[{"role": "user", "content": prompt}]
         )
 
-        reply = openai_res.choices[0].message.content.strip()
+        reply = openai_res['choices'][0]['message']['content'].strip()
         logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
 
         # ----------------------------
@@ -936,22 +931,17 @@ def handle_gpt_query(question, user_data, messenger_id):
         lead_prompt = (
             "Analyze the following question to determine if the user is expressing "
             "intent to proceed with refinancing or applying for a loan. "
-            "Respond 'YES' for a lead and 'NO' otherwise."
+            "Respond 'YES' for a lead and 'NO' otherwise.\n\n"
+            f"Question: {question}\nAnswer:"
         )
 
-        lead_messages = [
-            {"role": "system", "content": lead_prompt},
-            {"role": "user", "content": question}
-        ]
-
-        lead_res = openai.ChatCompletion.create(
+        lead_res = openai.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=lead_messages,
-            max_tokens=10,
-            temperature=0.3
+            messages=[{"role": "user", "content": lead_prompt}],
+            max_tokens=10  # Limit the response length
         )
 
-        lead_decision = lead_res.choices[0].message.content.strip().upper()
+        lead_decision = lead_res['choices'][0]['message']['content'].strip().upper()
         logging.info(f"🔍 GPT lead decision: {lead_decision}")
 
         # ----------------------------
@@ -1006,7 +996,7 @@ def handle_gpt_query(question, user_data, messenger_id):
         logging.error(f"❌ Error in handle_gpt_query: {str(e)}")
         send_messenger_message(messenger_id, "Sorry, something went wrong. Please try again later.")
         return "Sorry, something went wrong!"
-    
+
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
     try:
