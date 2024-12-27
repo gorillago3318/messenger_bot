@@ -914,23 +914,34 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # 9) GPT Query Handling
 # -------------------
 def handle_gpt_query(question, user_data, messenger_id):
-    """Handles GPT queries and returns responses without sending messages directly."""
+    """Handles GPT queries and saves potential leads in GPTLeads."""
     try:
-        # Step 1: Check if there is a preset response
+        # Keywords related to refinancing and home loans
+        refinancing_home_loan_keywords = ["refinance", "home loan", "loan savings", "apply for refinancing", "home loan options"]
+
+        # Step 1: Check if the question contains refinancing or home loan related keywords
+        if not any(keyword in question.lower() for keyword in refinancing_home_loan_keywords):
+            logging.warning(f"❌ Non-refinancing or non-home loan query detected: {question}")
+            send_messenger_message(messenger_id, "Sorry, I can only assist with refinancing or home loan related questions. Please ask about refinancing or home loan options.")
+            return "Non-refinancing or non-home loan query."
+
+        # ----------------------------
+        # Step 2: Proceed with GPT query
+        # ----------------------------
         response = get_preset_response(question, user_data.language_code or 'en')
         if response:
             logging.info(f"✅ Preset response found for query: {question}")
-            return response  # Return preset response and avoid querying GPT
+            send_messenger_message(messenger_id, response)
+            return response  # Return preset response
 
-        # Step 2: No preset match, proceed to query GPT
         logging.info(f"❌ No preset match. Querying GPT for: {question}")
         prompt = f"Question: {question}\nAnswer:"
 
-        # Query GPT
+        # Making the GPT request
         openai_res = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Using the GPT-3.5 model
-            messages=[  # Send message to GPT model
-                {"role": "system", "content": "You are a helpful assistant."},
+            model="gpt-3.5-turbo",  # Correct model for v0.28
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant for home refinancing and home loan queries."},
                 {"role": "user", "content": prompt}
             ]
         )
@@ -938,15 +949,15 @@ def handle_gpt_query(question, user_data, messenger_id):
         reply = openai_res['choices'][0]['message']['content'].strip()
         logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
 
-        # Step 3: If GPT response is empty, return error message
-        if not reply:
-            reply = "Sorry, I couldn't process your request correctly. For further assistance, please contact our admin via WhatsApp."
-
+        # Step 3: Send GPT Response to User
+        send_messenger_message(messenger_id, reply)
         return reply
 
     except Exception as e:
         logging.error(f"❌ Error in handle_gpt_query: {str(e)}")
+        send_messenger_message(messenger_id, "Sorry, something went wrong. Please try again later.")
         return "Sorry, something went wrong!"
+
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
     try:
