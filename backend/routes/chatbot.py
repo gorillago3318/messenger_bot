@@ -911,18 +911,23 @@ def handle_gpt_query(question, user_data, messenger_id):
             "You are a mortgage salesperson working for Finzo AI. "
             "Answer questions related to refinancing and mortgage loans only. "
             "Avoid off-topic responses and escalate unrelated queries to an admin. "
-            "Be helpful and professional. Focus on generating leads.\n\n"
-            f"Question: {question}\nAnswer:"
+            "Be helpful and professional. Focus on generating leads."
         )
 
-        # Query GPT for response
-        openai_res = openai.Completion.create(
+        # Query GPT for response using the new API format
+        messages = [
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": question}
+        ]
+
+        openai_res = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            prompt=prompt,
-            max_tokens=100
+            messages=messages,
+            max_tokens=100,
+            temperature=0.7
         )
 
-        reply = openai_res['choices'][0]['text'].strip()
+        reply = openai_res.choices[0].message.content.strip()
         logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
 
         # ----------------------------
@@ -931,17 +936,22 @@ def handle_gpt_query(question, user_data, messenger_id):
         lead_prompt = (
             "Analyze the following question to determine if the user is expressing "
             "intent to proceed with refinancing or applying for a loan. "
-            "Respond 'YES' for a lead and 'NO' otherwise.\n\n"
-            f"Question: {question}\nAnswer:"
+            "Respond 'YES' for a lead and 'NO' otherwise."
         )
 
-        lead_res = openai.Completion.create(
+        lead_messages = [
+            {"role": "system", "content": lead_prompt},
+            {"role": "user", "content": question}
+        ]
+
+        lead_res = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            prompt=lead_prompt,
-            max_tokens=10  # Limit the response length
+            messages=lead_messages,
+            max_tokens=10,
+            temperature=0.3
         )
 
-        lead_decision = lead_res['choices'][0]['text'].strip().upper()
+        lead_decision = lead_res.choices[0].message.content.strip().upper()
         logging.info(f"🔍 GPT lead decision: {lead_decision}")
 
         # ----------------------------
@@ -996,7 +1006,7 @@ def handle_gpt_query(question, user_data, messenger_id):
         logging.error(f"❌ Error in handle_gpt_query: {str(e)}")
         send_messenger_message(messenger_id, "Sorry, something went wrong. Please try again later.")
         return "Sorry, something went wrong!"
-
+    
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
     try:
