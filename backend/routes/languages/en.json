@@ -31,8 +31,21 @@
 
     "invalid_input_message": "⚠️ Invalid input. Please check your entry and try again.",
 
-    "invalid_phone_number_message": "⚠️ Invalid phone number. It must start with '01' and be 10–11 digits long. Example: 0123456789.",
-    
-    "invalid_age_message": "⚠️ Invalid age. Please enter a valid number between 18 and 70."
+    "invalid_choose_language_message": "⚠️ Invalid language selection. Please select 1 for English, 2 for Bahasa Malaysia, or 3 for 中文 (Chinese).",
 
+    "invalid_get_name_message": "⚠️ Invalid name. Please enter letters only.",
+
+    "invalid_get_phone_number_message": "⚠️ Invalid phone number. It must start with '01' and be 10–11 digits long. Example: 0123456789.",
+    
+    "invalid_get_age_message": "⚠️ Invalid age. Please enter a valid number between 18 and 70.",
+    
+    "invalid_get_loan_amount_message": "⚠️ Invalid loan amount. Enter numbers only without commas or symbols. Example: 250000.",
+    
+    "invalid_get_loan_tenure_message": "⚠️ Invalid loan tenure. Enter a number between 1 and 40 years. Example: 30.",
+    
+    "invalid_get_monthly_repayment_message": "⚠️ Invalid repayment amount. Enter numbers only without commas or symbols. Example: 2500.",
+    
+    "invalid_get_interest_rate_message": "⚠️ Invalid interest rate. Enter a number between 3% and 10%, or type 'skip' if unsure. Example: 4.25 or 'skip'.",
+    
+    "invalid_get_remaining_tenure_message": "⚠️ Invalid remaining tenure. Enter a number greater than 0 or type 'skip' if unsure. Example: 15 or 'skip'."
 }
