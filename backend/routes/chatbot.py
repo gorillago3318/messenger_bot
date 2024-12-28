@@ -465,21 +465,13 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         validator = step_config.get('validator')
         if not validator or not validator(message_body):
             logging.warning(f"❌ Validation failed for step: {current_step} with input: {message_body}")
-            # Get error message from en.json
+            # Get error message from en.json, ms.json, or zh.json
             error_key = f"invalid_{current_step}_message"
             invalid_msg = get_message(error_key, user_data.language_code)
 
-            # Provide detailed fallback guide if message is missing
+            # Final fallback if key is missing
             if invalid_msg == "Message not available.":
-                fallback_guides = {
-                    'get_age': "⚠️ Please enter an age between 18 and 70. Example: 35.",
-                    'get_loan_amount': "⚠️ Please enter the loan amount in numbers only. Example: 250000.",
-                    'get_loan_tenure': "⚠️ Please enter a loan tenure between 1 and 40 years. Example: 30.",
-                    'get_monthly_repayment': "⚠️ Please enter your current monthly repayment in numbers only. Example: 2500.",
-                    'get_interest_rate': "⚠️ Please enter an interest rate between 3% and 10%, or type 'skip'. Example: 4.25 or 'skip'.",
-                    'get_remaining_tenure': "⚠️ Please enter the remaining tenure in years or type 'skip'. Example: 15 or 'skip'."
-                }
-                invalid_msg = fallback_guides.get(current_step, "⚠️ Invalid input. Please check and try again.")
+                invalid_msg = get_message(error_key, 'en')
 
             send_messenger_message(messenger_id, invalid_msg)
             return {"status": "failed"}, 200
@@ -534,6 +526,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.error(f"Traceback: {traceback.format_exc()}")
         db.session.rollback()
         return {"status": "error", "message": "An error occurred while processing your input."}, 500
+
 
 @chatbot_bp.route('/process_message', methods=['POST'])
 def process_message():
