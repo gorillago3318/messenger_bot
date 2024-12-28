@@ -988,7 +988,7 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # -------------------
 def handle_gpt_query(question, user_data, messenger_id):
     try:
-        # Step 1: Check inquiry mode
+        # Step 1: Check if the user is in inquiry mode
         if user_data.mode != 'inquiry':
             logging.info(f"🚫 User {messenger_id} is not in inquiry mode. Ignoring GPT query.")
             return "Please complete the process before asking questions."
@@ -997,7 +997,7 @@ def handle_gpt_query(question, user_data, messenger_id):
         response = get_preset_response(question, user_data.language_code or 'en')
         if response:
             logging.info(f"✅ Preset response found for query: {question}")
-            return response  # Only return the preset response
+            return response  # Only return the preset response if found
 
         # ----------------------------
         # Step 3: Query GPT if no preset response is found
@@ -1013,14 +1013,15 @@ def handle_gpt_query(question, user_data, messenger_id):
         # Determine preferred language
         preferred_language = language_map.get(user_data.language_code, 'English')
 
-        # Construct GPT prompt with language preference
+        # Construct GPT system prompt with language preference and topic focus
         logging.info(f"❌ No preset match. Querying GPT in {preferred_language} for: {question}")
         system_prompt = (
             f"You are a helpful assistant for home refinancing and home loan queries. "
-            f"Respond in {preferred_language}."
+            f"Your responses should strictly be about home loans, mortgages, refinancing, interest rates, and related financial topics. "
+            f"Please respond in {preferred_language}."
         )
 
-        # Making GPT request
+        # Making GPT request to ensure it sticks to the right topic (home loans and refinancing)
         openai_res = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -1040,9 +1041,10 @@ def handle_gpt_query(question, user_data, messenger_id):
         return reply
 
     except Exception as e:
-        # Log error
+        # Log error and return a fallback message
         logging.error(f"❌ Error in handle_gpt_query: {str(e)}")
         return "Sorry, something went wrong! Please try again or contact support."
+
 
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
