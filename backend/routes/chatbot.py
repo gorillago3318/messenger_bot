@@ -403,6 +403,13 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         # ----------------------------
         # 4. Apply Updates Based on Input
         # ----------------------------
+
+        # Update language_code if the step is 'choose_language'
+        if current_step == 'choose_language':
+            language_map = {'1': 'en', '2': 'ms', '3': 'zh'}
+            user_data.language_code = language_map.get(message_body, 'en')  # Default to 'en' if invalid input
+            db.session.commit()  # Commit the change immediately
+
         update_mapping = {
             'get_name': lambda x: {'name': x.title()},
             'get_phone_number': lambda x: {'phone_number': x},
@@ -418,8 +425,8 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
                 setattr(user_data, key, value)
 
         # Commit updated data
+        
         db.session.commit()
-
         # ----------------------------
         # 5. Move to the Next Step
         # ----------------------------
@@ -850,7 +857,6 @@ def update_database(messenger_id, user_data, calc_results):
             user = User(
                 messenger_id=messenger_id,
                 name=user_data.name or "Unknown",
-                age=user_data.age or 0,
                 phone_number=user_data.phone_number or "Unknown"  # Ensure valid phone number
             )
             db.session.add(user)
@@ -1018,7 +1024,6 @@ def log_gpt_query(messenger_id, question, response):
 
         # Handle missing details if user exists
         user.name = user.name or "Unknown User"
-        user.age = user.age or 0
         user.phone_number = user.phone_number or "Unknown"
 
         # Log the GPT query in ChatLog
