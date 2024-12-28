@@ -479,33 +479,43 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             }
         }
 
+        # ----------------------------
         # Handle 'skip' Command Before Validation
+        # ----------------------------
         if message_body.lower() == 'skip':
             logging.info(f"🔄 Skipping input for step: {current_step}")
-            user_data.current_step = 'next_step'
+            # Determine the next step explicitly
+            next_step = 'get_name' if current_step == 'choose_language' else 'get_phone_number'
+
+            # Update user step and commit
+            user_data.current_step = next_step
             db.session.commit()
-            return {"status": "success", "next_step": 'next_step'}, 200
+
+            # Fetch and send the next prompt dynamically
+            next_prompt = PROMPTS[user_data.language_code].get(next_step, "⚠️ Invalid input. Please check and try again.")
+            send_messenger_message(messenger_id, next_prompt)
+            return {"status": "success", "next_step": next_step}, 200
 
         # ----------------------------
-        # Initialize Update Data
+        # 2. Initialize Update Data
         # ----------------------------
         data_to_update = {}
 
         # Handle Steps with Validation
         def validate_input(step, value):
-            if step == 'get_remaining_tenure':
-                return value.isdigit() and int(value) > 0
+            if step == 'get_name':
+                return value.replace(' ', '').isalpha()
             return True
 
         # Validate Input
         if not validate_input(current_step, message_body):
-            error_msg = PROMPTS[user_data.language_code]['invalid_get_remaining_tenure']
+            error_msg = PROMPTS[user_data.language_code].get(f"invalid_{current_step}", "⚠️ Invalid input. Please check and try again.")
             send_messenger_message(messenger_id, error_msg)
             return {"status": "failed"}, 200
 
         # Mapping Updates
         update_mapping = {
-            'get_remaining_tenure': lambda x: {'remaining_tenure': int(x)}
+            'get_name': lambda x: {'name': x.title()}
         }
 
         # Apply Updates
@@ -517,17 +527,23 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         for key, value in data_to_update.items():
             setattr(user_data, key, value)
 
-        user_data.current_step = 'next_step'
+        # Move to the next step dynamically
+        next_step = 'get_phone_number'  # Change this based on the current flow
+        user_data.current_step = next_step
         db.session.commit()
 
-        logging.debug(f"🔄 Moved to next step: next_step")
-        return {"status": "success", "next_step": 'next_step'}, 200
+        # Send the next prompt
+        next_prompt = PROMPTS[user_data.language_code].get(next_step, "⚠️ Invalid input. Please check and try again.")
+        send_messenger_message(messenger_id, next_prompt)
+
+        logging.debug(f"🔄 Moved to next step: {next_step}")
+        return {"status": "success", "next_step": next_step}, 200
 
     except Exception as e:
         logging.error(f"❌ Error in process_user_input: {str(e)}")
         db.session.rollback()
         return {"status": "error", "message": "An error occurred while processing your input."}, 500
-
+    
 @chatbot_bp.route('/process_message', methods=['POST'])
 def process_message():
     try:
