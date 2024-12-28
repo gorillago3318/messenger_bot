@@ -339,22 +339,30 @@ def get_message(key, language_code, mode='flow'):
         LANGUAGE_MAP = {'1': 'en', '2': 'ms', '3': 'zh'}
         language_code = LANGUAGE_MAP.get(language_code, language_code)
 
-        # Determine the message set based on language
+        # Retrieve the message key for the mode (flow or inquiry)
+        step_key = STEP_CONFIG.get(key, {}).get('message', key)
+
+        # Determine message set based on language
         messages = LANGUAGE_OPTIONS.get(language_code, LANGUAGE_OPTIONS['en'])
 
-        # Fetch message based on key
-        message = messages.get(key)
+        # Check if key exists in language file
+        message = messages.get(step_key)
 
         # Final fallback to prevent "Message not available."
         if not message:
-            logging.warning(f"⚠️ Missing key '{key}' in '{language_code}'. Using default fallback.")
-            message = "⚠️ Sorry, I couldn't process that. Please check and try again."
+            # Use step-specific fallback message
+            if key in STEP_CONFIG:
+                message = f"⚠️ Please provide a valid input for {key.replace('_', ' ').title()}."
+            else:
+                message = "⚠️ Sorry, I couldn't process that. Please check and try again."
+            logging.warning(f"⚠️ Missing key '{step_key}' in '{language_code}'. Using fallback.")
 
         return message
 
     except Exception as e:
         logging.error(f"❌ Error in get_message: {str(e)}")
         return "⚠️ An error occurred. Please try again."
+
 
 def delete_chatflow_data(messenger_id):
     """
