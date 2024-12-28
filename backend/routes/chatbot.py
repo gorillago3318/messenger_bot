@@ -576,8 +576,6 @@ def process_message():
 
             if message_body == 'get_started':
                 logging.info(f"🌟 User {sender_id} clicked the 'Get Started' button.")
-
-                # Retrieve or Create User Data
                 user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
                 if user_data:
                     reset_user_data(user_data, mode='flow')
@@ -598,7 +596,9 @@ def process_message():
                 send_messenger_message(sender_id, PROMPTS['en']['choose_language'])
                 return jsonify({"status": "success"}), 200
 
-        # Extract text or quick reply
+        # ----------------------------
+        # 3. Handle Any User Message (Greeting or Random)
+        # ----------------------------
         if not message_body:
             if 'quick_reply' in message_data:
                 message_body = message_data['quick_reply']['payload'].strip().lower()
@@ -613,21 +613,28 @@ def process_message():
         logging.info(f"💎 Incoming message from {sender_id}: {message_body}")
 
         # ----------------------------
-        # 3. Retrieve User Data
+        # 4. Handle Language Selection Prompt
         # ----------------------------
         user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
 
-        # Handle Reset Commands
-        if message_body.lower() in ['restart', 'reset', 'start over']:
-            logging.info(f"🔄 Restarting flow for user {sender_id}")
-            reset_user_data(user_data, mode='flow')
-            user_data.current_step = 'choose_language'
+        # If no user data exists, create a new entry and start the language selection
+        if not user_data:
+            user_data = ChatflowTemp(
+                sender_id=sender_id,
+                messenger_id=messenger_id,
+                current_step='choose_language',
+                language_code='en',  # Default to English if no language selected
+                mode='flow'
+            )
+            db.session.add(user_data)
             db.session.commit()
+
+            # Send Language Selection Prompt
             send_messenger_message(sender_id, PROMPTS['en']['choose_language'])
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
-        # 4. Handle Inquiry Mode
+        # 5. Handle Inquiry Mode
         # ----------------------------
         if user_data.mode == 'inquiry':
             logging.info(f"💬 Inquiry mode for user {sender_id}")
@@ -642,7 +649,7 @@ def process_message():
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
-        # 5. Process Regular Flow
+        # 6. Process Regular Flow (Ask for user details)
         # ----------------------------
         current_step = user_data.current_step
         process_response, status = process_user_input(current_step, user_data, message_body, messenger_id)
@@ -669,7 +676,14 @@ def process_message():
                     else:
                         user_data.mode = 'inquiry'
                         db.session.commit()
-                        # Don't send the greeting message again here
+                        # Send inquiry greeting only once here
+                        inquiry_greeting = (
+                            "🎉 *Welcome to Inquiry Mode!* 🎉\n\n"
+                            "🤖 *FinZo AI Assistant* is now activated. Ask me anything about *home refinancing* or *housing loans*.\n\n"
+                            "💬 *You can ask about loan eligibility, refinancing steps, or required documents.*\n\n"
+                            f"📱 Need urgent help? Contact admin via WhatsApp: https://wa.me/60167177813"
+                        )
+                        send_messenger_message(sender_id, inquiry_greeting)
                     return jsonify({"status": "success"}), 200
 
                 # Send Next Prompt
@@ -684,7 +698,6 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
-
 
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
