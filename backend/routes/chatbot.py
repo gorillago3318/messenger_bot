@@ -790,10 +790,41 @@ def handle_process_completion(messenger_id):
         except Exception as e:
             logging.error(f"❌ Failed to save results in database: {str(e)}")
 
-        # Step 8: Switch to inquiry mode
+        # Step 8: Switch to inquiry mode with language-specific greeting
         user_data.mode = 'inquiry'
         db.session.commit()
-        logging.info(f"✅ Process completed successfully for {messenger_id}. Switched to inquiry mode.")
+
+        # Fetch WhatsApp link from environment variable
+        whatsapp_link = os.getenv('ADMIN_WHATSAPP_LINK', "https://wa.me/60167177813")
+
+        # Inquiry Mode Greeting based on user language
+        language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
+        inquiry_greetings = {
+            'en': (
+                "🎉 *Welcome to Inquiry Mode!* 🎉\n\n"
+                "🤖 *FinZo AI Assistant* is now activated. Ask me anything about *home refinancing* or *housing loans*.\n\n"
+                "💬 *You can ask about loan eligibility, refinancing steps, or required documents.*\n\n"
+                f"📱 Need urgent help? Contact admin via WhatsApp: {whatsapp_link}"
+            ),
+            'ms': (
+                "🎉 *Selamat datang ke Mod Pertanyaan!* 🎉\n\n"
+                "🤖 *Pembantu AI FinZo* kini diaktifkan. Tanyakan apa sahaja tentang *pembiayaan semula rumah* atau *pinjaman perumahan*.\n\n"
+                "💬 *Anda boleh bertanya tentang kelayakan pinjaman, langkah pembiayaan semula, atau dokumen yang diperlukan.*\n\n"
+                f"📱 Perlukan bantuan segera? Hubungi admin melalui WhatsApp: {whatsapp_link}"
+            ),
+            'zh': (
+                "🎉 *欢迎进入咨询模式!* 🎉\n\n"
+                "🤖 *FinZo AI 助手* 现在已启动。您可以询问关于 *房屋再融资* 或 *住房贷款* 的任何问题。\n\n"
+                "💬 *您可以询问贷款资格、再融资步骤或所需文件。*\n\n"
+                f"📱 如需帮助，请通过 WhatsApp 联系管理员: {whatsapp_link}"
+            )
+        }
+
+        # Send the appropriate inquiry greeting based on the user's language
+        inquiry_greeting = inquiry_greetings.get(language, inquiry_greetings['en'])
+        send_messenger_message(messenger_id, inquiry_greeting)
+
+        logging.info(f"✅ Process completed successfully for {messenger_id}. Switched to inquiry mode with greeting.")
 
         return jsonify({"status": "success"}), 200
 
@@ -975,29 +1006,50 @@ def handle_gpt_query(question, user_data, messenger_id):
             logging.info(f"✅ Preset response found for query: {question}")
             return response  # Only return the preset response
 
-        # Step 3: Query GPT only if no preset response is found
-        logging.info(f"❌ No preset match. Querying GPT for: {question}")
-        prompt = f"Question: {question}\nAnswer:"
+        # ----------------------------
+        # Step 3: Query GPT if no preset response is found
+        # ----------------------------
+
+        # Map language code to full names for GPT instruction
+        language_map = {
+            'en': 'English',
+            'ms': 'Malay',
+            'zh': 'Chinese'
+        }
+
+        # Determine preferred language
+        preferred_language = language_map.get(user_data.language_code, 'English')
+
+        # Construct GPT prompt with language preference
+        logging.info(f"❌ No preset match. Querying GPT in {preferred_language} for: {question}")
+        system_prompt = (
+            f"You are a helpful assistant for home refinancing and home loan queries. "
+            f"Respond in {preferred_language}."
+        )
 
         # Making GPT request
         openai_res = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are a helpful assistant for home refinancing and home loan queries."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": question}
             ]
         )
 
+        # Extract GPT response
         reply = openai_res['choices'][0]['message']['content'].strip()
         logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
 
-        # Return GPT Response (Message sent only once outside this function)
+        # Log GPT query and response
+        log_gpt_query(messenger_id, question, reply)
+
+        # Return GPT response
         return reply
 
     except Exception as e:
+        # Log error
         logging.error(f"❌ Error in handle_gpt_query: {str(e)}")
-        return "Sorry, something went wrong!"
-
+        return "Sorry, something went wrong! Please try again or contact support."
 
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
@@ -1005,37 +1057,36 @@ def log_gpt_query(messenger_id, question, response):
         messenger_id = str(messenger_id)
         user = User.query.filter_by(messenger_id=messenger_id).first()
 
-        # Create or update user
+        # Create or update user with default values if missing
         if not user:
             user = User(
                 messenger_id=messenger_id,
                 name="Unknown User",
                 age=0,
-                phone_number="Unknown"  # Default if not set
+                phone_number="Unknown"  # Default value
             )
             db.session.add(user)
-            db.session.flush()
-        else:
-            if not user.name:
-                user.name = "Unknown User"
-            if not user.age:
-                user.age = 0
-            if not user.phone_number:
-                user.phone_number = "Unknown"  # Default if not set
+            db.session.flush()  # Flush to get user ID
 
-        # Log GPT query
+        # Handle missing details if user exists
+        user.name = user.name or "Unknown User"
+        user.age = user.age or 0
+        user.phone_number = user.phone_number or "Unknown"
+
+        # Log the GPT query in ChatLog
         chat_log = ChatLog(
             user_id=user.id,
             message_content=f"User (GPT Query): {question}\nBot: {response}",
-            phone_number=user.phone_number  # Ensure phone_number is set
+            phone_number=user.phone_number  # Ensure phone number is set
         )
         db.session.add(chat_log)
         db.session.commit()
         logging.info(f"✅ GPT query logged for user {user.messenger_id}")
+
     except Exception as e:
+        # Log error and rollback
         logging.error(f"❌ Error logging GPT query: {str(e)}")
         db.session.rollback()
-
 
 # -------------------
 # 11) Helper Messages
