@@ -424,7 +424,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             'get_loan_tenure': 'get_monthly_repayment',
             'get_monthly_repayment': 'get_interest_rate',
             'get_interest_rate': 'get_remaining_tenure',
-            'get_remaining_tenure': 'thank_you'
+            'get_remaining_tenure': 'process_completion'
         }
 
         # ----------------------------
@@ -464,7 +464,14 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             if step == 'get_interest_rate':
                 return value.lower() == 'skip' or (value.replace('.', '', 1).isdigit() and 3 <= float(value) <= 10)
             if step == 'get_remaining_tenure':
-                return value.lower() == 'skip' or value.isdigit()
+                if value.lower() == 'skip':  # Allow skipping
+                    return True
+            if not value.isdigit():  # Ensure numeric input
+                return False
+            remaining = int(value)
+            original = user_data.original_loan_tenure  # Fetch original tenure from user data
+            if remaining > original:  # Validate remaining tenure does not exceed original tenure
+                return False
             return True
 
         # Validate Input
@@ -504,7 +511,18 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
 
         # If no further steps, mark process complete
         if not next_step:
-            send_messenger_message(messenger_id, "⚠️ Process complete or invalid step.")
+            # Trigger calculation for savings and send summary
+            result = handle_process_completion(messenger_id)
+
+            if result[1] != 200:  # Error during calculation
+                send_messenger_message(messenger_id, "⚠️ Error calculating savings. Please restart the process.")
+            else:
+                # Switch to inquiry mode after summary
+                user_data.mode = 'inquiry'
+                db.session.commit()
+                follow_up_message = PROMPTS['en']['inquiry_mode_message']
+                send_messenger_message(messenger_id, follow_up_message)
+
             return {"status": "success"}, 200
 
         # Update user step and commit changes before prompting
