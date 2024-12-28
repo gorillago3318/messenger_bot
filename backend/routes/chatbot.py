@@ -424,7 +424,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             'get_loan_tenure': 'get_monthly_repayment',
             'get_monthly_repayment': 'get_interest_rate',
             'get_interest_rate': 'get_remaining_tenure',
-            'get_remaining_tenure': 'process_completion'
+            'get_remaining_tenure': 'process_completion'  # Triggers calculation and summary
         }
 
         # ----------------------------
@@ -466,12 +466,20 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             if step == 'get_remaining_tenure':
                 if value.lower() == 'skip':  # Allow skipping
                     return True
-            if not value.isdigit():  # Ensure numeric input
-                return False
-            remaining = int(value)
-            original = user_data.original_loan_tenure  # Fetch original tenure from user data
-            if remaining > original:  # Validate remaining tenure does not exceed original tenure
-                return False
+                if not value.isdigit():  # Ensure numeric input
+                    return False
+                remaining = int(value)
+                original = user_data.original_loan_tenure
+
+                # Validate if original tenure is None or not set
+                if original is None:
+                    logging.error("❌ Original loan tenure is missing during validation.")
+                    return False
+
+                # Validate remaining tenure cannot exceed original tenure
+                if remaining > original:
+                    return False
+                return True
             return True
 
         # Validate Input
@@ -509,9 +517,8 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         # ----------------------------
         next_step = next_step_mapping.get(current_step, None)
 
-        # If no further steps, mark process complete
-        if not next_step:
-            # Trigger calculation for savings and send summary
+        # Trigger Calculation for Final Step
+        if next_step == 'process_completion':
             result = handle_process_completion(messenger_id)
 
             if result[1] != 200:  # Error during calculation
@@ -525,13 +532,10 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
 
             return {"status": "success"}, 200
 
-        # Update user step and commit changes before prompting
+        # Move to next step and send prompt
         user_data.current_step = next_step
         db.session.commit()
 
-        # ----------------------------
-        # 6. Send Next Prompt
-        # ----------------------------
         language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
         next_prompt = PROMPTS[language].get(next_step, "⚠️ Invalid input. Please check and try again.")
         send_messenger_message(messenger_id, next_prompt)
@@ -543,7 +547,6 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.error(f"❌ Error in process_user_input: {str(e)}")
         db.session.rollback()
         return {"status": "error", "message": "An error occurred while processing your input."}, 500
-
 
 @chatbot_bp.route('/process_message', methods=['POST'])
 def process_message():
