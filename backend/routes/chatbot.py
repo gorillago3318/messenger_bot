@@ -36,6 +36,70 @@ logging.basicConfig(
     ]
 )
 
+
+PROMPTS = {
+            'en': {
+                'choose_language': "🎉 Welcome to FinZo AI — Your Smart Refinancing Assistant! 🤖\n\n💸 **Discover Your Savings Potential** – Instantly estimate how much you could save by refinancing your home loan.\n💡 **Expert Guidance at Your Fingertips** – Get quick answers to your refinancing and home loan questions (up to 15 inquiries).\n🔄 **Simple Restart** – Need to reset? Just type 'restart' anytime to start over.\n\n👉 Let's get started! Please select your preferred language:\n\n🌐 **Choose Language:**\n1️⃣ *English* \n2️⃣ *Bahasa Malaysia* \n3️⃣ *中文 (Chinese)*",
+                'get_name': "📝 *Step 1: Enter Your Name* \n\nPlease enter your *full name* as it appears on official documentation. \n\n💡 *Example*: John Doe",
+                'get_phone_number': "📞 *Step 2: Enter Your Phone Number* \n\nPlease enter your *phone number* (minimum 10 digits). \n\n💡 *Example*: 0123456789",
+                'get_age': "🎂 *Step 3: Enter Your Age* \n\nPlease enter your *age in years* (must be between *18 and 70*). \n\n💡 *Example*: 35",
+                'get_loan_amount': "💸 *Step 4: Enter Your Loan Amount* \n\nPlease enter the *original loan amount* that you initially took from the bank. \n\n💡 *Example*: 250000 (do not use commas or special symbols).",
+                'get_loan_tenure': "📆 *Step 5: Enter Your Loan Tenure* \n\nPlease enter your *original loan tenure* approved by the bank. (This is normally 30 or 35 years.) \n\n💡 *Example*: 30.",
+                'get_monthly_repayment': "💳 *Step 6: Enter Your Current Monthly Repayment* \n\nPlease enter the *current amount you pay each month* for your loan. \n\n💡 *Example*: 2500 (do not use commas or special symbols).",
+                'get_interest_rate': "📈 *Step 7: Enter Your Interest Rate* \n\nIf you know the *current interest rate* for your loan, please enter it (e.g., 3.85). \n\nYou can also type *skip* if you are unsure. \n\n💡 *Example*: 4.25 or *skip*.",
+                'get_remaining_tenure': "📅 *Step 8: Enter the Remaining Tenure* \n\nPlease enter the *number of years remaining* for your loan. \n\n💡 *Note*: You can skip this if you don't know the exact number. Just type *skip*. \n\n💡 *Example*: 15 or *skip*.",
+                'invalid_choose_language': "⚠️ Invalid language selection. Please select 1 for English, 2 for Bahasa Malaysia, or 3 for 中文 (Chinese).",
+                'invalid_get_name': "⚠️ Invalid name. Please enter letters only.",
+                'invalid_get_phone_number': "⚠️ Invalid phone number. It must start with '01' and be 10–11 digits long. Example: 0123456789.",
+                'invalid_get_age': "⚠️ Invalid age. Please enter a valid number between 18 and 70.",
+                'invalid_get_loan_amount': "⚠️ Invalid loan amount. Enter numbers only without commas or symbols. Example: 250000.",
+                'invalid_get_loan_tenure': "⚠️ Invalid loan tenure. Enter a number between 1 and 40 years. Example: 30.",
+                'invalid_get_monthly_repayment': "⚠️ Invalid repayment amount. Enter numbers only without commas or symbols. Example: 2500.",
+                'invalid_get_interest_rate': "⚠️ Invalid interest rate. Enter a number between 3% and 10%, or type 'skip' if unsure. Example: 4.25 or 'skip'.",
+                'invalid_get_remaining_tenure': "⚠️ Invalid remaining tenure. Enter a number greater than 0 or type 'skip' if unsure. Example: 15 or 'skip'."
+            },
+            'ms': {
+                'choose_language': "🎉 Selamat datang ke FinZo AI — Pembantu Pembiayaan Semula Pintar Anda! 🤖\n\n💸 **Temui Potensi Penjimatan Anda** – Anggarkan dengan segera berapa banyak yang anda boleh jimatkan dengan membiayai semula pinjaman rumah anda.\n💡 **Bimbingan Pakar di Hujung Jari** – Dapatkan jawapan segera untuk soalan pembiayaan semula dan pinjaman rumah anda (sehingga 15 pertanyaan).\n🔄 **Mula Semula dengan Mudah** – Perlu bermula semula? Hanya taip 'restart' pada bila-bila masa.\n\n👉 Mari kita mulakan! Sila pilih bahasa pilihan anda:\n\n🌐 **Pilih Bahasa:**\n1️⃣ *English* \n2️⃣ *Bahasa Malaysia* \n3️⃣ *中文 (Chinese)*",
+                'get_name': "📝 *Langkah 1: Masukkan Nama Anda* \n\nSila masukkan *nama penuh* anda seperti yang tertera pada dokumen rasmi. \n\n💡 *Contoh*: Ahmad bin Abdullah",
+                'get_phone_number': "📞 *Langkah 2: Masukkan Nombor Telefon Anda* \n\nSila masukkan *nombor telefon* anda (minimum 10 digit). \n\n💡 *Contoh*: 0123456789",
+                'get_age': "🎂 *Langkah 3: Masukkan Umur Anda* \n\nSila masukkan *umur anda dalam tahun* (mesti antara *18 dan 70*). \n\n💡 *Contoh*: 35",
+                'get_loan_amount': "💸 *Langkah 4: Masukkan Jumlah Pinjaman Anda* \n\nSila masukkan *jumlah pinjaman asal* yang anda ambil dari bank. \n\n💡 *Contoh*: 250000 (jangan gunakan koma atau simbol khas).",
+                'get_loan_tenure': "📆 *Langkah 5: Masukkan Tempoh Pinjaman Anda* \n\nSila masukkan *tempoh pinjaman asal* yang diluluskan oleh bank. (Ini biasanya 30 atau 35 tahun.) \n\n💡 *Contoh*: 30.",
+                'get_monthly_repayment': "💳 *Langkah 6: Masukkan Bayaran Bulanan Semasa Anda* \n\nSila masukkan *jumlah yang anda bayar setiap bulan* untuk pinjaman anda. \n\n💡 *Contoh*: 2500 (jangan gunakan koma atau simbol khas).",
+                'get_interest_rate': "📈 *Langkah 7: Masukkan Kadar Faedah Anda* \n\nJika anda tahu *kadar faedah semasa* untuk pinjaman anda, sila masukkan (contoh: 3.85). \n\nAnda juga boleh taip *skip* jika anda tidak pasti. \n\n💡 *Contoh*: 4.25 atau *skip*.",
+                'get_remaining_tenure': "📅 *Langkah 8: Masukkan Baki Tempoh* \n\nSila masukkan *bilangan tahun yang berbaki* untuk pinjaman anda. \n\n💡 *Nota*: Anda boleh langkau jika anda tidak tahu jumlah yang tepat. Hanya taip *skip*. \n\n💡 *Contoh*: 15 atau *skip*.",
+                'invalid_choose_language': "⚠️ Pilihan bahasa tidak sah. Sila pilih 1 untuk English, 2 untuk Bahasa Malaysia, atau 3 untuk 中文 (Chinese).",
+                'invalid_get_name': "⚠️ Nama tidak sah. Sila masukkan huruf sahaja.",
+                'invalid_get_phone_number': "⚠️ Nombor telefon tidak sah. Mesti bermula dengan '01' dan mempunyai 10-11 digit. Contoh: 0123456789.",
+                'invalid_get_age': "⚠️ Umur tidak sah. Sila masukkan nombor yang sah antara 18 dan 70.",
+                'invalid_get_loan_amount': "⚠️ Jumlah pinjaman tidak sah. Masukkan nombor sahaja tanpa koma atau simbol. Contoh: 250000.",
+                'invalid_get_loan_tenure': "⚠️ Tempoh pinjaman tidak sah. Masukkan nombor antara 1 dan 40 tahun. Contoh: 30.",
+                'invalid_get_monthly_repayment': "⚠️ Jumlah bayaran tidak sah. Masukkan nombor sahaja tanpa koma atau simbol. Contoh: 2500.",
+                'invalid_get_interest_rate': "⚠️ Kadar faedah tidak sah. Masukkan nombor antara 3% dan 10%, atau taip 'skip' jika tidak pasti. Contoh: 4.25 atau 'skip'.",
+                'invalid_get_remaining_tenure': "⚠️ Baki tempoh tidak sah. Masukkan nombor lebih besar daripada 0 atau taip 'skip' jika tidak pasti. Contoh: 15 atau 'skip'."
+            },
+             'zh': {
+                'choose_language': "🎉 欢迎使用 FinZo AI — 您的智能再融资助手！🤖\n\n💸 **发现您的储蓄潜力** – 立即估算通过房屋贷款再融资可以节省多少。\n💡 **专业指导触手可及** – 快速获得再融资和房屋贷款问题的答案（最多15个咨询）。\n🔄 **简单重启** – 需要重置？随时输入'restart'即可重新开始。\n\n👉 让我们开始吧！请选择您的首选语言：\n\n🌐 **选择语言：**\n1️⃣ *English* \n2️⃣ *Bahasa Malaysia* \n3️⃣ *中文 (Chinese)*",
+                'get_name': "📝 *步骤1：输入姓名* \n\n请输入您的*全名*，需与官方文件上的姓名一致。 \n\n💡 *示例*：张明华",
+                'get_phone_number': "📞 *步骤2：输入电话号码* \n\n请输入您的*电话号码*（至少10位数字）。 \n\n💡 *示例*：0123456789",
+                'get_age': "🎂 *步骤3：输入年龄* \n\n请输入您的*年龄*（必须在*18至70岁*之间）。 \n\n💡 *示例*：35",
+                'get_loan_amount': "💸 *步骤4：输入贷款金额* \n\n请输入您最初从银行获得的*原始贷款金额*。 \n\n💡 *示例*：250000（请勿使用逗号或特殊符号）。",
+                'get_loan_tenure': "📆 *步骤5：输入贷款期限* \n\n请输入银行批准的*原始贷款期限*。（通常为30或35年。） \n\n💡 *示例*：30。",
+                'get_monthly_repayment': "💳 *步骤6：输入当前每月还款额* \n\n请输入您当前*每月的贷款还款金额*。 \n\n💡 *示例*：2500（请勿使用逗号或特殊符号）。",
+                'get_interest_rate': "📈 *步骤7：输入利率* \n\n如果您知道贷款的*当前利率*，请输入（例如：3.85）。 \n\n如果不确定，您也可以输入*skip*。 \n\n💡 *示例*：4.25 或 *skip*。",
+                'get_remaining_tenure': "📅 *步骤8：输入剩余期限* \n\n请输入您的贷款*剩余年数*。 \n\n💡 *注意*：如果您不知道确切数字，可以跳过此步骤。只需输入*skip*。 \n\n💡 *示例*：15 或 *skip*。",
+                'invalid_choose_language': "⚠️ 语言选择无效。请选择 1 代表英语，2 代表马来语，或 3 代表中文。",
+                'invalid_get_name': "⚠️ 姓名无效。请只输入字母。",
+                'invalid_get_phone_number': "⚠️ 电话号码无效。必须以'01'开头，并且有10-11位数字。示例：0123456789。",
+                'invalid_get_age': "⚠️ 年龄无效。请输入18至70之间的有效数字。",
+                'invalid_get_loan_amount': "⚠️ 贷款金额无效。请只输入数字，不要使用逗号或符号。示例：250000。",
+                'invalid_get_loan_tenure': "⚠️ 贷款期限无效。请输入1至40年之间的数字。示例：30。",
+                'invalid_get_monthly_repayment': "⚠️ 还款金额无效。请只输入数字，不要使用逗号或符号。示例：2500。",
+                'invalid_get_interest_rate': "⚠️ 利率无效。请输入3%至10%之间的数字，或如果不确定请输入'skip'。示例：4.25或'skip'。",
+                'invalid_get_remaining_tenure': "⚠️ 剩余期限无效。请输入大于0的数字，或如果不确定请输入'skip'。示例：15或'skip'。"
+            }
+        }
+
 # -------------------
 # 2) Initialize OpenAI client
 # -------------------
@@ -346,78 +410,24 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.debug(f"Processing step: {current_step} with input: {message_body}")
 
         # ----------------------------
-        # Hardcoded Prompts and Errors for All Languages
-        # ----------------------------
-        PROMPTS = {
-            'en': {
-                'choose_language': "🎉 Welcome to FinZo AI — Your Smart Refinancing Assistant! 🤖\n\n💸 **Discover Your Savings Potential** – Instantly estimate how much you could save by refinancing your home loan.\n💡 **Expert Guidance at Your Fingertips** – Get quick answers to your refinancing and home loan questions (up to 15 inquiries).\n🔄 **Simple Restart** – Need to reset? Just type 'restart' anytime to start over.\n\n👉 Let's get started! Please select your preferred language:\n\n🌐 **Choose Language:**\n1️⃣ *English* \n2️⃣ *Bahasa Malaysia* \n3️⃣ *中文 (Chinese)*",
-                'get_name': "📝 *Step 1: Enter Your Name* \n\nPlease enter your *full name* as it appears on official documentation. \n\n💡 *Example*: John Doe",
-                'get_phone_number': "📞 *Step 2: Enter Your Phone Number* \n\nPlease enter your *phone number* (minimum 10 digits). \n\n💡 *Example*: 0123456789",
-                'get_age': "🎂 *Step 3: Enter Your Age* \n\nPlease enter your *age in years* (must be between *18 and 70*). \n\n💡 *Example*: 35",
-                'get_loan_amount': "💸 *Step 4: Enter Your Loan Amount* \n\nPlease enter the *original loan amount* that you initially took from the bank. \n\n💡 *Example*: 250000 (do not use commas or special symbols).",
-                'get_loan_tenure': "📆 *Step 5: Enter Your Loan Tenure* \n\nPlease enter your *original loan tenure* approved by the bank. (This is normally 30 or 35 years.) \n\n💡 *Example*: 30.",
-                'get_monthly_repayment': "💳 *Step 6: Enter Your Current Monthly Repayment* \n\nPlease enter the *current amount you pay each month* for your loan. \n\n💡 *Example*: 2500 (do not use commas or special symbols).",
-                'get_interest_rate': "📈 *Step 7: Enter Your Interest Rate* \n\nIf you know the *current interest rate* for your loan, please enter it (e.g., 3.85). \n\nYou can also type *skip* if you are unsure. \n\n💡 *Example*: 4.25 or *skip*.",
-                'get_remaining_tenure': "📅 *Step 8: Enter the Remaining Tenure* \n\nPlease enter the *number of years remaining* for your loan. \n\n💡 *Note*: You can skip this if you don't know the exact number. Just type *skip*. \n\n💡 *Example*: 15 or *skip*.",
-                'invalid_choose_language': "⚠️ Invalid language selection. Please select 1 for English, 2 for Bahasa Malaysia, or 3 for 中文 (Chinese).",
-                'invalid_get_name': "⚠️ Invalid name. Please enter letters only.",
-                'invalid_get_phone_number': "⚠️ Invalid phone number. It must start with '01' and be 10–11 digits long. Example: 0123456789.",
-                'invalid_get_age': "⚠️ Invalid age. Please enter a valid number between 18 and 70.",
-                'invalid_get_loan_amount': "⚠️ Invalid loan amount. Enter numbers only without commas or symbols. Example: 250000.",
-                'invalid_get_loan_tenure': "⚠️ Invalid loan tenure. Enter a number between 1 and 40 years. Example: 30.",
-                'invalid_get_monthly_repayment': "⚠️ Invalid repayment amount. Enter numbers only without commas or symbols. Example: 2500.",
-                'invalid_get_interest_rate': "⚠️ Invalid interest rate. Enter a number between 3% and 10%, or type 'skip' if unsure. Example: 4.25 or 'skip'.",
-                'invalid_get_remaining_tenure': "⚠️ Invalid remaining tenure. Enter a number greater than 0 or type 'skip' if unsure. Example: 15 or 'skip'."
-            },
-            'ms': {
-                'choose_language': "🎉 Selamat datang ke FinZo AI — Pembantu Pembiayaan Semula Pintar Anda! 🤖\n\n💸 **Temui Potensi Penjimatan Anda** – Anggarkan dengan segera berapa banyak yang anda boleh jimatkan dengan membiayai semula pinjaman rumah anda.\n💡 **Bimbingan Pakar di Hujung Jari** – Dapatkan jawapan segera untuk soalan pembiayaan semula dan pinjaman rumah anda (sehingga 15 pertanyaan).\n🔄 **Mula Semula dengan Mudah** – Perlu bermula semula? Hanya taip 'restart' pada bila-bila masa.\n\n👉 Mari kita mulakan! Sila pilih bahasa pilihan anda:\n\n🌐 **Pilih Bahasa:**\n1️⃣ *English* \n2️⃣ *Bahasa Malaysia* \n3️⃣ *中文 (Chinese)*",
-                'get_name': "📝 *Langkah 1: Masukkan Nama Anda* \n\nSila masukkan *nama penuh* anda seperti yang tertera pada dokumen rasmi. \n\n💡 *Contoh*: Ahmad bin Abdullah",
-                'get_phone_number': "📞 *Langkah 2: Masukkan Nombor Telefon Anda* \n\nSila masukkan *nombor telefon* anda (minimum 10 digit). \n\n💡 *Contoh*: 0123456789",
-                'get_age': "🎂 *Langkah 3: Masukkan Umur Anda* \n\nSila masukkan *umur anda dalam tahun* (mesti antara *18 dan 70*). \n\n💡 *Contoh*: 35",
-                'get_loan_amount': "💸 *Langkah 4: Masukkan Jumlah Pinjaman Anda* \n\nSila masukkan *jumlah pinjaman asal* yang anda ambil dari bank. \n\n💡 *Contoh*: 250000 (jangan gunakan koma atau simbol khas).",
-                'get_loan_tenure': "📆 *Langkah 5: Masukkan Tempoh Pinjaman Anda* \n\nSila masukkan *tempoh pinjaman asal* yang diluluskan oleh bank. (Ini biasanya 30 atau 35 tahun.) \n\n💡 *Contoh*: 30.",
-                'get_monthly_repayment': "💳 *Langkah 6: Masukkan Bayaran Bulanan Semasa Anda* \n\nSila masukkan *jumlah yang anda bayar setiap bulan* untuk pinjaman anda. \n\n💡 *Contoh*: 2500 (jangan gunakan koma atau simbol khas).",
-                'get_interest_rate': "📈 *Langkah 7: Masukkan Kadar Faedah Anda* \n\nJika anda tahu *kadar faedah semasa* untuk pinjaman anda, sila masukkan (contoh: 3.85). \n\nAnda juga boleh taip *skip* jika anda tidak pasti. \n\n💡 *Contoh*: 4.25 atau *skip*.",
-                'get_remaining_tenure': "📅 *Langkah 8: Masukkan Baki Tempoh* \n\nSila masukkan *bilangan tahun yang berbaki* untuk pinjaman anda. \n\n💡 *Nota*: Anda boleh langkau jika anda tidak tahu jumlah yang tepat. Hanya taip *skip*. \n\n💡 *Contoh*: 15 atau *skip*.",
-                'invalid_choose_language': "⚠️ Pilihan bahasa tidak sah. Sila pilih 1 untuk English, 2 untuk Bahasa Malaysia, atau 3 untuk 中文 (Chinese).",
-                'invalid_get_name': "⚠️ Nama tidak sah. Sila masukkan huruf sahaja.",
-                'invalid_get_phone_number': "⚠️ Nombor telefon tidak sah. Mesti bermula dengan '01' dan mempunyai 10-11 digit. Contoh: 0123456789.",
-                'invalid_get_age': "⚠️ Umur tidak sah. Sila masukkan nombor yang sah antara 18 dan 70.",
-                'invalid_get_loan_amount': "⚠️ Jumlah pinjaman tidak sah. Masukkan nombor sahaja tanpa koma atau simbol. Contoh: 250000.",
-                'invalid_get_loan_tenure': "⚠️ Tempoh pinjaman tidak sah. Masukkan nombor antara 1 dan 40 tahun. Contoh: 30.",
-                'invalid_get_monthly_repayment': "⚠️ Jumlah bayaran tidak sah. Masukkan nombor sahaja tanpa koma atau simbol. Contoh: 2500.",
-                'invalid_get_interest_rate': "⚠️ Kadar faedah tidak sah. Masukkan nombor antara 3% dan 10%, atau taip 'skip' jika tidak pasti. Contoh: 4.25 atau 'skip'.",
-                'invalid_get_remaining_tenure': "⚠️ Baki tempoh tidak sah. Masukkan nombor lebih besar daripada 0 atau taip 'skip' jika tidak pasti. Contoh: 15 atau 'skip'."
-            },
-             'zh': {
-                'choose_language': "🎉 欢迎使用 FinZo AI — 您的智能再融资助手！🤖\n\n💸 **发现您的储蓄潜力** – 立即估算通过房屋贷款再融资可以节省多少。\n💡 **专业指导触手可及** – 快速获得再融资和房屋贷款问题的答案（最多15个咨询）。\n🔄 **简单重启** – 需要重置？随时输入'restart'即可重新开始。\n\n👉 让我们开始吧！请选择您的首选语言：\n\n🌐 **选择语言：**\n1️⃣ *English* \n2️⃣ *Bahasa Malaysia* \n3️⃣ *中文 (Chinese)*",
-                'get_name': "📝 *步骤1：输入姓名* \n\n请输入您的*全名*，需与官方文件上的姓名一致。 \n\n💡 *示例*：张明华",
-                'get_phone_number': "📞 *步骤2：输入电话号码* \n\n请输入您的*电话号码*（至少10位数字）。 \n\n💡 *示例*：0123456789",
-                'get_age': "🎂 *步骤3：输入年龄* \n\n请输入您的*年龄*（必须在*18至70岁*之间）。 \n\n💡 *示例*：35",
-                'get_loan_amount': "💸 *步骤4：输入贷款金额* \n\n请输入您最初从银行获得的*原始贷款金额*。 \n\n💡 *示例*：250000（请勿使用逗号或特殊符号）。",
-                'get_loan_tenure': "📆 *步骤5：输入贷款期限* \n\n请输入银行批准的*原始贷款期限*。（通常为30或35年。） \n\n💡 *示例*：30。",
-                'get_monthly_repayment': "💳 *步骤6：输入当前每月还款额* \n\n请输入您当前*每月的贷款还款金额*。 \n\n💡 *示例*：2500（请勿使用逗号或特殊符号）。",
-                'get_interest_rate': "📈 *步骤7：输入利率* \n\n如果您知道贷款的*当前利率*，请输入（例如：3.85）。 \n\n如果不确定，您也可以输入*skip*。 \n\n💡 *示例*：4.25 或 *skip*。",
-                'get_remaining_tenure': "📅 *步骤8：输入剩余期限* \n\n请输入您的贷款*剩余年数*。 \n\n💡 *注意*：如果您不知道确切数字，可以跳过此步骤。只需输入*skip*。 \n\n💡 *示例*：15 或 *skip*。",
-                'invalid_choose_language': "⚠️ 语言选择无效。请选择 1 代表英语，2 代表马来语，或 3 代表中文。",
-                'invalid_get_name': "⚠️ 姓名无效。请只输入字母。",
-                'invalid_get_phone_number': "⚠️ 电话号码无效。必须以'01'开头，并且有10-11位数字。示例：0123456789。",
-                'invalid_get_age': "⚠️ 年龄无效。请输入18至70之间的有效数字。",
-                'invalid_get_loan_amount': "⚠️ 贷款金额无效。请只输入数字，不要使用逗号或符号。示例：250000。",
-                'invalid_get_loan_tenure': "⚠️ 贷款期限无效。请输入1至40年之间的数字。示例：30。",
-                'invalid_get_monthly_repayment': "⚠️ 还款金额无效。请只输入数字，不要使用逗号或符号。示例：2500。",
-                'invalid_get_interest_rate': "⚠️ 利率无效。请输入3%至10%之间的数字，或如果不确定请输入'skip'。示例：4.25或'skip'。",
-                'invalid_get_remaining_tenure': "⚠️ 剩余期限无效。请输入大于0的数字，或如果不确定请输入'skip'。示例：15或'skip'。"
-            }
-        }
-
-        # ----------------------------
         # Handle 'skip' Command Before Validation
         # ----------------------------
         if message_body.lower() == 'skip':
             logging.info(f"🔄 Skipping input for step: {current_step}")
             # Determine the next step explicitly
-            next_step = 'get_name' if current_step == 'choose_language' else 'get_phone_number'
+            next_step_mapping = {
+                'choose_language': 'get_name',
+                'get_name': 'get_phone_number',
+                'get_phone_number': 'get_age',
+                'get_age': 'get_loan_amount',
+                'get_loan_amount': 'get_loan_tenure',
+                'get_loan_tenure': 'get_monthly_repayment',
+                'get_monthly_repayment': 'get_interest_rate',
+                'get_interest_rate': 'get_remaining_tenure',
+                'get_remaining_tenure': 'thank_you'
+            }
+
+            next_step = next_step_mapping.get(current_step, None)
 
             # Update user step and commit
             user_data.current_step = next_step
@@ -439,6 +449,18 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
                 return value.replace(' ', '').isalpha()
             if step == 'get_phone_number':
                 return value.isdigit() and value.startswith('01') and len(value) in [10, 11]
+            if step == 'get_age':
+                return value.isdigit() and 18 <= int(value) <= 70
+            if step == 'get_loan_amount':
+                return value.replace(',', '').isdigit()
+            if step == 'get_loan_tenure':
+                return value.isdigit() and 1 <= int(value) <= 40
+            if step == 'get_monthly_repayment':
+                return value.replace('.', '', 1).isdigit()
+            if step == 'get_interest_rate':
+                return value.lower() == 'skip' or (value.replace('.', '', 1).isdigit() and 3 <= float(value) <= 10)
+            if step == 'get_remaining_tenure':
+                return value.lower() == 'skip' or value.isdigit()
             return True
 
         # Validate Input
@@ -447,7 +469,9 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             send_messenger_message(messenger_id, error_msg)
             return {"status": "failed"}, 200
 
-        # Mapping Updates
+        # ----------------------------
+        # 3. Mapping Updates
+        # ----------------------------
         update_mapping = {
             'get_name': lambda x: {'name': x.title()},
             'get_phone_number': lambda x: {'phone_number': x},
@@ -468,7 +492,9 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         for key, value in data_to_update.items():
             setattr(user_data, key, value)
 
-        # Move to the next step dynamically
+        # ----------------------------
+        # 4. Move to the Next Step
+        # ----------------------------
         next_step_mapping = {
             'choose_language': 'get_name',
             'get_name': 'get_phone_number',
@@ -487,6 +513,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             send_messenger_message(messenger_id, "⚠️ Process complete or invalid step.")
             return {"status": "success"}, 200
 
+        # Update user step and commit
         user_data.current_step = next_step
         db.session.commit()
 
@@ -588,7 +615,7 @@ def process_message():
         if message_body.lower() in ['restart', 'reset', 'start over']:
             logging.info(f"🔄 Restarting flow for user {sender_id}")
             reset_user_data(user_data, mode='flow')  # Use helper function to reset
-            restart_msg = PROMPTS['en']['choose_language']  # Start with language selection
+            restart_msg = PROMPTS['en']['choose_language']
             send_messenger_message(sender_id, restart_msg)
             log_chat(sender_id, message_body, restart_msg, user_data)
             return jsonify({"status": "success"}), 200
