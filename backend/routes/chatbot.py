@@ -677,8 +677,7 @@ def process_message():
                     else:
                         user_data.mode = 'inquiry'
                         db.session.commit()
-                        follow_up_message = PROMPTS['en']['inquiry_mode_message']
-                        send_messenger_message(sender_id, follow_up_message)
+                        # Don't send the greeting message again here
                     return jsonify({"status": "success"}), 200
 
                 # Send Next Prompt
@@ -693,6 +692,7 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
+
 
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
