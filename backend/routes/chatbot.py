@@ -449,6 +449,18 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.debug(f"📥 Processing input for step: {current_step} with message: {message_body}")
 
         # ----------------------------
+        # Handle immediate language update for 'choose_language'
+        if current_step == 'choose_language':
+            # Update language code immediately before proceeding
+            language_mapping = {'1': 'en', '2': 'ms', '3': 'zh'}
+            selected_language = language_mapping.get(message_body, 'en')
+            user_data.language_code = selected_language
+            db.session.commit()
+
+            # Log the selected language
+            logging.debug(f"✅ Language updated to: {selected_language}")
+
+        # ----------------------------
         # 3. Process Steps with Validation
         # ----------------------------
         step_config = STEP_CONFIG.get(current_step)
