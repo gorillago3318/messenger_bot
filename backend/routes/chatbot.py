@@ -733,29 +733,40 @@ def handle_process_completion(messenger_id):
             return jsonify({"status": "error", "message": "Calculation failed"}), 500
 
         # Step 4: Extract savings data
+        current_repayment = round(float(user_data.current_repayment), 2)
+        new_repayment = round(float(results.get('new_monthly_repayment', 0.0)), 2)
         monthly_savings = round(float(results.get('monthly_savings', 0.0)), 2)
         yearly_savings = round(float(results.get('yearly_savings', 0.0)), 2)
         lifetime_savings = round(float(results.get('lifetime_savings', 0.0)), 2)
         years_saved = results.get('years_saved', 0)
         months_saved = results.get('months_saved', 0)
 
-        logging.debug(f"💰 Savings - Monthly: {monthly_savings} RM, Yearly: {yearly_savings} RM, Lifetime: {lifetime_savings} RM")
-        logging.debug(f"⏱️ Time Saved - Years: {years_saved}, Months: {months_saved}")
+        logging.debug(f"💰 Savings - Monthly: {monthly_savings} RM, New Repayment: {new_repayment} RM, "
+                      f"Current Repayment: {current_repayment} RM")
 
-        # Step 5: Handle cases with no savings
-        if monthly_savings <= 0:
+        # ----------------------------
+        # Handle Case Where New Repayment is Higher or No Savings
+        # ----------------------------
+        if new_repayment >= current_repayment:
+            # Fetch WhatsApp link from environment variable or fallback
+            whatsapp_link = os.getenv('ADMIN_WHATSAPP_LINK', "https://wa.me/60167177813")
+
             msg = (
-                "Thank you for using FinZo AI! Our analysis shows your current loan rates are already great. "
-                "We’ll be in touch if better offers become available.\n\n"
-                "💬 Need help? Contact our admin or type 'inquiry' to chat."
+                "Thank you for using FinZo AI! Based on your details, your **current repayment** is already optimal, "
+                "and refinancing may not provide immediate savings.\n\n"
+                f"💬 Need assistance? Contact our admin directly via WhatsApp: {whatsapp_link}"
             )
             send_messenger_message(messenger_id, msg)
-            user_data.mode = 'inquiry'  # Corrected mode name
+
+            # Switch to inquiry mode
+            user_data.mode = 'inquiry'
             db.session.commit()
-            logging.info(f"✅ No savings found. Switched user {messenger_id} to inquiry mode.")
+            logging.info(f"✅ No savings case handled. User switched to inquiry mode.")
             return jsonify({"status": "success"}), 200
 
-        # Step 6: Generate and send summary messages
+        # ----------------------------
+        # Step 5: Generate and send summary messages
+        # ----------------------------
         summary_messages = prepare_summary_messages(user_data, results, user_data.language_code or 'en')
         for m in summary_messages:
             try:
@@ -763,27 +774,27 @@ def handle_process_completion(messenger_id):
             except Exception as e:
                 logging.error(f"❌ Failed to send summary message to {messenger_id}: {str(e)}")
 
-        # Step 7: Notify admin about the new lead
+        # Step 6: Notify admin about the new lead
         try:
             send_new_lead_to_admin(messenger_id, user_data, results)
         except Exception as e:
             logging.error(f"❌ Failed to notify admin: {str(e)}")
 
-        # Step 8: Save results in the database
+        # Step 7: Save results in the database
         try:
             update_database(messenger_id, user_data, results)
         except Exception as e:
             logging.error(f"❌ Failed to save results in database: {str(e)}")
 
-        # Step 9: Switch to inquiry mode
-        user_data.mode = 'inquiry'  # Corrected mode name
+        # Step 8: Switch to inquiry mode
+        user_data.mode = 'inquiry'
         db.session.commit()
         logging.info(f"✅ Process completed successfully for {messenger_id}. Switched to inquiry mode.")
 
         return jsonify({"status": "success"}), 200
 
     except Exception as e:
-        # Step 10: Error handling
+        # Error handling
         logging.error(f"❌ Error in handle_process_completion: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         db.session.rollback()
@@ -792,7 +803,6 @@ def handle_process_completion(messenger_id):
             "An error occurred. Please restart the process by typing 'restart'."
         )
         return jsonify({"status": "error", "message": "An error occurred."}), 500
-
 
 def prepare_summary_messages(user_data, calc_results, language_code):
     """Builds shortened summary messages about the user's savings."""
