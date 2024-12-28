@@ -839,6 +839,7 @@ def handle_process_completion(messenger_id):
         )
         return jsonify({"status": "error", "message": "An error occurred."}), 500
 
+
 def prepare_summary_messages(user_data, calc_results, language_code):
     """Builds shortened summary messages about the user's savings."""
 
