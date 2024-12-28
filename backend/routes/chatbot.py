@@ -618,6 +618,16 @@ def process_message():
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
+        # Handle Inquiry Mode
+        # ----------------------------
+        if user_data.mode == 'inquiry':
+            logging.info(f"💬 Inquiry mode for user {sender_id}")
+            # Use presets.json or GPT to handle questions
+            response = handle_gpt_query(message_body, user_data, messenger_id)
+            log_chat(sender_id, message_body, response, user_data)
+            return jsonify({"status": "success"}), 200
+
+        # ----------------------------
         # Continue Processing the Regular Flow
         # ----------------------------
 
@@ -657,7 +667,6 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
-
 
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
