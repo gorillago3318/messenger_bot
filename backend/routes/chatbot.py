@@ -469,6 +469,9 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
                 if not value.isdigit():  # Ensure numeric input
                     return False
                 remaining = int(value)
+
+                # Refresh user data to ensure latest state
+                db.session.refresh(user_data)
                 original = user_data.original_loan_tenure
 
                 # Validate if original tenure is None or not set
@@ -477,17 +480,18 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
                     return False
 
                 # Validate remaining tenure cannot exceed original tenure
-                if remaining > original:
+                if remaining > original or remaining <= 0:
                     return False
                 return True
             return True
 
         # Validate Input
         if not validate_input(current_step, message_body):
+            # Show only error message without proceeding to the next step
             language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
             error_msg = PROMPTS[language].get(f"invalid_{current_step}", "⚠️ Invalid input. Please check and try again.")
             send_messenger_message(messenger_id, error_msg)
-            return {"status": "failed"}, 200
+            return {"status": "failed"}, 200  # Return without moving forward
 
         # ----------------------------
         # 4. Apply Updates Based on Input
@@ -524,24 +528,24 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             if result[1] != 200:  # Error during calculation
                 send_messenger_message(messenger_id, "⚠️ Error calculating savings. Please restart the process.")
             else:
-                # Switch to inquiry mode after summary
-                user_data.mode = 'inquiry'
-                db.session.commit()
-                follow_up_message = PROMPTS['en']['inquiry_mode_message']
-                send_messenger_message(messenger_id, follow_up_message)
-
+                # Inquiry Mode Greeting
+                whatsapp_link = os.getenv('ADMIN_WHATSAPP_LINK', "https://wa.me/60167177813")
+                inquiry_greeting = (
+                    "🎉 Welcome to Inquiry Mode!\n\n"
+                    "🤖 FinZo AI Assistant is now activated. Ask me anything about home refinancing or housing loans.\n\n"
+                    f"📱 Need help? Contact admin via WhatsApp: {whatsapp_link}"
+                )
+                send_messenger_message(messenger_id, inquiry_greeting)
             return {"status": "success"}, 200
 
-        # Move to next step and send prompt
         user_data.current_step = next_step
         db.session.commit()
-
         language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
-        next_prompt = PROMPTS[language].get(next_step, "⚠️ Invalid input. Please check and try again.")
+        next_prompt = PROMPTS[language].get(next_step, "⚠️ Invalid input.")
         send_messenger_message(messenger_id, next_prompt)
 
         logging.debug(f"🔄 Moved to next step: {next_step}")
-        return {"status": "success", "next_step": next_step}, 200
+        return {"status": "success"}, 200
 
     except Exception as e:
         logging.error(f"❌ Error in process_user_input: {str(e)}")
