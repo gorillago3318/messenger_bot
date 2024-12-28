@@ -337,28 +337,21 @@ def get_message(key, language_code, mode='flow'):
     try:
         # Map numeric language codes to text codes
         LANGUAGE_MAP = {'1': 'en', '2': 'ms', '3': 'zh'}
-        language_code = LANGUAGE_MAP.get(language_code, language_code)
+        language_code = LANGUAGE_MAP.get(language_code, 'en')  # Default to English
 
-        # Retrieve the message key for the mode (flow or inquiry)
-        step_key = STEP_CONFIG.get(key, {}).get('message', key)
+        # Retrieve the message key for the mode
+        messages = LANGUAGE_OPTIONS.get(language_code, LANGUAGE_OPTIONS['en'])  # Select language file
 
-        # Determine message set based on language
-        messages = LANGUAGE_OPTIONS.get(language_code, LANGUAGE_OPTIONS['en'])
+        # Fetch the message
+        message = messages.get(key)
 
-        # Check if key exists in language file
-        message = messages.get(step_key)
+        # Log the key lookup for debugging
+        logging.debug(f"🔍 Message Key Lookup: {key}, Language: {language_code}, Found: {message}")
 
-        # Final fallback to provide detailed input guide instead of generic error
+        # Final fallback to English if key is still not found
         if not message:
-            fallback_guides = {
-                'get_loan_tenure': "⚠️ Please enter a loan tenure between 1 and 40 years. Example: 30.",
-                'get_phone_number': "⚠️ Please enter a phone number starting with '01' and 10–11 digits long. Example: 0123456789.",
-                'get_age': "⚠️ Please enter an age between 18 and 70. Example: 35.",
-                'get_loan_amount': "⚠️ Please enter the loan amount in numbers only. Example: 250000.",
-                'get_interest_rate': "⚠️ Please enter an interest rate between 3% and 10%, or type 'skip'. Example: 4.25 or 'skip'."
-            }
-            message = fallback_guides.get(key, "⚠️ Invalid input. Please check your entry and try again.")
-            logging.warning(f"⚠️ Missing key '{step_key}' in '{language_code}'. Using fallback guide.")
+            logging.warning(f"⚠️ Missing key '{key}' in '{language_code}', falling back to English.")
+            message = LANGUAGE_OPTIONS['en'].get(key, "⚠️ Invalid input. Please check and try again.")
 
         return message
 
