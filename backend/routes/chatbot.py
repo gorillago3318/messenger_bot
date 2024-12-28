@@ -460,9 +460,9 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             logging.warning(f"❌ Validation failed for step: {current_step} with input: {message_body}")
             # Get error message dynamically based on language
             error_key = f"invalid_{current_step}_message"
-            invalid_msg = get_message(error_key, user_data.language_code)
 
-            # Final fallback to English if key is missing
+            # Fetch message based on language or fallback to English
+            invalid_msg = get_message(error_key, user_data.language_code)
             if invalid_msg == "Message not available.":
                 invalid_msg = get_message(error_key, 'en')
 
@@ -475,6 +475,11 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             next_step = step_config['next_step_map'].get(message_body)
             if not next_step:
                 logging.error(f"❌ Invalid input '{message_body}' for step '{current_step}'")
+                error_key = f"invalid_{current_step}_message"
+                invalid_msg = get_message(error_key, user_data.language_code)
+                if invalid_msg == "Message not available.":
+                    invalid_msg = get_message(error_key, 'en')
+                send_messenger_message(messenger_id, invalid_msg)
                 return {"status": "error", "message": "Invalid step transition"}, 400
         else:
             next_step = step_config.get('next_step')
@@ -499,6 +504,8 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             updates = update_mapping[current_step](message_body)
             if updates.get('phone_number') is None and current_step == 'get_phone_number':
                 error_msg = get_message('invalid_phone_number_message', user_data.language_code)
+                if error_msg == "Message not available.":
+                    error_msg = get_message('invalid_phone_number_message', 'en')
                 send_messenger_message(messenger_id, error_msg)
                 return {"status": "failed"}, 200
             data_to_update.update(updates)
@@ -520,6 +527,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.error(f"Traceback: {traceback.format_exc()}")
         db.session.rollback()
         return {"status": "error", "message": "An error occurred while processing your input."}, 500
+
 
 @chatbot_bp.route('/process_message', methods=['POST'])
 def process_message():
