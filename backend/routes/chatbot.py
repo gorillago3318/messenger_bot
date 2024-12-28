@@ -527,15 +527,6 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
 
             if result[1] != 200:  # Error during calculation
                 send_messenger_message(messenger_id, "⚠️ Error calculating savings. Please restart the process.")
-            else:
-                # Inquiry Mode Greeting
-                whatsapp_link = os.getenv('ADMIN_WHATSAPP_LINK', "https://wa.me/60167177813")
-                inquiry_greeting = (
-                    "🎉 Welcome to Inquiry Mode!\n\n"
-                    "🤖 FinZo AI Assistant is now activated. Ask me anything about home refinancing or housing loans.\n\n"
-                    f"📱 Need help? Contact admin via WhatsApp: {whatsapp_link}"
-                )
-                send_messenger_message(messenger_id, inquiry_greeting)
             return {"status": "success"}, 200
 
         user_data.current_step = next_step
@@ -551,6 +542,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.error(f"❌ Error in process_user_input: {str(e)}")
         db.session.rollback()
         return {"status": "error", "message": "An error occurred while processing your input."}, 500
+
 
 @chatbot_bp.route('/process_message', methods=['POST'])
 def process_message():
