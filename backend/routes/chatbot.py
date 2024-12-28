@@ -468,6 +468,19 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             # Get error message from en.json
             error_key = f"invalid_{current_step}_message"
             invalid_msg = get_message(error_key, user_data.language_code)
+
+            # Provide detailed fallback guide if message is missing
+            if invalid_msg == "Message not available.":
+                fallback_guides = {
+                    'get_age': "⚠️ Please enter an age between 18 and 70. Example: 35.",
+                    'get_loan_amount': "⚠️ Please enter the loan amount in numbers only. Example: 250000.",
+                    'get_loan_tenure': "⚠️ Please enter a loan tenure between 1 and 40 years. Example: 30.",
+                    'get_monthly_repayment': "⚠️ Please enter your current monthly repayment in numbers only. Example: 2500.",
+                    'get_interest_rate': "⚠️ Please enter an interest rate between 3% and 10%, or type 'skip'. Example: 4.25 or 'skip'.",
+                    'get_remaining_tenure': "⚠️ Please enter the remaining tenure in years or type 'skip'. Example: 15 or 'skip'."
+                }
+                invalid_msg = fallback_guides.get(current_step, "⚠️ Invalid input. Please check and try again.")
+
             send_messenger_message(messenger_id, invalid_msg)
             return {"status": "failed"}, 200
 
@@ -521,7 +534,6 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.error(f"Traceback: {traceback.format_exc()}")
         db.session.rollback()
         return {"status": "error", "message": "An error occurred while processing your input."}, 500
-
 
 @chatbot_bp.route('/process_message', methods=['POST'])
 def process_message():
@@ -615,6 +627,20 @@ def process_message():
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
+        # Handle Inquiry Mode
+        # ----------------------------
+        if user_data.mode == 'inquiry':
+            logging.info(f"💬 Inquiry mode for user {sender_id}")
+            try:
+                response = handle_gpt_query(message_body, user_data, messenger_id)
+            except Exception as e:
+                logging.error(f"❌ GPT query error: {str(e)}")
+                response = get_message('inquiry_mode_message', user_data.language_code)  # Proper fallback
+            log_chat(sender_id, message_body, response, user_data)
+            send_messenger_message(sender_id, response)
+            return jsonify({"status": "success"}), 200
+
+        # ----------------------------
         # Continue Processing the Regular Flow
         # ----------------------------
 
@@ -647,6 +673,8 @@ def process_message():
                 if result[1] != 200:
                     send_messenger_message(sender_id, "Sorry, we encountered an error processing your request. Please restart the process.")
                 else:
+                    user_data.mode = 'inquiry'  # Ensure mode is set to inquiry
+                    db.session.commit()
                     follow_up_message = get_message('inquiry_mode_message', user_data.language_code)
                     send_messenger_message(sender_id, follow_up_message)
                 return jsonify({"status": "success"}), 200
