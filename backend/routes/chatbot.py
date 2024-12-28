@@ -465,14 +465,15 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         validator = step_config.get('validator')
         if not validator or not validator(message_body):
             logging.warning(f"❌ Validation failed for step: {current_step} with input: {message_body}")
-            # Get error message from en.json, ms.json, or zh.json
+            # Get error message dynamically based on language
             error_key = f"invalid_{current_step}_message"
             invalid_msg = get_message(error_key, user_data.language_code)
 
-            # Final fallback if key is missing
+            # Final fallback to English if key is missing
             if invalid_msg == "Message not available.":
                 invalid_msg = get_message(error_key, 'en')
 
+            # Send localized error message
             send_messenger_message(messenger_id, invalid_msg)
             return {"status": "failed"}, 200
 
@@ -526,7 +527,6 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.error(f"Traceback: {traceback.format_exc()}")
         db.session.rollback()
         return {"status": "error", "message": "An error occurred while processing your input."}, 500
-
 
 @chatbot_bp.route('/process_message', methods=['POST'])
 def process_message():
