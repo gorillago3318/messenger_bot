@@ -339,32 +339,22 @@ def get_message(key, language_code, mode='flow'):
         LANGUAGE_MAP = {'1': 'en', '2': 'ms', '3': 'zh'}
         language_code = LANGUAGE_MAP.get(language_code, language_code)
 
-        # Retrieve the message key for the mode (flow or inquiry)
-        step_key = STEP_CONFIG.get(key, {}).get('message', key)
+        # Determine the message set based on language
+        messages = LANGUAGE_OPTIONS.get(language_code, LANGUAGE_OPTIONS['en'])
 
-        # Determine message set based on language
-        if language_code not in LANGUAGE_OPTIONS:
-            logging.warning(f"⚠️ Language '{language_code}' not found. Defaulting to English.")
-            language_code = 'en'
+        # Fetch message based on key
+        message = messages.get(key)
 
-        # Get the message for the step, falling back to English if unavailable
-        if mode == 'inquiry':
-            message = LANGUAGE_OPTIONS[language_code].get(f"inquiry_{step_key}")
-        else:
-            message = LANGUAGE_OPTIONS[language_code].get(step_key)
-
-        # Final fallback to default English message if still missing
+        # Final fallback to prevent "Message not available."
         if not message:
-            message = LANGUAGE_OPTIONS['en'].get(step_key, "Message not available.")
-            logging.warning(f"⚠️ Missing key '{step_key}' in '{language_code}'. Using fallback.")
+            logging.warning(f"⚠️ Missing key '{key}' in '{language_code}'. Using default fallback.")
+            message = "⚠️ Sorry, I couldn't process that. Please check and try again."
 
         return message
 
     except Exception as e:
         logging.error(f"❌ Error in get_message: {str(e)}")
-        logging.error(f"Traceback: {traceback.format_exc()}")
-        return "Sorry, something went wrong!"
-
+        return "⚠️ An error occurred. Please try again."
 
 def delete_chatflow_data(messenger_id):
     """
@@ -929,19 +919,19 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # -------------------
 def handle_gpt_query(question, user_data, messenger_id):
     try:
-        # Step 1: Prevent duplicate queries by ensuring inquiry mode
+        # Step 1: Check inquiry mode
         if user_data.mode != 'inquiry':
             logging.info(f"🚫 User {messenger_id} is not in inquiry mode. Ignoring GPT query.")
             return "Please complete the process before asking questions."
 
-        # Step 2: Fetch preset response first
+        # Step 2: Check presets.json for predefined responses
         response = get_preset_response(question, user_data.language_code or 'en')
         if response:
             logging.info(f"✅ Preset response found for query: {question}")
             send_messenger_message(messenger_id, response)
-            return response  # Return preset response
+            return response  # Return preset response immediately
 
-        # Step 3: No preset found, query GPT
+        # Step 3: Query GPT only if no preset response is found
         logging.info(f"❌ No preset match. Querying GPT for: {question}")
         prompt = f"Question: {question}\nAnswer:"
 
@@ -960,7 +950,7 @@ def handle_gpt_query(question, user_data, messenger_id):
         # Step 4: Send GPT Response Once (No Duplicate)
         send_messenger_message(messenger_id, reply)
 
-        # Step 5: Log GPT Query Once
+        # Step 5: Log GPT Query
         log_gpt_query(messenger_id, question, reply)
 
         return reply
