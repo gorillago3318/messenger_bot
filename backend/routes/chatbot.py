@@ -244,86 +244,87 @@ def validate_mode_selection(x, user_data=None):
 STEP_CONFIG = {
     # Step 1: Language Selection
     'choose_language': {
-        'message': "choose_language_message",  # The message that prompts the user to choose language
+        'message': "choose_language_message",  # Message prompts user to choose language
         'next_step_map': {
             '1': 'get_name',  # English
             '2': 'get_name',  # Malay
             '3': 'get_name'   # Chinese
         },
         'next_step': None,
-        'validator': lambda x: x in ['1', '2', '3']
+        'validator': lambda x: x in ['1', '2', '3']  # Validate input for 1, 2, or 3
     },
 
     # Step 2: Get Name
     'get_name': {
-        'message': 'name_message',  # Message asking for the user's name
+        'message': 'name_message',
         'next_step': 'get_phone_number',
-        'validator': lambda x: x.replace(' ', '').isalpha()  # Ensure name is alphabetic
+        'validator': lambda x: x.replace(' ', '').isalpha()  # Validate alphabetic input
     },
 
     # Step 3: Get Phone Number
     'get_phone_number': {
         'message': 'phone_number_message',
         'next_step': 'get_age',
-        'validator': lambda x: x.isdigit() and len(x) >= 10  # Validate phone number format
+        'validator': lambda x: x.isdigit() and len(x) in [10, 11] and x.startswith('01')  # Starts with '01' and 10–11 digits
     },
 
     # Step 4: Get Age
     'get_age': {
         'message': 'age_message',
         'next_step': 'get_loan_amount',
-        'validator': lambda x: x.isdigit() and 18 <= int(x) <= 70  # Validate age
+        'validator': lambda x: x.isdigit() and 18 <= int(x) <= 70  # Age between 18–70
     },
 
     # Step 5: Get Loan Amount
     'get_loan_amount': {
         'message': 'loan_amount_message',
         'next_step': 'get_loan_tenure',
-        'validator': lambda x: x.replace(',', '').isdigit()  # Validate loan amount format
+        'validator': lambda x: x.replace(',', '').isdigit() and int(x.replace(',', '')) > 0  # Positive numeric value
     },
 
     # Step 6: Get Loan Tenure
     'get_loan_tenure': {
         'message': 'loan_tenure_message',
         'next_step': 'get_monthly_repayment',
-        'validator': lambda x: x.isdigit() and 1 <= int(x) <= 40  # Validate loan tenure
+        'validator': lambda x: x.isdigit() and 1 <= int(x) <= 40  # Between 1–40 years
     },
 
     # Step 7: Get Monthly Repayment
     'get_monthly_repayment': {
         'message': 'repayment_message',
         'next_step': 'get_interest_rate',
-        'validator': lambda x: x.replace('.', '', 1).isdigit()  # Validate repayment amount
+        'validator': lambda x: x.replace('.', '', 1).isdigit() and float(x) > 0  # Positive numeric with decimals allowed
     },
 
     # Step 8: Get Interest Rate
     'get_interest_rate': {
         'message': 'interest_rate_message',
         'next_step': 'get_remaining_tenure',
-        'validator': lambda x: x.lower() == 'skip' or (x.replace('.', '', 1).isdigit() and 3 <= float(x) <= 10)
+        'validator': lambda x: x.lower() == 'skip' or (x.replace('.', '', 1).isdigit() and 3 <= float(x) <= 10)  # 3–10% or 'skip'
     },
 
     # Step 9: Get Remaining Tenure
     'get_remaining_tenure': {
         'message': 'remaining_tenure_message',
         'next_step': 'process_completion',
-        'validator': lambda x: x.lower() == 'skip' or (x.isdigit() and int(x) > 0)
+        'validator': lambda x: x.lower() == 'skip' or (x.isdigit() and int(x) > 0)  # Positive integer or 'skip'
     },
 
-    # Step 10: Process Completion (Final Step)
+    # Step 10: Process Completion
     'process_completion': {
-        'message': 'completion_message',  # Thank you message
-        'next_step': 'gpt_query_mode',  # Only after completion, GPT can be triggered
-        'validator': lambda x: True
+        'message': 'completion_message',
+        'next_step': 'gpt_query_mode',
+        'validator': lambda x: True  # Always passes
     },
 
-    # Inquiry Mode for GPT Queries
+    # GPT Query Mode for Inquiries
     'gpt_query_mode': {
-        'message': 'You can now ask your refinancing-related questions!',
-        'next_step': None,  # GPT queries are handled here after completion
-        'validator': lambda x: True
+        'message': 'inquiry_mode_message',  # Fetch dynamically from language files
+        'next_step': None,
+        'validator': lambda x: True  # Always passes
     }
 }
+
 
 # -------------------
 # 6) Utility Functions
@@ -527,7 +528,6 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.error(f"Traceback: {traceback.format_exc()}")
         db.session.rollback()
         return {"status": "error", "message": "An error occurred while processing your input."}, 500
-
 
 @chatbot_bp.route('/process_message', methods=['POST'])
 def process_message():
