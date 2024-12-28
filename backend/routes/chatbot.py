@@ -48,6 +48,7 @@ PROMPTS = {
                 'get_monthly_repayment': "💳 *Step 6: Enter Your Current Monthly Repayment* \n\nPlease enter the *current amount you pay each month* for your loan. \n\n💡 *Example*: 2500 (do not use commas or special symbols).",
                 'get_interest_rate': "📈 *Step 7: Enter Your Interest Rate* \n\nIf you know the *current interest rate* for your loan, please enter it (e.g., 3.85). \n\nYou can also type *skip* if you are unsure. \n\n💡 *Example*: 4.25 or *skip*.",
                 'get_remaining_tenure': "📅 *Step 8: Enter the Remaining Tenure* \n\nPlease enter the *number of years remaining* for your loan. \n\n💡 *Note*: You can skip this if you don't know the exact number. Just type *skip*. \n\n💡 *Example*: 15 or *skip*.",
+                'thank_you': "🎉 Process complete! Thank you for using FinZo AI. You are now in inquiry mode.",           
                 'invalid_choose_language': "⚠️ Invalid language selection. Please select 1 for English, 2 for Bahasa Malaysia, or 3 for 中文 (Chinese).",
                 'invalid_get_name': "⚠️ Invalid name. Please enter letters only.",
                 'invalid_get_phone_number': "⚠️ Invalid phone number. It must start with '01' and be 10–11 digits long. Example: 0123456789.",
@@ -68,6 +69,7 @@ PROMPTS = {
                 'get_monthly_repayment': "💳 *Langkah 6: Masukkan Bayaran Bulanan Semasa Anda* \n\nSila masukkan *jumlah yang anda bayar setiap bulan* untuk pinjaman anda. \n\n💡 *Contoh*: 2500 (jangan gunakan koma atau simbol khas).",
                 'get_interest_rate': "📈 *Langkah 7: Masukkan Kadar Faedah Anda* \n\nJika anda tahu *kadar faedah semasa* untuk pinjaman anda, sila masukkan (contoh: 3.85). \n\nAnda juga boleh taip *skip* jika anda tidak pasti. \n\n💡 *Contoh*: 4.25 atau *skip*.",
                 'get_remaining_tenure': "📅 *Langkah 8: Masukkan Baki Tempoh* \n\nSila masukkan *bilangan tahun yang berbaki* untuk pinjaman anda. \n\n💡 *Nota*: Anda boleh langkau jika anda tidak tahu jumlah yang tepat. Hanya taip *skip*. \n\n💡 *Contoh*: 15 atau *skip*.",
+                'thank_you': "Proses selesai! Terima kasih kerana menggunakan FinZo AI. Anda kini berada dalam mod pertanyaan.",
                 'invalid_choose_language': "⚠️ Pilihan bahasa tidak sah. Sila pilih 1 untuk English, 2 untuk Bahasa Malaysia, atau 3 untuk 中文 (Chinese).",
                 'invalid_get_name': "⚠️ Nama tidak sah. Sila masukkan huruf sahaja.",
                 'invalid_get_phone_number': "⚠️ Nombor telefon tidak sah. Mesti bermula dengan '01' dan mempunyai 10-11 digit. Contoh: 0123456789.",
@@ -88,6 +90,7 @@ PROMPTS = {
                 'get_monthly_repayment': "💳 *步骤6：输入当前每月还款额* \n\n请输入您当前*每月的贷款还款金额*。 \n\n💡 *示例*：2500（请勿使用逗号或特殊符号）。",
                 'get_interest_rate': "📈 *步骤7：输入利率* \n\n如果您知道贷款的*当前利率*，请输入（例如：3.85）。 \n\n如果不确定，您也可以输入*skip*。 \n\n💡 *示例*：4.25 或 *skip*。",
                 'get_remaining_tenure': "📅 *步骤8：输入剩余期限* \n\n请输入您的贷款*剩余年数*。 \n\n💡 *注意*：如果您不知道确切数字，可以跳过此步骤。只需输入*skip*。 \n\n💡 *示例*：15 或 *skip*。",
+                'thank_you': "🎉 流程已完成！感谢您使用 FinZo AI。您现在处于询问模式。", 
                 'invalid_choose_language': "⚠️ 语言选择无效。请选择 1 代表英语，2 代表马来语，或 3 代表中文。",
                 'invalid_get_name': "⚠️ 姓名无效。请只输入字母。",
                 'invalid_get_phone_number': "⚠️ 电话号码无效。必须以'01'开头，并且有10-11位数字。示例：0123456789。",
@@ -434,7 +437,8 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             db.session.commit()
 
             # Fetch and send the next prompt dynamically
-            next_prompt = PROMPTS[user_data.language_code].get(next_step, "⚠️ Invalid input. Please check and try again.")
+            language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
+            next_prompt = PROMPTS[language].get(next_step, "⚠️ Invalid input. Please check and try again.")
             send_messenger_message(messenger_id, next_prompt)
             return {"status": "success", "next_step": next_step}, 200
 
@@ -518,7 +522,9 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         db.session.commit()
 
         # Send the next prompt
-        next_prompt = PROMPTS[user_data.language_code].get(next_step, "⚠️ Invalid input. Please check and try again.")
+        language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
+        next_prompt = PROMPTS[language].get(next_step, "⚠️ Invalid input. Please check and try again.")
+
         send_messenger_message(messenger_id, next_prompt)
 
         logging.debug(f"🔄 Moved to next step: {next_step}")
@@ -587,7 +593,7 @@ def process_message():
                     db.session.commit()
 
                 # Send the "choose language" message
-                choose_language_message = get_message('choose_language_message', 'en')  # Fetch from en.json
+                choose_language_message = PROMPTS['en']['choose_language']
                 send_messenger_message(sender_id, choose_language_message)
                 return jsonify({"status": "success"}), 200
 
@@ -629,7 +635,8 @@ def process_message():
                 response = handle_gpt_query(message_body, user_data, messenger_id)
             except Exception as e:
                 logging.error(f"❌ GPT query error: {str(e)}")
-                response = get_message('inquiry_mode_message', user_data.language_code)  # Proper fallback
+                language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
+                response = PROMPTS[language].get('inquiry_mode_message', "⚠️ An error occurred. Please try again.")
             log_chat(sender_id, message_body, response, user_data)
             send_messenger_message(sender_id, response)
             return jsonify({"status": "success"}), 200
@@ -657,7 +664,8 @@ def process_message():
 
             # Send the next message or process completion
             if next_step != 'process_completion':
-                next_message = get_message(next_step, user_data.language_code)
+                language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
+                next_message = PROMPTS[language].get(next_step, "⚠️ Invalid input. Please check and try again.")
                 send_messenger_message(sender_id, next_message)
                 log_chat(sender_id, message_body, next_message, user_data)
             else:
