@@ -622,9 +622,14 @@ def process_message():
         # ----------------------------
         if user_data.mode == 'inquiry':
             logging.info(f"💬 Inquiry mode for user {sender_id}")
-            # Use presets.json or GPT to handle questions
-            response = handle_gpt_query(message_body, user_data, messenger_id)
+            # Use presets.json or GPT to handle all inquiries without keyword checks
+            try:
+                response = handle_gpt_query(message_body, user_data, messenger_id)
+            except Exception as e:
+                logging.error(f"❌ GPT query error: {str(e)}")
+                response = "Sorry, I couldn't process your question. Please try again."
             log_chat(sender_id, message_body, response, user_data)
+            send_messenger_message(sender_id, response)
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
@@ -937,26 +942,18 @@ def handle_gpt_query(question, user_data, messenger_id):
 
         # Step 2: Only proceed with GPT query if user is in 'inquiry' mode
         if user_data.mode != 'inquiry':
-            logging.info(f"🚫 User {messenger_id} is not in inquiry mode. Ignoring GPT query.")
+            logging.info(f"🛛 User {messenger_id} is not in inquiry mode. Ignoring GPT query.")
             send_messenger_message(messenger_id, "Please complete the flow before asking questions.")
             return "Please complete the flow before asking questions."
 
-        # Keywords related to refinancing and home loans
-        refinancing_home_loan_keywords = ["refinance", "home loan", "loan savings", "apply for refinancing", "home loan options"]
-
-        # Step 3: Check if the question contains refinancing or home loan-related keywords
-        if not any(keyword in question.lower() for keyword in refinancing_home_loan_keywords):
-            logging.warning(f"❌ Non-refinancing or non-home loan query detected: {question}")
-            send_messenger_message(messenger_id, "Sorry, I can only assist with refinancing or home loan related questions. Please ask about refinancing or home loan options.")
-            return "Non-refinancing or non-home loan query."
-
-        # Step 4: Proceed with GPT query
+        # Step 3: Check presets.json for predefined responses
         response = get_preset_response(question, user_data.language_code or 'en')
         if response:
             logging.info(f"✅ Preset response found for query: {question}")
             send_messenger_message(messenger_id, response)
             return response  # Return preset response
 
+        # Step 4: If no preset response, query GPT
         logging.info(f"❌ No preset match. Querying GPT for: {question}")
         prompt = f"Question: {question}\nAnswer:"
 

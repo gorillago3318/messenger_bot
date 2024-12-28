@@ -27,5 +27,12 @@
 
     "whats_next_title": "🔍 *What's next?*",
 
-    "whats_next_content": "✅ *A Specialist Will Be Assigned To You!* \n\nWe will prepare a *FULL DETAILED REPORT* for you — *completely free of charge* and with *no obligations*! \n\n💡 Our specialist can guide you on the refinancing process and help you make the best decision. \n\n📞 *Need help or have questions?* Contact our admin directly at *{whatsapp_link}*.\n\n💬 *Got more questions about refinancing or home loans?* Ask away! FinZo AI is here to provide the best possible answers for you! 🚀"
+    "whats_next_content": "✅ *A Specialist Will Be Assigned To You!* \n\nWe will prepare a *FULL DETAILED REPORT* for you — *completely free of charge* and with *no obligations*! \n\n💡 Our specialist can guide you on the refinancing process and help you make the best decision. \n\n📞 *Need help or have questions?* Contact our admin directly at *{whatsapp_link}*.\n\n💬 *Got more questions about refinancing or home loans?* Ask away! FinZo AI is here to provide the best possible answers for you! 🚀",
+
+    "invalid_input_message": "⚠️ Invalid input. Please check your entry and try again.",
+
+    "invalid_phone_number_message": "⚠️ Invalid phone number. It must start with '01' and be 10–11 digits long. Example: 0123456789.",
+    
+    "invalid_age_message": "⚠️ Invalid age. Please enter a valid number between 18 and 70."
+
 }
