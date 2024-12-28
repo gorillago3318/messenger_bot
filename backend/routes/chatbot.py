@@ -80,25 +80,40 @@ LANGUAGE_OPTIONS = {
 def test():
     return jsonify({"message": "Chatbot BP is working!"}), 200
 
+# Utility function for numeric validation
+def is_valid_number(input_text, min_val=None, max_val=None, decimal_allowed=False):
+    """Generic number validation with optional range and decimal checks."""
+    if decimal_allowed:
+        valid = input_text.replace('.', '', 1).isdigit()
+    else:
+        valid = input_text.isdigit()
+    
+    if not valid:
+        return False
+    
+    value = float(input_text)
+    if min_val is not None and value < min_val:
+        return False
+    if max_val is not None and value > max_val:
+        return False
+    
+    return True
+
 # -------------------
-# 4) Validation Functions
+# Validation Functions
 # -------------------
 
 def validate_language_choice(input_text, user_data=None):
-    """Validate that the user selects 1, 2, or 3 for language selection."""
+    """Validate language selection."""
     logging.debug(f"🔍 Validating language input: {input_text}")
-    if input_text.lower() in ['hi', 'hello', 'hey']:
-        return False  # Trigger language step again for greetings
-
     valid = input_text in ['1', '2', '3']
     if not valid:
         logging.warning(f"❌ Invalid language input: {input_text}")
     return valid
 
 
-
 def validate_name(input_text, user_data=None):
-    """Validate that the name contains only letters and spaces."""
+    """Validate name contains only letters and spaces."""
     valid = input_text.replace(' ', '').isalpha()
     if not valid:
         logging.warning(f"❌ Invalid name: {input_text}")
@@ -106,28 +121,32 @@ def validate_name(input_text, user_data=None):
 
 
 def validate_phone_number(input_text, user_data=None):
-    """Validate that the phone number is numeric and at least 10 digits, while handling GPT queries."""
-    # Check if the input looks like a GPT query
-    if input_text.lower().startswith("can i") or "?" in input_text:
-        logging.info(f"⚠️ Detected GPT query, skipping phone number validation.")
-        return True  # Allow non-phone number queries to pass through, like GPT queries.
+    """Validate phone number format."""
+    if not input_text.isdigit():
+        logging.warning(f"❌ Phone number must be numeric: {input_text}")
+        return False
 
-    valid = input_text.isdigit() and len(input_text) >= 10
-    if not valid:
-        logging.warning(f"❌ Invalid phone number: {input_text}")
-    return valid
+    if not input_text.startswith('01'):
+        logging.warning(f"❌ Invalid phone number (must start with '01'): {input_text}")
+        return False
+
+    if len(input_text) not in [10, 11]:
+        logging.warning(f"❌ Invalid phone number length (must be 10–11 digits): {input_text}")
+        return False
+
+    return True
 
 
 def validate_age(input_text, user_data=None):
-    """Validate that the age is between 18 and 70."""
-    valid = input_text.isdigit() and 18 <= int(input_text) <= 70
-    if not valid:
+    """Validate age between 18 and 70."""
+    if not is_valid_number(input_text, 18, 70):
         logging.warning(f"❌ Invalid age: {input_text}")
-    return valid
+        return False
+    return True
 
 
 def validate_loan_amount(input_text, user_data=None):
-    """Validate that the loan amount is numeric (ignores commas)."""
+    """Validate loan amount (numeric, no commas)."""
     clean_input = input_text.replace(',', '')
     valid = clean_input.isdigit()
     if not valid:
@@ -136,48 +155,42 @@ def validate_loan_amount(input_text, user_data=None):
 
 
 def validate_loan_tenure(input_text, user_data=None):
-    """Validate that the loan tenure is between 1 and 40 years."""
-    valid = input_text.isdigit() and 1 <= int(input_text) <= 40
-    if not valid:
+    """Validate loan tenure between 1 and 40 years."""
+    if not is_valid_number(input_text, 1, 40):
         logging.warning(f"❌ Invalid loan tenure: {input_text}")
-    return valid
+        return False
+    return True
 
 
 def validate_monthly_repayment(input_text, user_data=None):
-    """Validate that the monthly repayment is numeric."""
-    valid = input_text.replace('.', '', 1).isdigit()
-    if not valid:
+    """Validate monthly repayment as numeric."""
+    if not is_valid_number(input_text, decimal_allowed=True):
         logging.warning(f"❌ Invalid monthly repayment: {input_text}")
-    return valid
+        return False
+    return True
 
 
 def validate_interest_rate(input_text, user_data=None):
-    """Validate interest rate (3% to 10%) or allow 'skip'."""
-    try:
-        if input_text.lower() == 'skip':  # Allow skipping
-            return True
-        valid = input_text.replace('.', '', 1).isdigit() and 3 <= float(input_text) <= 10
-        if not valid:
-            logging.warning(f"❌ Invalid interest rate: {input_text}")
-        return valid
-    except Exception as e:
-        logging.error(f"❌ Interest rate validation error: {str(e)}")
+    """Validate interest rate (3%–10%) or 'skip'."""
+    if input_text.lower() == 'skip':  # Allow skipping
+        return True
+
+    if not is_valid_number(input_text, 3, 10, decimal_allowed=True):
+        logging.warning(f"❌ Invalid interest rate: {input_text}")
         return False
+    return True
 
 
 def validate_remaining_tenure(input_text, user_data=None):
-    """Validate remaining tenure (numeric) or allow 'skip'."""
+    """Validate remaining tenure as numeric or 'skip'."""
     if input_text.lower() == 'skip':
         return True
-    valid = input_text.isdigit() and int(input_text) > 0
-    if not valid:
+
+    if not is_valid_number(input_text, 1):
         logging.warning(f"❌ Invalid remaining tenure: {input_text}")
-    return valid
-
-
-def validate_process_completion(input_text, user_data=None):
-    """Validation for process completion (always true)."""
+        return False
     return True
+
 
 def log_chat(sender_id, user_message, bot_message, user_data=None):
     """Logs user-bot conversations into ChatLog."""
@@ -451,8 +464,9 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         validator = step_config.get('validator')
         if not validator or not validator(message_body):
             logging.warning(f"❌ Validation failed for step: {current_step} with input: {message_body}")
-            # Friendly prompt for invalid input
-            invalid_msg = get_message('invalid_input_message', user_data.language_code)
+            # Get error message from en.json
+            error_key = f"invalid_{current_step}_message"
+            invalid_msg = get_message(error_key, user_data.language_code)
             send_messenger_message(messenger_id, invalid_msg)
             return {"status": "failed"}, 200
 
@@ -468,45 +482,26 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         # ----------------------------
         # 4. Update User Data Based on Current Step
         # ----------------------------
-        if current_step == 'choose_language':
-            language_mapping = {'1': 'en', '2': 'ms', '3': 'zh'}
-            data_to_update['language_code'] = language_mapping.get(message_body, 'en')
+        update_mapping = {
+            'choose_language': lambda x: {'language_code': {'1': 'en', '2': 'ms', '3': 'zh'}.get(x, 'en')},
+            'get_name': lambda x: {'name': x.title()},
+            'get_phone_number': lambda x: {'phone_number': str(x) if x.startswith('01') and len(x) in [10, 11] else None},
+            'get_age': lambda x: {'age': int(x)},
+            'get_loan_amount': lambda x: {'original_loan_amount': float(x.replace(',', ''))},
+            'get_loan_tenure': lambda x: {'original_loan_tenure': int(x)},
+            'get_monthly_repayment': lambda x: {'current_repayment': float(x)},
+            'get_interest_rate': lambda x: {'interest_rate': None if x.lower() == 'skip' else float(x)},
+            'get_remaining_tenure': lambda x: {'remaining_tenure': None if x.lower() == 'skip' else int(x)}
+        }
 
-        elif current_step == 'get_name':
-            data_to_update['name'] = message_body.title()
-
-        elif current_step == 'get_phone_number':
-            data_to_update['phone_number'] = str(message_body)
-
-        elif current_step == 'get_age':
-            data_to_update['age'] = int(message_body)
-
-        elif current_step == 'get_loan_amount':
-            data_to_update['original_loan_amount'] = float(message_body.replace(',', ''))
-
-        elif current_step == 'get_loan_tenure':
-            data_to_update['original_loan_tenure'] = int(message_body)
-
-        elif current_step == 'get_monthly_repayment':
-            data_to_update['current_repayment'] = float(message_body)
-
-        elif current_step == 'get_interest_rate':
-            if message_body.lower() == 'skip':
-                data_to_update['interest_rate'] = None
-            else:
-                data_to_update['interest_rate'] = float(message_body)
-
-        elif current_step == 'get_remaining_tenure':
-            if message_body.lower() == 'skip':
-                data_to_update['remaining_tenure'] = None
-            else:
-                data_to_update['remaining_tenure'] = int(message_body)
-
-        elif current_step == 'process_completion':
-            # After the flow is completed, we transition the user to GPT query mode
-            user_data.mode = 'inquiry'
-            db.session.commit()
-            return {"status": "success", "next_step": 'process_completion'}, 200
+        # Apply updates
+        if current_step in update_mapping:
+            updates = update_mapping[current_step](message_body)
+            if updates.get('phone_number') is None and current_step == 'get_phone_number':
+                error_msg = get_message('invalid_phone_number_message', user_data.language_code)
+                send_messenger_message(messenger_id, error_msg)
+                return {"status": "failed"}, 200
+            data_to_update.update(updates)
 
         # ----------------------------
         # 5. Update User Data in Database
@@ -525,6 +520,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.error(f"Traceback: {traceback.format_exc()}")
         db.session.rollback()
         return {"status": "error", "message": "An error occurred while processing your input."}, 500
+
 
 @chatbot_bp.route('/process_message', methods=['POST'])
 def process_message():
@@ -933,42 +929,40 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # -------------------
 def handle_gpt_query(question, user_data, messenger_id):
     try:
-        # Step 1: Check if the question is the "Get Started" payload
-        if question.strip().lower() == 'get_started':
-            logging.info(f"🌟 User {messenger_id} clicked the 'Get Started' button. Ignoring GPT query.")
-            # Return the prompt to choose language when the user clicks 'Get Started'
-            send_messenger_message(messenger_id, "Starting the process... Please choose your language.")
-            return "Starting the process... Please choose your language."  # Inform user that it's starting
-
-        # Step 2: Only proceed with GPT query if user is in 'inquiry' mode
+        # Step 1: Prevent duplicate queries by ensuring inquiry mode
         if user_data.mode != 'inquiry':
-            logging.info(f"🛛 User {messenger_id} is not in inquiry mode. Ignoring GPT query.")
-            send_messenger_message(messenger_id, "Please complete the flow before asking questions.")
-            return "Please complete the flow before asking questions."
+            logging.info(f"🚫 User {messenger_id} is not in inquiry mode. Ignoring GPT query.")
+            return "Please complete the process before asking questions."
 
-        # Step 3: Check presets.json for predefined responses
+        # Step 2: Fetch preset response first
         response = get_preset_response(question, user_data.language_code or 'en')
         if response:
             logging.info(f"✅ Preset response found for query: {question}")
             send_messenger_message(messenger_id, response)
             return response  # Return preset response
 
-        # Step 4: If no preset response, query GPT
+        # Step 3: No preset found, query GPT
         logging.info(f"❌ No preset match. Querying GPT for: {question}")
         prompt = f"Question: {question}\nAnswer:"
 
-        # Making the GPT request
+        # Making GPT request
         openai_res = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Correct model for v0.28
-            messages=[{"role": "system", "content": "You are a helpful assistant for home refinancing and home loan queries."},
-                      {"role": "user", "content": prompt}]
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant for home refinancing and home loan queries."},
+                {"role": "user", "content": prompt}
+            ]
         )
 
         reply = openai_res['choices'][0]['message']['content'].strip()
         logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
 
-        # Step 5: Send GPT Response to User
+        # Step 4: Send GPT Response Once (No Duplicate)
         send_messenger_message(messenger_id, reply)
+
+        # Step 5: Log GPT Query Once
+        log_gpt_query(messenger_id, question, reply)
+
         return reply
 
     except Exception as e:
