@@ -332,7 +332,7 @@ STEP_CONFIG = {
 def get_message(key, language_code, mode='flow'):
     """
     Retrieve a message from the appropriate language file based on language and mode.
-    Supports fallback to English for missing messages.
+    Supports fallback to English for missing messages and guides the user.
     """
     try:
         # Map numeric language codes to text codes
@@ -348,14 +348,17 @@ def get_message(key, language_code, mode='flow'):
         # Check if key exists in language file
         message = messages.get(step_key)
 
-        # Final fallback to prevent "Message not available."
+        # Final fallback to provide detailed input guide instead of generic error
         if not message:
-            # Use step-specific fallback message
-            if key in STEP_CONFIG:
-                message = f"⚠️ Please provide a valid input for {key.replace('_', ' ').title()}."
-            else:
-                message = "⚠️ Sorry, I couldn't process that. Please check and try again."
-            logging.warning(f"⚠️ Missing key '{step_key}' in '{language_code}'. Using fallback.")
+            fallback_guides = {
+                'get_loan_tenure': "⚠️ Please enter a loan tenure between 1 and 40 years. Example: 30.",
+                'get_phone_number': "⚠️ Please enter a phone number starting with '01' and 10–11 digits long. Example: 0123456789.",
+                'get_age': "⚠️ Please enter an age between 18 and 70. Example: 35.",
+                'get_loan_amount': "⚠️ Please enter the loan amount in numbers only. Example: 250000.",
+                'get_interest_rate': "⚠️ Please enter an interest rate between 3% and 10%, or type 'skip'. Example: 4.25 or 'skip'."
+            }
+            message = fallback_guides.get(key, "⚠️ Invalid input. Please check your entry and try again.")
+            logging.warning(f"⚠️ Missing key '{step_key}' in '{language_code}'. Using fallback guide.")
 
         return message
 
@@ -612,21 +615,6 @@ def process_message():
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
-        # Handle Inquiry Mode
-        # ----------------------------
-        if user_data.mode == 'inquiry':
-            logging.info(f"💬 Inquiry mode for user {sender_id}")
-            # Use presets.json or GPT to handle all inquiries without keyword checks
-            try:
-                response = handle_gpt_query(message_body, user_data, messenger_id)
-            except Exception as e:
-                logging.error(f"❌ GPT query error: {str(e)}")
-                response = "Sorry, I couldn't process your question. Please try again."
-            log_chat(sender_id, message_body, response, user_data)
-            send_messenger_message(sender_id, response)
-            return jsonify({"status": "success"}), 200
-
-        # ----------------------------
         # Continue Processing the Regular Flow
         # ----------------------------
 
@@ -645,20 +633,10 @@ def process_message():
             db.session.commit()
 
             # Send the next message
-            if next_step != 'process_completion':
-                next_message = get_message(next_step, user_data.language_code)
-                send_messenger_message(sender_id, next_message)
-                log_chat(sender_id, message_body, next_message, user_data)
-            else:
-                # Process completion step and generate summary
-                send_messenger_message(sender_id, get_message('completion_message', user_data.language_code))
-                result = handle_process_completion(messenger_id)
-                if result[1] != 200:
-                    send_messenger_message(sender_id, "Sorry, we encountered an error processing your request. Please restart the process.")
-                else:
-                    follow_up_message = get_message('inquiry_mode_message', user_data.language_code)
-                    send_messenger_message(sender_id, follow_up_message)
-                return jsonify({"status": "success"}), 200
+            next_message = get_message(next_step, user_data.language_code)
+            send_messenger_message(sender_id, next_message)
+            log_chat(sender_id, message_body, next_message, user_data)
+            return jsonify({"status": "success"}), 200
 
         return jsonify({"status": "success"}), 200
 
@@ -666,6 +644,7 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
+
 
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
@@ -932,12 +911,11 @@ def handle_gpt_query(question, user_data, messenger_id):
             logging.info(f"🚫 User {messenger_id} is not in inquiry mode. Ignoring GPT query.")
             return "Please complete the process before asking questions."
 
-        # Step 2: Check presets.json for predefined responses
+        # Step 2: Fetch preset response first
         response = get_preset_response(question, user_data.language_code or 'en')
         if response:
             logging.info(f"✅ Preset response found for query: {question}")
-            send_messenger_message(messenger_id, response)
-            return response  # Return preset response immediately
+            return response  # Only return the preset response
 
         # Step 3: Query GPT only if no preset response is found
         logging.info(f"❌ No preset match. Querying GPT for: {question}")
@@ -955,18 +933,13 @@ def handle_gpt_query(question, user_data, messenger_id):
         reply = openai_res['choices'][0]['message']['content'].strip()
         logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
 
-        # Step 4: Send GPT Response Once (No Duplicate)
-        send_messenger_message(messenger_id, reply)
-
-        # Step 5: Log GPT Query
-        log_gpt_query(messenger_id, question, reply)
-
+        # Return GPT Response (Message sent only once outside this function)
         return reply
 
     except Exception as e:
         logging.error(f"❌ Error in handle_gpt_query: {str(e)}")
-        send_messenger_message(messenger_id, "Sorry, something went wrong. Please try again later.")
         return "Sorry, something went wrong!"
+
 
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
