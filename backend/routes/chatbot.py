@@ -42,39 +42,6 @@ logging.basicConfig(
 openai.api_key = os.getenv("OPENAI_API_KEY").strip()
 logging.debug(f"API Key: {openai.api_key}") # Set it directly or via environment variable
 
-# -------------------
-# 3) Load Language Files
-# -------------------
-try:
-    with open('backend/routes/languages/en.json', 'r', encoding='utf-8') as f:
-        EN_MESSAGES = json.load(f)
-    logging.info(f"Successfully loaded en.json with {len(EN_MESSAGES)} keys.")
-except Exception as e:
-    logging.error(f"Error loading en.json file: {e}")
-    EN_MESSAGES = {}
-
-try:
-    with open('backend/routes/languages/ms.json', 'r', encoding='utf-8') as f:
-        MS_MESSAGES = json.load(f)
-    logging.info(f"Successfully loaded ms.json with {len(MS_MESSAGES)} keys.")
-except Exception as e:
-    logging.error(f"Error loading ms.json file: {e}")
-    MS_MESSAGES = {}
-
-try:
-    with open('backend/routes/languages/zh.json', 'r', encoding='utf-8') as f:
-        ZH_MESSAGES = json.load(f)
-    logging.info(f"Successfully loaded zh.json with {len(ZH_MESSAGES)} keys.")
-except Exception as e:
-    logging.error(f"Error loading zh.json file: {e}")
-    ZH_MESSAGES = {}
-
-LANGUAGE_OPTIONS = {
-    'en': EN_MESSAGES,
-    'ms': MS_MESSAGES,
-    'zh': ZH_MESSAGES
-}
-
 # Example route to test blueprint
 @chatbot_bp.route('/test', methods=['GET'])
 def test():
@@ -326,41 +293,6 @@ STEP_CONFIG = {
 }
 
 
-# -------------------
-# 6) Utility Functions
-# -------------------
-
-def get_message(key, language_code, mode='flow'):
-    """
-    Retrieve a message from the appropriate language file based on language and mode.
-    Supports fallback to English for missing messages and guides the user.
-    """
-    try:
-        # Map numeric language codes to text codes
-        LANGUAGE_MAP = {'1': 'en', '2': 'ms', '3': 'zh'}
-        language_code = LANGUAGE_MAP.get(language_code, 'en')  # Default to English
-
-        # Retrieve the message key for the mode
-        messages = LANGUAGE_OPTIONS.get(language_code, LANGUAGE_OPTIONS['en'])  # Select language file
-
-        # Fetch the message
-        message = messages.get(key)
-
-        # Log the key lookup for debugging
-        logging.debug(f"🔍 Message Key Lookup: {key}, Language: {language_code}, Found: {message}")
-
-        # Final fallback to English if key is still not found
-        if not message:
-            logging.warning(f"⚠️ Missing key '{key}' in '{language_code}', falling back to English.")
-            message = LANGUAGE_OPTIONS['en'].get(key, "⚠️ Invalid input. Please check and try again.")
-
-        return message
-
-    except Exception as e:
-        logging.error(f"❌ Error in get_message: {str(e)}")
-        return "⚠️ An error occurred. Please try again."
-
-
 def delete_chatflow_data(messenger_id):
     """
     Delete all chatflow data for a specific user by messenger_id.
@@ -518,7 +450,13 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         # Mapping Updates
         update_mapping = {
             'get_name': lambda x: {'name': x.title()},
-            'get_phone_number': lambda x: {'phone_number': x}
+            'get_phone_number': lambda x: {'phone_number': x},
+            'get_age': lambda x: {'age': int(x)},
+            'get_loan_amount': lambda x: {'original_loan_amount': float(x.replace(',', ''))},
+            'get_loan_tenure': lambda x: {'original_loan_tenure': int(x)},
+            'get_monthly_repayment': lambda x: {'current_repayment': float(x)},
+            'get_interest_rate': lambda x: {'interest_rate': None if x.lower() == 'skip' else float(x)},
+            'get_remaining_tenure': lambda x: {'remaining_tenure': None if x.lower() == 'skip' else int(x)}
         }
 
         # Apply Updates
@@ -534,8 +472,15 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         next_step_mapping = {
             'choose_language': 'get_name',
             'get_name': 'get_phone_number',
-            'get_phone_number': 'get_age'
+            'get_phone_number': 'get_age',
+            'get_age': 'get_loan_amount',
+            'get_loan_amount': 'get_loan_tenure',
+            'get_loan_tenure': 'get_monthly_repayment',
+            'get_monthly_repayment': 'get_interest_rate',
+            'get_interest_rate': 'get_remaining_tenure',
+            'get_remaining_tenure': 'thank_you'
         }
+
         next_step = next_step_mapping.get(current_step, None)
 
         if not next_step:
@@ -643,7 +588,7 @@ def process_message():
         if message_body.lower() in ['restart', 'reset', 'start over']:
             logging.info(f"🔄 Restarting flow for user {sender_id}")
             reset_user_data(user_data, mode='flow')  # Use helper function to reset
-            restart_msg = get_message('choose_language_message', 'en')  # Start with language selection
+            restart_msg = PROMPTS['en']['choose_language']  # Start with language selection
             send_messenger_message(sender_id, restart_msg)
             log_chat(sender_id, message_body, restart_msg, user_data)
             return jsonify({"status": "success"}), 200
@@ -673,7 +618,7 @@ def process_message():
         if status != 200:
             # Get specific error message for invalid input from en.json
             error_key = f"invalid_{current_step}_message"
-            invalid_msg = get_message(error_key, user_data.language_code)
+            invalid_msg = PROMPTS['en'][f"invalid_{current_step}"]
             send_messenger_message(sender_id, invalid_msg)
             return jsonify({"status": "error"}), 500
 
@@ -690,14 +635,14 @@ def process_message():
                 log_chat(sender_id, message_body, next_message, user_data)
             else:
                 # Process completion step and generate summary
-                send_messenger_message(sender_id, get_message('completion_message', user_data.language_code))
+                send_messenger_message(sender_id, PROMPTS['en']['completion_message'])
                 result = handle_process_completion(messenger_id)
                 if result[1] != 200:
                     send_messenger_message(sender_id, "Sorry, we encountered an error processing your request. Please restart the process.")
                 else:
                     user_data.mode = 'inquiry'  # Ensure mode is set to inquiry
                     db.session.commit()
-                    follow_up_message = get_message('inquiry_mode_message', user_data.language_code)
+                    follow_up_message = PROMPTS['en']['inquiry_mode_message']
                     send_messenger_message(sender_id, follow_up_message)
                 return jsonify({"status": "success"}), 200
 
