@@ -19,19 +19,13 @@ class ChatflowTemp(db.Model):
     current_step = Column(String(50), nullable=True)
     language_code = Column(String(10), nullable=True)
     name = Column(String(100), nullable=True)
-    age = Column(Integer, nullable=True)
+    phone_number = Column(String(20), nullable=True)  # Added phone_number
     original_loan_amount = Column(Float, nullable=True)
     original_loan_tenure = Column(Integer, nullable=True)
     current_repayment = Column(Float, nullable=True)
-    interest_rate = Column(Float, nullable=True)
-    remaining_tenure = Column(Integer, nullable=True)
-    last_question_time = Column(DateTime, nullable=True)
-    gpt_query_count = Column(Integer, nullable=True)
     mode = Column(String(20), nullable=False, default='flow')  # Default value set
-    phone_number = Column(String(20), nullable=True)  # Added phone_number
     created_at = Column(DateTime, default=lambda: datetime.now(MYT))  # Consistent MYT
     updated_at = Column(DateTime, default=lambda: datetime.now(MYT), onupdate=lambda: datetime.now(MYT))
-
 
 # ----------------------------
 # Users Model
@@ -44,11 +38,9 @@ class Users(db.Model):
     sender_id = db.Column(String, nullable=True)  # Optional sender ID
     phone_number = db.Column(String(20), nullable=True)  # Added phone_number
     name = db.Column(String, nullable=True)
-    age = db.Column(Integer, nullable=True)
     current_step = db.Column(String, nullable=True)
     created_at = db.Column(DateTime, default=lambda: datetime.now(MYT))
     updated_at = db.Column(DateTime, default=lambda: datetime.now(MYT), onupdate=lambda: datetime.now(MYT))
-
 
 # ----------------------------
 # Lead Model
@@ -77,21 +69,6 @@ class Lead(db.Model):
     created_at = db.Column(DateTime, default=lambda: datetime.now(MYT))
     updated_at = db.Column(DateTime, default=lambda: datetime.now(MYT), onupdate=lambda: datetime.now(MYT))
 
-
-# ----------------------------
-# GPT Lead Model (NEW)
-# ----------------------------
-class GPTLead(db.Model):
-    __tablename__ = 'gpt_leads'
-
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Link to users table
-    sender_id = db.Column(db.String(50), nullable=False)  # Messenger ID
-    name = db.Column(db.String(100), nullable=False)  # Name
-    phone_number = db.Column(db.String(20), nullable=False)  # Phone number
-    question = db.Column(db.Text, nullable=False)  # User's inquiry
-    created_at = db.Column(db.DateTime, default=datetime.now(MYT))  # Timestamp
-
 # ----------------------------
 # ChatLog Model
 # ----------------------------
@@ -105,7 +82,6 @@ class ChatLog(db.Model):
     phone_number = db.Column(String(20), nullable=True)  # Changed from String(255) to String(20)
     message_content = db.Column(Text, nullable=False)  # Updated column name
     created_at = db.Column(DateTime, default=lambda: datetime.now(MYT))  # Corrected datetime call
-
 
 # ----------------------------
 # BankRate Model
