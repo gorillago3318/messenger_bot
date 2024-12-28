@@ -505,6 +505,8 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         def validate_input(step, value):
             if step == 'get_name':
                 return value.replace(' ', '').isalpha()
+            if step == 'get_phone_number':
+                return value.isdigit() and value.startswith('01') and len(value) in [10, 11]
             return True
 
         # Validate Input
@@ -515,7 +517,8 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
 
         # Mapping Updates
         update_mapping = {
-            'get_name': lambda x: {'name': x.title()}
+            'get_name': lambda x: {'name': x.title()},
+            'get_phone_number': lambda x: {'phone_number': x}
         }
 
         # Apply Updates
@@ -528,7 +531,17 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             setattr(user_data, key, value)
 
         # Move to the next step dynamically
-        next_step = 'get_phone_number'  # Change this based on the current flow
+        next_step_mapping = {
+            'choose_language': 'get_name',
+            'get_name': 'get_phone_number',
+            'get_phone_number': 'get_age'
+        }
+        next_step = next_step_mapping.get(current_step, None)
+
+        if not next_step:
+            send_messenger_message(messenger_id, "⚠️ Process complete or invalid step.")
+            return {"status": "success"}, 200
+
         user_data.current_step = next_step
         db.session.commit()
 
@@ -543,7 +556,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.error(f"❌ Error in process_user_input: {str(e)}")
         db.session.rollback()
         return {"status": "error", "message": "An error occurred while processing your input."}, 500
-    
+
 @chatbot_bp.route('/process_message', methods=['POST'])
 def process_message():
     try:
