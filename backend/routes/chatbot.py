@@ -413,41 +413,41 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.debug(f"Processing step: {current_step} with input: {message_body}")
 
         # ----------------------------
-        # Handle 'skip' Command Before Validation
+        # 1. Initialize Step Mapping
+        # ----------------------------
+        next_step_mapping = {
+            'choose_language': 'get_name',
+            'get_name': 'get_phone_number',
+            'get_phone_number': 'get_age',
+            'get_age': 'get_loan_amount',
+            'get_loan_amount': 'get_loan_tenure',
+            'get_loan_tenure': 'get_monthly_repayment',
+            'get_monthly_repayment': 'get_interest_rate',
+            'get_interest_rate': 'get_remaining_tenure',
+            'get_remaining_tenure': 'thank_you'
+        }
+
+        # ----------------------------
+        # 2. Handle 'skip' Command Before Validation
         # ----------------------------
         if message_body.lower() == 'skip':
             logging.info(f"🔄 Skipping input for step: {current_step}")
-            # Determine the next step explicitly
-            next_step_mapping = {
-                'choose_language': 'get_name',
-                'get_name': 'get_phone_number',
-                'get_phone_number': 'get_age',
-                'get_age': 'get_loan_amount',
-                'get_loan_amount': 'get_loan_tenure',
-                'get_loan_tenure': 'get_monthly_repayment',
-                'get_monthly_repayment': 'get_interest_rate',
-                'get_interest_rate': 'get_remaining_tenure',
-                'get_remaining_tenure': 'thank_you'
-            }
-
             next_step = next_step_mapping.get(current_step, None)
 
-            # Update user step and commit
+            # Update user step and commit changes before sending the next prompt
             user_data.current_step = next_step
             db.session.commit()
 
-            # Fetch and send the next prompt dynamically
+            # Fetch and send the next prompt
             language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
             next_prompt = PROMPTS[language].get(next_step, "⚠️ Invalid input. Please check and try again.")
             send_messenger_message(messenger_id, next_prompt)
+
             return {"status": "success", "next_step": next_step}, 200
 
         # ----------------------------
-        # 2. Initialize Update Data
+        # 3. Input Validation
         # ----------------------------
-        data_to_update = {}
-
-        # Handle Steps with Validation
         def validate_input(step, value):
             if step == 'get_name':
                 return value.replace(' ', '').isalpha()
@@ -469,12 +469,13 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
 
         # Validate Input
         if not validate_input(current_step, message_body):
-            error_msg = PROMPTS[user_data.language_code].get(f"invalid_{current_step}", "⚠️ Invalid input. Please check and try again.")
+            language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
+            error_msg = PROMPTS[language].get(f"invalid_{current_step}", "⚠️ Invalid input. Please check and try again.")
             send_messenger_message(messenger_id, error_msg)
             return {"status": "failed"}, 200
 
         # ----------------------------
-        # 3. Mapping Updates
+        # 4. Apply Updates Based on Input
         # ----------------------------
         update_mapping = {
             'get_name': lambda x: {'name': x.title()},
@@ -487,44 +488,34 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             'get_remaining_tenure': lambda x: {'remaining_tenure': None if x.lower() == 'skip' else int(x)}
         }
 
-        # Apply Updates
+        # Update user data
         if current_step in update_mapping:
             updates = update_mapping[current_step](message_body)
-            data_to_update.update(updates)
+            for key, value in updates.items():
+                setattr(user_data, key, value)
 
-        # Update User Data
-        for key, value in data_to_update.items():
-            setattr(user_data, key, value)
+        # Commit updated data
+        db.session.commit()
 
         # ----------------------------
-        # 4. Move to the Next Step
+        # 5. Move to the Next Step
         # ----------------------------
-        next_step_mapping = {
-            'choose_language': 'get_name',
-            'get_name': 'get_phone_number',
-            'get_phone_number': 'get_age',
-            'get_age': 'get_loan_amount',
-            'get_loan_amount': 'get_loan_tenure',
-            'get_loan_tenure': 'get_monthly_repayment',
-            'get_monthly_repayment': 'get_interest_rate',
-            'get_interest_rate': 'get_remaining_tenure',
-            'get_remaining_tenure': 'thank_you'
-        }
-
         next_step = next_step_mapping.get(current_step, None)
 
+        # If no further steps, mark process complete
         if not next_step:
             send_messenger_message(messenger_id, "⚠️ Process complete or invalid step.")
             return {"status": "success"}, 200
 
-        # Update user step and commit
+        # Update user step and commit changes before prompting
         user_data.current_step = next_step
         db.session.commit()
 
-        # Send the next prompt
+        # ----------------------------
+        # 6. Send Next Prompt
+        # ----------------------------
         language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
         next_prompt = PROMPTS[language].get(next_step, "⚠️ Invalid input. Please check and try again.")
-
         send_messenger_message(messenger_id, next_prompt)
 
         logging.debug(f"🔄 Moved to next step: {next_step}")
@@ -534,6 +525,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.error(f"❌ Error in process_user_input: {str(e)}")
         db.session.rollback()
         return {"status": "error", "message": "An error occurred while processing your input."}, 500
+
 
 @chatbot_bp.route('/process_message', methods=['POST'])
 def process_message():
@@ -545,10 +537,6 @@ def process_message():
         logging.debug(f"🛢 Received raw request data:\n{json.dumps(data, indent=2)}")
 
         # Extract Sender ID
-        sender_id = None
-        messenger_id = None
-
-        # Fix sender ID extraction
         messaging_event = data.get('entry', [{}])[0].get('messaging', [{}])[0]
         sender_id = messaging_event.get('sender', {}).get('id')
         messenger_id = sender_id
@@ -563,48 +551,43 @@ def process_message():
         # ----------------------------
         message_data = messaging_event.get('message', {})
         postback_data = messaging_event.get('postback', {})
-
-        # Initialize message_body
         message_body = None
 
-        # ----------------------------
         # Handle 'Get Started' Payload
-        # ----------------------------
         if 'payload' in postback_data:
             message_body = postback_data['payload'].strip().lower()
 
             if message_body == 'get_started':
                 logging.info(f"🌟 User {sender_id} clicked the 'Get Started' button.")
-                # Create or reset user data here
-                user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
 
+                # Retrieve or Create User Data
+                user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
                 if user_data:
-                    reset_user_data(user_data, mode='flow')  # Reset state
+                    reset_user_data(user_data, mode='flow')
                 else:
-                    # Create new user session
                     user_data = ChatflowTemp(
                         sender_id=sender_id,
                         messenger_id=messenger_id,
-                        current_step='choose_language',  # Start with language selection
+                        current_step='choose_language',
                         language_code='en',
                         mode='flow'
                     )
                     db.session.add(user_data)
                     db.session.commit()
 
-                # Send the "choose language" message
-                choose_language_message = PROMPTS['en']['choose_language']
-                send_messenger_message(sender_id, choose_language_message)
+                # Send Language Selection Prompt
+                user_data.current_step = 'choose_language'
+                db.session.commit()
+                send_messenger_message(sender_id, PROMPTS['en']['choose_language'])
                 return jsonify({"status": "success"}), 200
 
-        # Extract message body from other types of messages (text or quick replies)
+        # Extract text or quick reply
         if not message_body:
             if 'quick_reply' in message_data:
                 message_body = message_data['quick_reply']['payload'].strip().lower()
             elif 'text' in message_data:
                 message_body = message_data['text'].strip()
 
-        # If we have no message content, we can't proceed, so we log and return an error
         if not message_body:
             logging.error(f"❌ No valid message found from {sender_id}")
             send_messenger_message(sender_id, "Sorry, I can only process text or button replies for now.")
@@ -613,21 +596,21 @@ def process_message():
         logging.info(f"💎 Incoming message from {sender_id}: {message_body}")
 
         # ----------------------------
-        # 3. Retrieve or Create User Data
+        # 3. Retrieve User Data
         # ----------------------------
         user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
 
-        # Handle "Restart" Commands and further steps
+        # Handle Reset Commands
         if message_body.lower() in ['restart', 'reset', 'start over']:
             logging.info(f"🔄 Restarting flow for user {sender_id}")
-            reset_user_data(user_data, mode='flow')  # Use helper function to reset
-            restart_msg = PROMPTS['en']['choose_language']
-            send_messenger_message(sender_id, restart_msg)
-            log_chat(sender_id, message_body, restart_msg, user_data)
+            reset_user_data(user_data, mode='flow')
+            user_data.current_step = 'choose_language'
+            db.session.commit()
+            send_messenger_message(sender_id, PROMPTS['en']['choose_language'])
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
-        # Handle Inquiry Mode
+        # 4. Handle Inquiry Mode
         # ----------------------------
         if user_data.mode == 'inquiry':
             logging.info(f"💬 Inquiry mode for user {sender_id}")
@@ -642,44 +625,42 @@ def process_message():
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
-        # Continue Processing the Regular Flow
+        # 5. Process Regular Flow
         # ----------------------------
-
-        # Process other user inputs, like choosing language or mode
         current_step = user_data.current_step
         process_response, status = process_user_input(current_step, user_data, message_body, messenger_id)
 
         if status != 200:
-            # Get specific error message for invalid input from en.json
-            error_key = f"invalid_{current_step}_message"
+            # Handle Invalid Input
             invalid_msg = PROMPTS['en'][f"invalid_{current_step}"]
             send_messenger_message(sender_id, invalid_msg)
             return jsonify({"status": "error"}), 500
 
-        # Handle next step
+        # Move to the Next Step
         next_step = process_response.get("next_step")
         if next_step:
-            user_data.current_step = next_step
-            db.session.commit()
+            if user_data.current_step != next_step:  # Prevent duplicate prompts
+                user_data.current_step = next_step
+                db.session.commit()
 
-            # Send the next message or process completion
-            if next_step != 'process_completion':
+                # Handle Final Completion
+                if next_step == 'process_completion':
+                    send_messenger_message(sender_id, PROMPTS['en']['completion_message'])
+                    result = handle_process_completion(messenger_id)
+                    if result[1] != 200:
+                        send_messenger_message(sender_id, "Sorry, we encountered an error. Please restart.")
+                    else:
+                        user_data.mode = 'inquiry'
+                        db.session.commit()
+                        follow_up_message = PROMPTS['en']['inquiry_mode_message']
+                        send_messenger_message(sender_id, follow_up_message)
+                    return jsonify({"status": "success"}), 200
+
+                # Send Next Prompt
                 language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
                 next_message = PROMPTS[language].get(next_step, "⚠️ Invalid input. Please check and try again.")
                 send_messenger_message(sender_id, next_message)
                 log_chat(sender_id, message_body, next_message, user_data)
-            else:
-                # Process completion step and generate summary
-                send_messenger_message(sender_id, PROMPTS['en']['completion_message'])
-                result = handle_process_completion(messenger_id)
-                if result[1] != 200:
-                    send_messenger_message(sender_id, "Sorry, we encountered an error processing your request. Please restart the process.")
-                else:
-                    user_data.mode = 'inquiry'  # Ensure mode is set to inquiry
-                    db.session.commit()
-                    follow_up_message = PROMPTS['en']['inquiry_mode_message']
-                    send_messenger_message(sender_id, follow_up_message)
-                return jsonify({"status": "success"}), 200
 
         return jsonify({"status": "success"}), 200
 
@@ -687,8 +668,6 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
-
-
 
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
