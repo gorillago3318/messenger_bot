@@ -39,12 +39,12 @@ logging.basicConfig(
 
 PROMPTS = {
             'en': {
-                'choose_language': "🎉 Welcome to FinZo AI — Your Smart Refinancing Assistant! 🤖\n\n💸 **Discover Your Savings Potential** – Instantly estimate how much you could save by refinancing your home loan.\n💡 **Expert Guidance at Your Fingertips** – Get quick answers to your refinancing and home loan questions (up to 15 inquiries).\n🔄 **Simple Restart** – Need to reset? Just type 'restart' anytime to start over.\n\n👉 Let's get started! Please select your preferred language:\n\n🌐 **Choose Language:**\n1️⃣ *English* \n2️⃣ *Bahasa Malaysia* \n3️⃣ *中文 (Chinese)*",
-                'get_name': "📝 *Step 1: Enter Your Name* \n\nPlease enter your *full name* as it appears on official documentation. \n\n💡 *Example*: John Doe",
-                'get_phone_number': "📞 *Step 2: Enter Your Phone Number* \n\nPlease enter your *phone number* (minimum 10 digits). \n\n💡 *Example*: 0123456789",
-                'get_loan_amount': "💸 *Step 4: Enter Your Loan Amount* \n\nPlease enter the *original loan amount* that you initially took from the bank. \n\n💡 *Example*: 250000 (do not use commas or special symbols).",
-                'get_loan_tenure': "📆 *Step 5: Enter Your Loan Tenure* \n\nPlease enter your *original loan tenure* approved by the bank. (This is normally 30 or 35 years.) \n\n💡 *Example*: 30.",
-                'get_monthly_repayment': "💳 *Step 6: Enter Your Current Monthly Repayment* \n\nPlease enter the *current amount you pay each month* for your loan. \n\n💡 *Example*: 2500 (do not use commas or special symbols).",
+                'choose_language': "🎉 Welcome to FinZo AI — Your Smart Refinancing Assistant! 🤖\n\n💸 Discover Your Savings Potential – Instantly estimate how much you could save by refinancing your home loan.\n💡 Expert Guidance at Your Fingertips – Get quick answers to your refinancing and home loan questions (up to 15 inquiries).\n🔄 Simple Restart – Need to reset? Just type 'restart' anytime to start over.\n\n👉 Let's get started! Please select your preferred language:\n\n🌐 Choose Language:\n1️⃣ English \n2️⃣ Bahasa Malaysia \n3️⃣ 中文 (Chinese)",
+                'get_name': "📝 *Step 1: Enter Your Name* \n\nPlease enter your *full name* as it appears on official documentation. \n\n💡 Example: John Doe",
+                'get_phone_number': "📞 Step 2: Enter Your Phone Number* \n\nPlease enter your *phone number* (minimum 10 digits). \n\n💡 Example: 0123456789",
+                'get_loan_amount': "💸 Step 3: Enter Your Loan Amount* \n\nPlease enter the *original loan amount* that you initially took from the bank. \n\n💡 Example: 250000 (do not use commas or special symbols).",
+                'get_loan_tenure': "📆 Step 4: Enter Your Loan Tenure* \n\nPlease enter your *original loan tenure* approved by the bank. (This is normally 30 or 35 years.) \n\n💡 Example: 30.",
+                'get_monthly_repayment': "💳 Step 5: Enter Your Current Monthly Repayment* \n\nPlease enter the *current amount you pay each month* for your loan. \n\n💡 Example: 2500 (do not use commas or special symbols).",
                 'thank_you': "🎉 Process complete! Thank you for using FinZo AI. You are now in inquiry mode.",           
                 'invalid_choose_language': "⚠️ Invalid language selection. Please select 1 for English, 2 for Bahasa Malaysia, or 3 for 中文 (Chinese).",
                 'invalid_get_name': "⚠️ Invalid name. Please enter letters only.",
@@ -55,11 +55,11 @@ PROMPTS = {
             },
             'ms': {
                 'choose_language': "🎉 Selamat datang ke FinZo AI — Pembantu Pembiayaan Semula Pintar Anda! 🤖\n\n💸 **Temui Potensi Penjimatan Anda** – Anggarkan dengan segera berapa banyak yang anda boleh jimatkan dengan membiayai semula pinjaman rumah anda.\n💡 **Bimbingan Pakar di Hujung Jari** – Dapatkan jawapan segera untuk soalan pembiayaan semula dan pinjaman rumah anda (sehingga 15 pertanyaan).\n🔄 **Mula Semula dengan Mudah** – Perlu bermula semula? Hanya taip 'restart' pada bila-bila masa.\n\n👉 Mari kita mulakan! Sila pilih bahasa pilihan anda:\n\n🌐 **Pilih Bahasa:**\n1️⃣ *English* \n2️⃣ *Bahasa Malaysia* \n3️⃣ *中文 (Chinese)*",
-                'get_name': "📝 *Langkah 1: Masukkan Nama Anda* \n\nSila masukkan *nama penuh* anda seperti yang tertera pada dokumen rasmi. \n\n💡 *Contoh*: Ahmad bin Abdullah",
-                'get_phone_number': "📞 *Langkah 2: Masukkan Nombor Telefon Anda* \n\nSila masukkan *nombor telefon* anda (minimum 10 digit). \n\n💡 *Contoh*: 0123456789",
-                'get_loan_amount': "💸 *Langkah 4: Masukkan Jumlah Pinjaman Anda* \n\nSila masukkan *jumlah pinjaman asal* yang anda ambil dari bank. \n\n💡 *Contoh*: 250000 (jangan gunakan koma atau simbol khas).",
-                'get_loan_tenure': "📆 *Langkah 5: Masukkan Tempoh Pinjaman Anda* \n\nSila masukkan *tempoh pinjaman asal* yang diluluskan oleh bank. (Ini biasanya 30 atau 35 tahun.) \n\n💡 *Contoh*: 30.",
-                'get_monthly_repayment': "💳 *Langkah 6: Masukkan Bayaran Bulanan Semasa Anda* \n\nSila masukkan *jumlah yang anda bayar setiap bulan* untuk pinjaman anda. \n\n💡 *Contoh*: 2500 (jangan gunakan koma atau simbol khas).",
+                'get_name': "📝 Langkah 1: Masukkan Nama Anda* \n\nSila masukkan *nama penuh* anda seperti yang tertera pada dokumen rasmi. \n\n💡 Contoh: Ahmad bin Abdullah",
+                'get_phone_number': "📞 Langkah 2: Masukkan Nombor Telefon Anda* \n\nSila masukkan *nombor telefon* anda (minimum 10 digit). \n\n💡 Contoh*: 0123456789",
+                'get_loan_amount': "💸 Langkah 3: Masukkan Jumlah Pinjaman Anda* \n\nSila masukkan *jumlah pinjaman asal* yang anda ambil dari bank. \n\n💡 Contoh: 250000 (jangan gunakan koma atau simbol khas).",
+                'get_loan_tenure': "📆 Langkah 4: Masukkan Tempoh Pinjaman Anda* \n\nSila masukkan *tempoh pinjaman asal* yang diluluskan oleh bank. (Ini biasanya 30 atau 35 tahun.) \n\n💡 Contoh: 30.",
+                'get_monthly_repayment': "💳 Langkah 5: Masukkan Bayaran Bulanan Semasa Anda* \n\nSila masukkan *jumlah yang anda bayar setiap bulan* untuk pinjaman anda. \n\n💡 Contoh: 2500 (jangan gunakan koma atau simbol khas).",
                 'thank_you': "Proses selesai! Terima kasih kerana menggunakan FinZo AI. Anda kini berada dalam mod pertanyaan.",
                 'invalid_choose_language': "⚠️ Pilihan bahasa tidak sah. Sila pilih 1 untuk English, 2 untuk Bahasa Malaysia, atau 3 untuk 中文 (Chinese).",
                 'invalid_get_name': "⚠️ Nama tidak sah. Sila masukkan huruf sahaja.",
@@ -70,11 +70,11 @@ PROMPTS = {
             },
              'zh': {
                 'choose_language': "🎉 欢迎使用 FinZo AI — 您的智能再融资助手！🤖\n\n💸 **发现您的储蓄潜力** – 立即估算通过房屋贷款再融资可以节省多少。\n💡 **专业指导触手可及** – 快速获得再融资和房屋贷款问题的答案（最多15个咨询）。\n🔄 **简单重启** – 需要重置？随时输入'restart'即可重新开始。\n\n👉 让我们开始吧！请选择您的首选语言：\n\n🌐 **选择语言：**\n1️⃣ *English* \n2️⃣ *Bahasa Malaysia* \n3️⃣ *中文 (Chinese)*",
-                'get_name': "📝 *步骤1：输入姓名* \n\n请输入您的*全名*，需与官方文件上的姓名一致。 \n\n💡 *示例*：张明华",
-                'get_phone_number': "📞 *步骤2：输入电话号码* \n\n请输入您的*电话号码*（至少10位数字）。 \n\n💡 *示例*：0123456789",
-                'get_loan_amount': "💸 *步骤4：输入贷款金额* \n\n请输入您最初从银行获得的*原始贷款金额*。 \n\n💡 *示例*：250000（请勿使用逗号或特殊符号）。",
-                'get_loan_tenure': "📆 *步骤5：输入贷款期限* \n\n请输入银行批准的*原始贷款期限*。（通常为30或35年。） \n\n💡 *示例*：30。",
-                'get_monthly_repayment': "💳 *步骤6：输入当前每月还款额* \n\n请输入您当前*每月的贷款还款金额*。 \n\n💡 *示例*：2500（请勿使用逗号或特殊符号）。",
+                'get_name': "📝 步骤1：输入姓名 \n\n请输入您的*全名*，需与官方文件上的姓名一致。 \n\n💡 示例：张明华",
+                'get_phone_number': "📞 步骤2：输入电话号码 \n\n请输入您的*电话号码*（至少10位数字）。 \n\n💡 示例：0123456789",
+                'get_loan_amount': "💸 步骤3：输入贷款金额 \n\n请输入您最初从银行获得的*原始贷款金额*。 \n\n💡 示例：250000（请勿使用逗号或特殊符号）。",
+                'get_loan_tenure': "📆 步骤4：输入贷款期限 \n\n请输入银行批准的*原始贷款期限*。（通常为30或35年。） \n\n💡 示例：30。",
+                'get_monthly_repayment': "💳 *步骤5：输入当前每月还款额* \n\n请输入您当前*每月的贷款还款金额*。 \n\n💡 示例：2500（请勿使用逗号或特殊符号）。",
                 'thank_you': "🎉 流程已完成！感谢您使用 FinZo AI。您现在处于询问模式。", 
                 'invalid_choose_language': "⚠️ 语言选择无效。请选择 1 代表英语，2 代表马来语，或 3 代表中文。",
                 'invalid_get_name': "⚠️ 姓名无效。请只输入字母。",
@@ -425,7 +425,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
                 setattr(user_data, key, value)
 
         # Commit updated data
-        
+
         db.session.commit()
         # ----------------------------
         # 5. Move to the Next Step
@@ -626,9 +626,9 @@ def process_message():
                         db.session.commit()
                         # Send inquiry greeting only once here
                         inquiry_greeting = (
-                            "🎉 *Welcome to Inquiry Mode!* 🎉\n\n"
-                            "🤖 *FinZo AI Assistant* is now activated. Ask me anything about *home refinancing* or *housing loans*.\n\n"
-                            "💬 *You can ask about loan eligibility, refinancing steps, or required documents.*\n\n"
+                            "🎉 Welcome to Inquiry Mode! 🎉\n\n"
+                            "🤖 FinZo AI Assistant* is now activated. Ask me anything about home refinancing or housing loans.\n\n"
+                            "💬 You can ask about loan eligibility, refinancing steps, or required documents.*\n\n"
                             f"📱 Need urgent help? Contact admin via WhatsApp: https://wa.me/60167177813"
                         )
                         send_messenger_message(sender_id, inquiry_greeting)
@@ -797,7 +797,7 @@ def prepare_summary_messages(user_data, calc_results, language_code):
     """Builds shortened summary messages about the user's savings."""
 
     try:
-        # Retrieve WhatsApp link from environment variable
+        # Retrieve WhatsApp link
         whatsapp_link = os.getenv('ADMIN_WHATSAPP_LINK', "https://wa.me/60167177813")
 
         # Format values
@@ -807,40 +807,66 @@ def prepare_summary_messages(user_data, calc_results, language_code):
         yearly_savings = f"RM {float(calc_results.get('yearly_savings', 0.0)):,.2f}"
         lifetime_savings = f"RM {float(calc_results.get('lifetime_savings', 0.0)):,.2f}"
 
-        # Calculate equivalent years and months saved
-        months_saved = 0
-        years_saved = 0
-        remaining_months = 0
+        # Calculate equivalent savings time
+        months_saved = calc_results.get('lifetime_savings', 0) / user_data.current_repayment
+        years_saved = int(months_saved // 12)
+        remaining_months = int(months_saved % 12)
 
-        # Check if current repayment is greater than 0 to avoid division by zero
-        if user_data.current_repayment > 0:
-            months_saved = calc_results.get('lifetime_savings', 0) / user_data.current_repayment
-            years_saved = months_saved // 12  # Calculate full years
-            remaining_months = months_saved % 12  # Calculate remaining months
-        else:
-            months_saved = 0
-            years_saved = 0
-            remaining_months = 0
+        # -------------------
+        # Language Handling
+        # -------------------
+        if language_code == 'ms':  # Bahasa Malaysia
+            summary_msg = (
+                f"📊 Ringkasan Penjimatan:\n\n"
+                f"💸 Bayaran Bulanan Semasa: {current_repayment}\n"
+                f"💸 Bayaran Bulanan Baru: {new_repayment}\n"
+                f"💰 Penjimatan Bulanan: {monthly_savings}\n"
+                f"💰 Penjimatan Tahunan: {yearly_savings}\n"
+                f"🎉 Penjimatan Sepanjang Hayat: {lifetime_savings}\n\n"
+                f"⏳ Bersamaan dengan penjimatan selama {years_saved} tahun dan {remaining_months} bulan pembayaran! 🚀"
+            )
 
-        # Combined Summary (Merges Summary 1 and 2)
-        summary_msg = (
-            f"📊 Savings Summary:\n\n"
-            f"💸 **Current Repayment:** {current_repayment}\n"
-            f"💸 **New Repayment:** {new_repayment}\n"
-            f"💰 **Monthly Savings:** {monthly_savings}\n"
-            f"💰 **Yearly Savings:** {yearly_savings}\n"
-            f"🎉 **Lifetime Savings:** {lifetime_savings}\n\n"
-            f"⏳ *Equivalent to saving {int(years_saved)} year(s) and {int(remaining_months)} month(s) of repayments!* 🚀"
-        )
+            whats_next_msg = (
+                "🔜 Apa Seterusnya?\n\n"
+                "Seorang pakar kami akan menghubungi anda tidak lama lagi untuk membantu dengan pilihan pembiayaan semula anda.\n"
+                f"Jika anda memerlukan bantuan segera, hubungi kami terus di {whatsapp_link}."
+            )
 
-        # What's Next Message
-        whats_next_msg = (
-            "🔜 **What's Next?**\n\n"
-            "One of our specialists will contact you shortly to assist with your refinancing options.\n"
-            f"If you need urgent assistance, contact us directly at {whatsapp_link}."
-        )
+        elif language_code == 'zh':  # Chinese
+            summary_msg = (
+                f"📊 储蓄摘要:\n\n"
+                f"💸 当前还款: {current_repayment}\n"
+                f"💸 新还款: {new_repayment}\n"
+                f"💰 每月节省: {monthly_savings}\n"
+                f"💰 每年节省: {yearly_savings}\n"
+                f"🎉 终生节省: {lifetime_savings}\n\n"
+                f"⏳ 相当于节省 {years_saved} 年和 {remaining_months} 个月的还款! 🚀"
+            )
 
-        # Return merged messages
+            whats_next_msg = (
+                "🔜 接下来是什么？\n\n"
+                "我们的专家将很快联系您，以协助您完成再融资选项。\n"
+                f"如需紧急帮助，请直接联系我们: {whatsapp_link}。"
+            )
+
+        else:  # Default to English
+            summary_msg = (
+                f"📊 Savings Summary:\n\n"
+                f"💸 Current Repayment: {current_repayment}\n"
+                f"💸 New Repayment: {new_repayment}\n"
+                f"💰 Monthly Savings: {monthly_savings}\n"
+                f"💰 Yearly Savings: {yearly_savings}\n"
+                f"🎉 Lifetime Savings: {lifetime_savings}\n\n"
+                f"⏳ Equivalent to saving {years_saved} year(s) and {remaining_months} month(s) of repayments! 🚀"
+            )
+
+            whats_next_msg = (
+                "🔜 What's Next?\n\n"
+                "One of our specialists will contact you shortly to assist with your refinancing options.\n"
+                f"If you need urgent assistance, contact us directly at {whatsapp_link}."
+            )
+
+        # Return the messages based on the language
         return [summary_msg, whats_next_msg]
 
     except Exception as e:
@@ -922,18 +948,18 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 
         # Format message with the correct savings data
         msg = (
-            f"📢 **New Lead Alert!** 📢\n\n"
-            f"👤 **Name:** {user_data.name or 'Unknown'}\n"
-            f"📱 **Phone Number:** {user_data.phone_number or 'N/A'}\n"  # Include phone number
-            f"💰 **Current Loan Amount:** RM {user_data.original_loan_amount if user_data.original_loan_amount else 0:,.2f}\n"
-            f"📅 **Current Tenure:** {user_data.original_loan_tenure if user_data.original_loan_tenure else 'N/A'} years\n"
-            f"📉 **Current Repayment:** RM {user_data.current_repayment if user_data.current_repayment else 0:,.2f}\n"
-            f"📈 **New Repayment:** RM {calc_results.get('new_monthly_repayment', 0):,.2f}\n"
-            f"💸 **Monthly Savings:** RM {calc_results.get('monthly_savings', 0):,.2f}\n"
-            f"💰 **Yearly Savings:** RM {calc_results.get('yearly_savings', 0):,.2f}\n"
-            f"🎉 **Total Savings:** RM {calc_results.get('lifetime_savings', 0):,.2f}\n"
-            f"🕒 **Years Saved:** {int(years_saved)} years\n"  # Using calculated years_saved
-            f"📱 **Messenger ID:** {messenger_id}"
+            f"📢 New Lead Alert! 📢\n\n"
+            f"👤 Name: {user_data.name or 'Unknown'}\n"
+            f"📱 Phone Number: {user_data.phone_number or 'N/A'}\n"  # Include phone number
+            f"💰 Current Loan Amount: RM {user_data.original_loan_amount if user_data.original_loan_amount else 0:,.2f}\n"
+            f"📅 Current Tenure: {user_data.original_loan_tenure if user_data.original_loan_tenure else 'N/A'} years\n"
+            f"📉 Current Repayment: RM {user_data.current_repayment if user_data.current_repayment else 0:,.2f}\n"
+            f"📈 New Repayment: RM {calc_results.get('new_monthly_repayment', 0):,.2f}\n"
+            f"💸 Monthly Savings: RM {calc_results.get('monthly_savings', 0):,.2f}\n"
+            f"💰 Yearly Savings: RM {calc_results.get('yearly_savings', 0):,.2f}\n"
+            f"🎉 Total Savings: RM {calc_results.get('lifetime_savings', 0):,.2f}\n"
+            f"🕒 Years Saved: {int(years_saved)} years\n"  # Using calculated years_saved
+            f"📱 Messenger ID: {messenger_id}"
         )
 
         # Send message to admin
