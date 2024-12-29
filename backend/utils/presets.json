@@ -12,7 +12,20 @@
       "2. how do i reach admin?": "No worries! An admin will follow up with you shortly. Meanwhile, you can click here to contact us directly: https://wa.me/60126181683.",
       "3. talk to someone now?": "We're happy to assist you! Click here to reach our admin directly: https://wa.me/60126181683.",
       "4. i need human help": "Got it! An admin will follow up, or you can contact us directly here: https://wa.me/60126181683."
-    }
+    },
+    "ms": {
+  "1. bagaimana saya boleh menghubungi agen?": "Sudah tentu! Untuk bercakap dengan agen atau mendapatkan bantuan terus, klik di sini: https://wa.me/60126181683.",
+  "2. bagaimana saya boleh menghubungi admin?": "Jangan risau! Admin akan menghubungi anda tidak lama lagi. Sementara itu, anda juga boleh klik di sini untuk menghubungi kami terus: https://wa.me/60126181683.",
+  "3. boleh saya bercakap dengan seseorang sekarang?": "Kami sedia membantu anda! Klik di sini untuk menghubungi admin kami secara langsung: https://wa.me/60126181683.",
+  "4. saya perlukan bantuan manusia": "Baik! Admin akan menghubungi anda. Atau, anda juga boleh hubungi kami terus di sini: https://wa.me/60126181683."
+    },
+    "zh": {
+  "1. 我如何联系代理？": "当然！如需与代理联系或直接获得帮助，请点击此链接: https://wa.me/60126181683。",
+  "2. 我如何联系管理员？": "别担心！管理员会尽快与您联系。同时，您也可以点击此链接直接联系我们: https://wa.me/60126181683。",
+  "3. 我现在可以和人聊聊吗？": "我们很乐意协助您！点击此链接直接联系管理员: https://wa.me/60126181683。",
+  "4. 我需要人工帮助": "明白！管理员将会与您联系。或者，您也可以直接通过此链接联系我们: https://wa.me/60126181683。"
+}
+
   },
 
   "example_queries": [
