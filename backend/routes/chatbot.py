@@ -1000,69 +1000,67 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # ---------------------------
 # Handle Queries
 # ---------------------------
+# -------------------
+# Query Handling System
+# -------------------
+
+import re
+import logging
+from difflib import get_close_matches
+import openai
+
+# ---------------------------
+# Main Query Handler
+# ---------------------------
 def handle_query(question, user_data, messenger_id):
     try:
-        # --- 1. Process FAQs and Contact Queries First ---
-        contact_response = handle_contact_queries(question, user_data, messenger_id)
-        if contact_response:
-            return contact_response  # Matches contact queries directly
-
-        faq_response = handle_faq_queries(question, user_data)
-        if faq_response:
-            return faq_response  # Matches FAQ responses directly
-
-        # --- 2. Contextual Handling with Limited History ---
-        contextual_response = handle_contextual_query(question, user_data)
-        if contextual_response:
-            return contextual_response  # Uses past chat history for context
-
-        # --- 3. Dynamic Query Handling with Intent Detection ---
+        # Handle dynamic queries
         dynamic_response = handle_dynamic_query(question, user_data, messenger_id)
         if dynamic_response:
-            return dynamic_response  # Handles intent classification
+            return dynamic_response
 
-        # --- 4. GPT Fallback ---
+        # Handle FAQ queries BEFORE contact queries
+        faq_response = handle_faq_queries(question, user_data)
+        if faq_response:
+            return faq_response
+
+        # Handle contact queries
+        contact_response = handle_contact_queries(question, user_data, messenger_id)
+        if contact_response:
+            return contact_response
+
+        # Handle contextual queries
+        contextual_response = handle_contextual_query(question, user_data)
+        if contextual_response:
+            return contextual_response
+
+        # GPT fallback
         return handle_gpt_query(question, user_data, messenger_id)
 
     except Exception as e:
         logging.error(f"Error in handle_query: {str(e)}")
-        return "I'm not sure about that. Let me get someone to assist you: https://wa.me/60126181683"
+        return "Sorry, I couldn't find an answer. Let me connect you to someone who can help: https://wa.me/60126181683"
 
-# ---------------------------
-# Contextual Query Handling
-# ---------------------------
-def handle_contextual_query(question, user_data):
-    # Build context dynamically based on previous questions
-    chat_history = [
-        {"role": "system", "content": "You are a helpful assistant specializing in home refinancing."}
-    ]
-
-    # Append user’s previous questions
-    for chat in user_data.chat_history:
-        chat_history.append({"role": "user", "content": chat['question']})
-        chat_history.append({"role": "assistant", "content": chat['answer']})
-
-    # Add the latest question
-    chat_history.append({"role": "user", "content": question})
-
-    # Get GPT response
-    gpt_response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=chat_history
-    )
-
-    # Return GPT's response
-    return gpt_response['choices'][0]['message']['content'].strip()
 
 # ---------------------------
 # Dynamic Query Handling
 # ---------------------------
 def handle_dynamic_query(question, user_data, messenger_id):
     try:
-        # Classify intent using GPT
+        # Manual intent overrides for FAQs
+        keywords = {
+            "what is refinancing": "Refinancing means replacing your existing home loan with a new one, often to get better rates or terms.",
+            "why do we refinance": "People refinance to reduce interest rates, lower payments, or access extra cash. Need more details?",
+        }
+
+        for key, value in keywords.items():
+            if key in question.lower():
+                return value
+
+        # Continue with intent classification
         intent = classify_intent_with_gpt(question)
 
-        # Map intents to actions
+        # Intent-based responses
         if intent == "contact_agent":
             return "No worries! Click here to contact our admin: https://wa.me/60126181683"
 
@@ -1078,36 +1076,32 @@ def handle_dynamic_query(question, user_data, messenger_id):
         elif intent == "greeting":
             return "Hey there! I'm Finzo AI Buddy. How can I help with your refinancing needs?"
 
-        # Fallback to GPT if intent is unknown
+        # Fallback to GPT
         return handle_gpt_query(question, user_data, messenger_id)
 
     except Exception as e:
         logging.error(f"Error handling query: {str(e)}")
         return "I couldn't process that right now. Click here to contact admin: https://wa.me/60126181683"
 
-# ---------------------------
-# Intent Classification
-# ---------------------------
-def classify_intent_with_gpt(question):
-    system_prompt = (
-        "You are a smart assistant that identifies the user's intent based on the question provided. "
-        "Classify the intent from this list: 'contact_agent', 'ask_rates', 'refinance_steps', "
-        "'loan_eligibility', 'application_process', 'greeting', or 'unknown'. "
-        "Provide only the intent as the response."
-    )
 
-    # Send query to GPT
-    gpt_response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": question}
-        ]
-    )
+# ---------------------------
+# FAQ Query Handling
+# ---------------------------
+def handle_faq_queries(question, user_data):
+    global presets_data
+    try:
+        normalized_question = preprocess_query(question)
+        faq_responses = presets_data.get('faq', {}).get(user_data.language_code, {})
+        matches = get_close_matches(normalized_question, faq_responses.keys(), n=1, cutoff=0.4)
+        if matches:
+            return faq_responses[matches[0]]
 
-    # Extract classified intent
-    intent = gpt_response['choices'][0]['message']['content'].strip().lower()
-    return intent
+        return None
+
+    except Exception as e:
+        logging.error(f"Error in handle_faq_queries: {str(e)}")
+        return None
+
 
 # ---------------------------
 # Contact Query Handling
@@ -1116,7 +1110,7 @@ def handle_contact_queries(question, user_data, messenger_id):
     global presets_data
     try:
         # Preprocess query
-        normalized_question = preprocess_contact_query(question)
+        normalized_question = preprocess_query(question)
 
         # Select language for response
         language = user_data.language_code if presets_data.get('contact_queries', {}).get(user_data.language_code) else 'en'
@@ -1128,43 +1122,46 @@ def handle_contact_queries(question, user_data, messenger_id):
             return queries[matches[0]]
 
         # Default response
-        return "Let me get you connected! Reach out here: https://wa.me/60126181683"
+        return None
 
     except Exception as e:
         logging.error(f"Error in handle_contact_queries: {str(e)}")
-        return "Let me get you connected! Reach out here: https://wa.me/60126181683"
+        return None
+
 
 # ---------------------------
-# FAQ Query Handling
+# Contextual Query Handling
 # ---------------------------
-def handle_faq_queries(question, user_data):
-    global presets_data
+def handle_contextual_query(question, user_data):
     try:
-        normalized_question = preprocess_contact_query(question)
-        faq_responses = presets_data.get('faq', {}).get(user_data.language_code, {})
-        matches = get_close_matches(normalized_question, faq_responses.keys(), n=1, cutoff=0.4)
-        if matches:
-            return faq_responses[matches[0]]
+        chat_history = [
+            {"role": "system", "content": "You are a helpful assistant specializing in home refinancing."}
+        ]
 
-        return "Not sure about that! Need more help? Click here: https://wa.me/60126181683"
+        # Append previous chats
+        for chat in user_data.chat_history:
+            chat_history.append({"role": "user", "content": chat['question']})
+            chat_history.append({"role": "assistant", "content": chat['answer']})
+
+        # Add the latest question
+        chat_history.append({"role": "user", "content": question})
+
+        # Get GPT response
+        gpt_response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=chat_history
+        )
+
+        return gpt_response['choices'][0]['message']['content'].strip()
 
     except Exception as e:
-        logging.error(f"Error in handle_faq_queries: {str(e)}")
-        return "I'm not sure about that. Let me connect you to someone who can help: https://wa.me/60126181683"
+        logging.error(f"Error in handle_contextual_query: {str(e)}")
+        return None
+
 
 # ---------------------------
 # GPT Query Fallback
 # ---------------------------
-
-# ----------------------------
-# Preprocessing Queries
-# ----------------------------
-def preprocess_contact_query(text):
-    """Normalize text by removing punctuation and converting to lowercase."""
-    import re  # Ensure regex is available
-    # Remove special characters and extra spaces
-    return re.sub(r'[^\w\s]', '', text).strip().lower()
-
 def handle_gpt_query(question, user_data, messenger_id):
     try:
         system_prompt = (
@@ -1179,12 +1176,19 @@ def handle_gpt_query(question, user_data, messenger_id):
             ]
         )
 
-        reply = gpt_response['choices'][0]['message']['content'].strip()
-        return reply
+        return gpt_response['choices'][0]['message']['content'].strip()
 
     except Exception as e:
         logging.error(f"GPT Query Failed: {str(e)}")
         return "I couldn't process that right now. Let me get someone to help: https://wa.me/60126181683"
+
+
+# ---------------------------
+# Preprocessing Queries
+# ---------------------------
+def preprocess_query(text):
+    return re.sub(r'[^\w\s]', '', text).strip().lower()
+
 
 # Log GPT queries
 
