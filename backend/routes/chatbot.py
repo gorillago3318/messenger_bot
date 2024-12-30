@@ -969,12 +969,13 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # -------------------
 # 9) GPT Query Handling
 # -------------------
-
 # Function to load presets from presets.json
 def load_presets():
     try:
-        with open('backend/utils/presets.json', 'r') as file:
-            return json.load(file)
+        with open('backend/utils/presets.json', 'r') as file:  # Make sure the path is correct for Heroku
+            data = json.load(file)
+            logging.info(f"Presets Loaded: {data}")  # Log the loaded presets
+            return data
     except Exception as e:
         logging.error(f"❌ Error loading presets.json: {str(e)}")
         return {}
@@ -983,7 +984,7 @@ def load_presets():
 presets_data = load_presets()
 
 # Log if the presets are loaded successfully
-logging.info(f"Presets Loaded: {presets_data}")
+logging.info(f"Presets Data Loaded: {presets_data}")
 
 def handle_query(question, user_data, messenger_id):
     try:
@@ -1008,24 +1009,27 @@ def handle_query(question, user_data, messenger_id):
         logging.error(f"❌ Error in handle_query: {str(e)}")
         return "Sorry, something went wrong. Please try again or contact support."
 
-def handle_contact_queries(question, user_data, messenger_id):
-    """Handle questions related to contacting agents or admin."""
-    # Ensure the language is correct
-    language = user_data.language_code if user_data.language_code in presets_data['contact_queries'] else 'en'
-    logging.info(f"Selected Language for Contact Queries: {language}")
 
-    # Ensure 'contact_queries' section is present in presets_data
-    if 'contact_queries' not in presets_data:
-        logging.error("❌ 'contact_queries' not found in presets.json")
+
+def handle_faq_queries(question, user_data):
+    """Handle frequently asked questions related to home loans and refinancing."""
+    # Ensure 'faq' section is present in presets_data
+    faq_responses = presets_data.get('faq', {}).get(user_data.language_code, {})
+
+    if not faq_responses:
+        logging.error("❌ 'faq' not found in presets.json for the selected language.")
         return None
 
-    # Iterate over the contact queries for the selected language
-    for key, value in presets_data['contact_queries'].get(language, {}).items():
-        if key.lower() in question.lower():  # Case-insensitive matching
-            logging.info(f"Matched Contact Query: {key} -> {value}")  # Log the match
+    question = question.lower()
+
+    # Check if the question exists in the FAQ list
+    for key, value in faq_responses.items():
+        logging.debug(f"Checking if '{key.lower()}' is in the question: '{question}'")  # Log the match check
+        if key.lower() in question:  # Case-insensitive matching
+            logging.info(f"Matched FAQ: {key} -> {value}")  # Log the match
             return value
 
-    logging.info(f"No match found for question: {question}")  # Log if no match found
+    logging.info(f"No match found for FAQ: {question}")  # Log if no match found
     return None
 
 def handle_faq_queries(question, user_data):
@@ -1051,6 +1055,9 @@ def handle_faq_queries(question, user_data):
 def handle_gpt_query(question, user_data, messenger_id):
     """Use GPT for questions not covered in predefined queries."""
     system_prompt = f"You are a mortgage specialist for Finzo AI, specializing solely in home refinancing, housing loans, and related financial topics in Malaysia."
+    
+    logging.info(f"Question is not found in presets, sending to GPT: {question}")
+
     gpt_response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": question}]
