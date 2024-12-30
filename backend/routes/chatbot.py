@@ -969,18 +969,17 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # -------------------
 # 9) GPT Query Handling
 # -------------------
-import json
-import logging
-import openai
 
 # Load presets from the JSON file
 def load_presets():
     try:
-        with open('path/to/presets.json', 'r') as file:
+        # Relative path to the 'presets.json' file in the Heroku file system
+        with open('backend/utils/presets.json', 'r') as file:
             return json.load(file)
     except Exception as e:
         logging.error(f"❌ Error loading presets.json: {str(e)}")
         return {}
+
 
 # Cache the presets once when the app starts
 presets_data = load_presets()
