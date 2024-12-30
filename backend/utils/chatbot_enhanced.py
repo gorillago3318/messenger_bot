@@ -71,17 +71,15 @@ class ChatbotHandler:
         return random.choice(greetings)
 
     def _handle_contact_queries(self, question, language_code):
-        """Handle contact queries in user's language."""
         contact_phrases = [
-            "talk to agent", "contact agent", "need help", "speak to someone",
-            "talk to human", "contact support", "talk to admin", "reach support",
-            "speak to team", "contact admin", "need to speak", "connect me",
-            "transfer to agent", "transfer to human", "connect to agent"
-        ]
-        
+        "talk to", "contact", "need help", "speak to", "how do i talk",
+        "how to talk", "can i talk", "can i contact", "connect me",
+        "transfer", "reach out"
+    ]
+    
         question_lower = question.lower()
-        if any(phrase in question_lower for phrase in contact_phrases) or \
-           any(word in question_lower.split() for word in ["agent", "human", "admin", "team"]):
+        if any(phrase in question_lower for phrase in contact_phrases) and \
+       any(word in question_lower for word in ["agent", "human", "admin", "team", "your"]):
             return self.translations[language_code]['contact_response']
         return None
 
