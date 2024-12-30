@@ -1001,14 +1001,16 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # Context Update (In-Memory)
 # ---------------------------
 def update_user_context(user_data, intent):
-    """Update user context without DB modification."""
+    """Update user context using in-memory dictionary."""
     try:
-        # In-memory context update
-        user_data['last_intent'] = intent
+        # Use in-memory context tracking instead of database
+        if not hasattr(user_data, 'context'):
+            user_data.context = {}  # Create context if missing
+
+        user_data.context['last_intent'] = intent
         logging.info(f"Updated user intent: {intent}")
     except Exception as e:
         logging.error(f"Error updating user context: {str(e)}")
-
 
 # ---------------------------
 # Main Query Handler
@@ -1052,17 +1054,17 @@ def handle_dynamic_query(question, user_data, messenger_id):
         # Keyword match lookup
         for key, value in keywords.items():
             if key in question.lower():
-                # Update context
                 update_user_context(user_data, "refinance_steps")
                 return value
 
         # Short responses handling (yes, okay, sure)
         if question.lower() in ["yes", "sure", "okay"]:
-            if user_data.get('last_intent') == "refinance_steps":
+            # Access context using in-memory storage
+            if 'last_intent' in user_data.context and user_data.context['last_intent'] == "refinance_steps":
                 return "Great! I can connect you to an agent for guidance. Contact here: https://wa.me/60126181683"
             return "Awesome! What else would you like to know?"
 
-        # Intent classification using GPT
+        # Classify Intent with GPT
         intent = classify_intent_with_gpt(question)
 
         # Handle Intent Responses
@@ -1085,7 +1087,7 @@ def handle_dynamic_query(question, user_data, messenger_id):
         elif intent == "greeting":
             return "Hey there! I'm Finzo AI Buddy. How can I assist you today?"
 
-        # Fallback to GPT if intent is unknown
+        # Fallback to GPT
         return handle_gpt_query(question, user_data, messenger_id)
 
     except Exception as e:
@@ -1097,7 +1099,6 @@ def handle_dynamic_query(question, user_data, messenger_id):
 # Intent Classification
 # ---------------------------
 def classify_intent_with_gpt(question):
-    """Classify intent using GPT."""
     try:
         system_prompt = (
             "You are a smart assistant that identifies the user's intent based on the question provided. "
@@ -1107,10 +1108,8 @@ def classify_intent_with_gpt(question):
 
         gpt_response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": question}
-            ]
+            messages=[{"role": "system", "content": system_prompt},
+                      {"role": "user", "content": question}]
         )
         return gpt_response['choices'][0]['message']['content'].strip().lower()
 
@@ -1150,10 +1149,8 @@ def handle_gpt_query(question, user_data, messenger_id):
 
         gpt_response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": question}
-            ]
+            messages=[{"role": "system", "content": system_prompt},
+                      {"role": "user", "content": question}]
         )
         return gpt_response['choices'][0]['message']['content'].strip()
 
