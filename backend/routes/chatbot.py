@@ -997,8 +997,21 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # -------------------
 # Function to load presets from presets.json
 
+# ---------------------------
+# Handle Queries
+# ---------------------------
 def handle_query(question, user_data, messenger_id):
     try:
+        # Handle contextual queries
+        contextual_response = handle_contextual_query(question, user_data)
+        if contextual_response:
+            return contextual_response
+
+        # Handle dynamic queries
+        dynamic_response = handle_dynamic_query(question, user_data, messenger_id)
+        if dynamic_response:
+            return dynamic_response
+
         # Check if the question matches contact-related queries
         contact_response = handle_contact_queries(question, user_data, messenger_id)
         if contact_response:
@@ -1014,86 +1027,140 @@ def handle_query(question, user_data, messenger_id):
 
     except Exception as e:
         logging.error(f"Error in handle_query: {str(e)}")
-        return "Sorry, I couldn't find an answer. Let me connect you to someone who can help: https://wa.me/60126181683"  
+        return "Sorry, I couldn't find an answer. Let me connect you to someone who can help: https://wa.me/60126181683"
 
+# ---------------------------
+# Contextual Query Handling
+# ---------------------------
+def handle_contextual_query(question, user_data):
+    # Build context dynamically based on previous questions
+    chat_history = [
+        {"role": "system", "content": "You are a helpful assistant specializing in home refinancing."}
+    ]
 
-# Preprocessing function for contact queries
-def preprocess_contact_query(text):
-    """Normalize text by removing punctuation and converting to lowercase."""
-    return text.lower().strip().replace('?', '').replace('.', '').replace(',', '').replace('!', '')
+    # Append user’s previous questions
+    for chat in user_data.chat_history:
+        chat_history.append({"role": "user", "content": chat['question']})
+        chat_history.append({"role": "assistant", "content": chat['answer']})
 
+    # Add the latest question
+    chat_history.append({"role": "user", "content": question})
 
-# Handle contact queries
-def handle_contact_queries(question, user_data, messenger_id):
-    """Handle questions related to contacting agents or admin."""
-    global presets_data  # Ensure access to global presets_data
+    # Get GPT response
+    gpt_response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=chat_history
+    )
 
+    # Return GPT's response
+    return gpt_response['choices'][0]['message']['content'].strip()
+
+# ---------------------------
+# Dynamic Query Handling
+# ---------------------------
+def handle_dynamic_query(question, user_data, messenger_id):
     try:
-        # Preprocess the query for better matching
+        # Classify intent using GPT
+        intent = classify_intent_with_gpt(question)
+
+        # Map intents to actions
+        if intent == "contact_agent":
+            return "No worries! Click here to contact our admin: https://wa.me/60126181683"
+
+        elif intent == "ask_rates":
+            return "Interest rates vary based on your loan amount and tenure. Want me to connect you with an agent?"
+
+        elif intent == "refinance_steps":
+            return "Refinancing is simple! Check your loan details, gather documents, and apply. Need more info?"
+
+        elif intent == "loan_eligibility":
+            return "Eligibility depends on income, credit score, and debt ratio. I can help connect you with an expert."
+
+        elif intent == "greeting":
+            return "Hey there! I'm Finzo AI Buddy. How can I help with your refinancing needs?"
+
+        # Fallback to GPT if intent is unknown
+        return handle_gpt_query(question, user_data, messenger_id)
+
+    except Exception as e:
+        logging.error(f"Error handling query: {str(e)}")
+        return "I couldn't process that right now. Click here to contact admin: https://wa.me/60126181683"
+
+# ---------------------------
+# Intent Classification
+# ---------------------------
+def classify_intent_with_gpt(question):
+    system_prompt = (
+        "You are a smart assistant that identifies the user's intent based on the question provided. "
+        "Classify the intent from this list: 'contact_agent', 'ask_rates', 'refinance_steps', "
+        "'loan_eligibility', 'application_process', 'greeting', or 'unknown'. "
+        "Provide only the intent as the response."
+    )
+
+    # Send query to GPT
+    gpt_response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": question}
+        ]
+    )
+
+    # Extract classified intent
+    intent = gpt_response['choices'][0]['message']['content'].strip().lower()
+    return intent
+
+# ---------------------------
+# Contact Query Handling
+# ---------------------------
+def handle_contact_queries(question, user_data, messenger_id):
+    global presets_data
+    try:
+        # Preprocess query
         normalized_question = preprocess_contact_query(question)
 
         # Select language for response
         language = user_data.language_code if presets_data.get('contact_queries', {}).get(user_data.language_code) else 'en'
-        logging.info(f"Selected Language for Contact Queries: {language}")
-
-        if 'contact_queries' not in presets_data:
-            logging.error("'contact_queries' not found in presets.json")
-            return None
-
-        # Retrieve queries from presets
         queries = presets_data['contact_queries'].get(language, {})
 
-        # Perform fuzzy matching with a lenient cutoff
+        # Match query
         matches = get_close_matches(normalized_question, queries.keys(), n=1, cutoff=0.4)
         if matches:
-            logging.info(f"Matched Contact Query: {matches[0]} -> {queries[matches[0]]}")
             return queries[matches[0]]
 
-        # Fallback response
-        logging.info(f"No match found for contact query: {question}")
-        return "No worries, you can reach us directly here: https://wa.me/60126181683"
+        # Default response
+        return "Let me get you connected! Reach out here: https://wa.me/60126181683"
 
     except Exception as e:
         logging.error(f"Error in handle_contact_queries: {str(e)}")
         return "Let me get you connected! Reach out here: https://wa.me/60126181683"
 
-
-# Handle FAQ queries
+# ---------------------------
+# FAQ Query Handling
+# ---------------------------
 def handle_faq_queries(question, user_data):
-    """Handle frequently asked questions related to home loans and refinancing."""
-    global presets_data  # Ensure access to global presets_data
+    global presets_data
     try:
-        # Preprocess query for better matching
         normalized_question = preprocess_contact_query(question)
-
         faq_responses = presets_data.get('faq', {}).get(user_data.language_code, {})
-        if not faq_responses:
-            logging.error("'faq' not found in presets.json for the selected language.")
-            return None
-
         matches = get_close_matches(normalized_question, faq_responses.keys(), n=1, cutoff=0.4)
         if matches:
-            logging.info(f"Matched FAQ: {matches[0]} -> {faq_responses[matches[0]]}")
             return faq_responses[matches[0]]
 
-        # Fallback response
-        logging.info(f"No match found for FAQ: {question}")
-        return "Hmm, not sure about that! Need more help? Click here: https://wa.me/60126181683"
+        return "Not sure about that! Need more help? Click here: https://wa.me/60126181683"
 
     except Exception as e:
         logging.error(f"Error in handle_faq_queries: {str(e)}")
         return "I'm not sure about that. Let me connect you to someone who can help: https://wa.me/60126181683"
 
-
-# Handle GPT query fallback
+# ---------------------------
+# GPT Query Fallback
+# ---------------------------
 def handle_gpt_query(question, user_data, messenger_id):
-    """Use GPT for questions not covered in predefined queries."""
     try:
         system_prompt = (
             "You are Finzo AI Buddy, a friendly assistant specializing in home refinancing, housing loans, and related financial topics in Malaysia. Keep responses short, simple, and conversational. Avoid jargon and suggest talking to admin if needed."
         )
-
-        logging.info(f"Question not found in presets, sending to GPT: {question}")
 
         gpt_response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -1104,13 +1171,11 @@ def handle_gpt_query(question, user_data, messenger_id):
         )
 
         reply = gpt_response['choices'][0]['message']['content'].strip()
-        log_gpt_query(messenger_id, question, reply)
         return reply
 
     except Exception as e:
         logging.error(f"GPT Query Failed: {str(e)}")
         return "I couldn't process that right now. Let me get someone to help: https://wa.me/60126181683"
-
 
 # Log GPT queries
 
