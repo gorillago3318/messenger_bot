@@ -1155,6 +1155,16 @@ def handle_faq_queries(question, user_data):
 # ---------------------------
 # GPT Query Fallback
 # ---------------------------
+
+# ----------------------------
+# Preprocessing Queries
+# ----------------------------
+def preprocess_contact_query(text):
+    """Normalize text by removing punctuation and converting to lowercase."""
+    import re  # Ensure regex is available
+    # Remove special characters and extra spaces
+    return re.sub(r'[^\w\s]', '', text).strip().lower()
+
 def handle_gpt_query(question, user_data, messenger_id):
     try:
         system_prompt = (
@@ -1203,6 +1213,7 @@ def log_gpt_query(messenger_id, question, response):
     except Exception as e:
         logging.error(f"Error logging GPT query: {str(e)}")
         db.session.rollback()
+
 
 
 # -------------------
