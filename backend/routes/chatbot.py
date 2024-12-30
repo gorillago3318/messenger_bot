@@ -998,204 +998,182 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # Context Handling (In-Memory)
 # ---------------------------
 
-def update_user_context(user_data, intent):
-    """Tracks user intent without treating user_data as a dictionary."""
+def update_user_context(user_data, intent, conversation_history=None):
+    """Tracks user context with enhanced conversation memory."""
     try:
-        # Check if 'context' is already an attribute in user_data
-        if not hasattr(user_data, 'context') or user_data.context is None:
-            # Create context as an empty dictionary (in-memory)
-            user_data.context = {}  
-
-        # Update last intent in the context
+        if not hasattr(user_data, 'context'):
+            user_data.context = {
+                'last_intent': None,
+                'conversation_history': [],
+                'user_preferences': {},
+                'interaction_stage': 'initial'
+            }
+        
+        # Update context with more sophisticated tracking
         user_data.context['last_intent'] = intent
-        logging.info(f"Updated user intent: {intent}")
-
+        if conversation_history:
+            user_data.context['conversation_history'].append({
+                'intent': intent,
+                'timestamp': datetime.now(),
+                'context': conversation_history
+            })
+            
+        # Prune old history (keep last 5 interactions)
+        if len(user_data.context['conversation_history']) > 5:
+            user_data.context['conversation_history'] = user_data.context['conversation_history'][-5:]
+            
     except Exception as e:
         logging.error(f"Error updating user context: {str(e)}")
 
-# ---------------------------
-# Main Query Handler
-# ---------------------------
 def handle_query(question, user_data, messenger_id):
     try:
-        # Step 1: FAQ Queries (Presets Lookup)
+        # First, analyze conversation context
+        context = analyze_conversation_context(question, user_data)
+        
+        # Handle greetings with personality
+        if context.get('is_greeting'):
+            return generate_contextual_greeting(user_data)
+            
+        # Handle continuity in conversation
+        if context.get('is_followup'):
+            return handle_conversation_continuity(question, user_data, context)
+        
+        # Standard pipeline with enhanced responses
+        responses = []
+        
+        # Check FAQ but with improved matching
         faq_response = handle_faq_queries(question, user_data)
         if faq_response:
-            return faq_response
-
-        # Step 2: Contact Queries
+            responses.append(faq_response)
+            
+        # Check for contact intent with context
         contact_response = handle_contact_queries(question, user_data, messenger_id)
         if contact_response:
-            return contact_response
-
-        # Step 3: Dynamic Queries (Quick Keywords)
+            responses.append(contact_response)
+            
+        # Dynamic handling with personality
         dynamic_response = handle_dynamic_query(question, user_data, messenger_id)
         if dynamic_response:
-            return dynamic_response
-
-        # Step 4: GPT Fallback (Freestyle)
-        return handle_gpt_query(question, user_data, messenger_id)
-
+            responses.append(dynamic_response)
+            
+        # If we have multiple valid responses, choose the most contextually appropriate
+        if responses:
+            return select_best_response(responses, context)
+            
+        # Enhanced GPT fallback
+        return handle_gpt_query(question, user_data, messenger_id, context)
+        
     except Exception as e:
         logging.error(f"Error in handle_query: {str(e)}")
-        return "Sorry, I couldn't find an answer. Let me connect you to someone who can help: https://wa.me/60126181683"
+        return generate_friendly_error_message()
 
+def analyze_conversation_context(question, user_data):
+    """Analyzes the conversation for better context understanding."""
+    context = {
+        'is_greeting': False,
+        'is_followup': False,
+        'emotional_tone': 'neutral',
+        'conversation_stage': 'initial'
+    }
+    
+    # Detect greetings more naturally
+    greeting_patterns = [
+        r'\b(hi|hello|hey|good\s*(morning|afternoon|evening))\b',
+        r'^(hi|hello|hey)[\s\W]*$'
+    ]
+    context['is_greeting'] = any(re.search(pattern, question.lower()) for pattern in greeting_patterns)
+    
+    # Detect follow-up questions
+    followup_indicators = [
+        r'\b(and|also|what about|how about)\b',
+        r'^(so|then|but)\b',
+        r'\b(you mentioned|earlier|before)\b'
+    ]
+    context['is_followup'] = any(re.search(pattern, question.lower()) for pattern in followup_indicators)
+    
+    # Analyze emotional tone
+    context['emotional_tone'] = analyze_emotional_tone(question)
+    
+    # Track conversation stage
+    if hasattr(user_data, 'context'):
+        context['conversation_stage'] = user_data.context.get('interaction_stage', 'initial')
+        
+    return context
 
-# ---------------------------
-# FAQ Query Handling (Presets)
-# ---------------------------
-def handle_faq_queries(question, user_data):
+def generate_contextual_greeting(user_data):
+    """Generates varied, contextual greetings."""
+    greetings = [
+        "Hey there! I'm here to help you with your financial journey. What's on your mind?",
+        "Hi! I'm your Finzo buddy. How can I make your day better?",
+        "Welcome! Ready to explore your financial options together?",
+        "Hello! I'm excited to help you achieve your financial goals. What would you like to know?"
+    ]
+    
+    # Select greeting based on user history and time
+    if hasattr(user_data, 'context') and user_data.context.get('conversation_history'):
+        return "Welcome back! Shall we continue where we left off?"
+    
+    return random.choice(greetings)
+
+def handle_gpt_query(question, user_data, messenger_id, context):
+    """Enhanced GPT handling with better prompting."""
     try:
-        # Preprocess query for better matching
-        normalized_question = preprocess_query(question)
-
-        # Lookup exact or fuzzy match in presets.json
-        faq_responses = presets_data.get('faq', {}).get(user_data.language_code, {})
-        if normalized_question in faq_responses:
-            return faq_responses[normalized_question]
-
-        # Fuzzy matching as a fallback
-        matches = get_close_matches(normalized_question, faq_responses.keys(), n=1, cutoff=0.7)
-        if matches:
-            return faq_responses[matches[0]]
-
-        # No match found
-        return None
-
-    except Exception as e:
-        logging.error(f"Error in FAQ queries: {str(e)}")
-        return None
-
-
-# ---------------------------
-# Contact Queries
-# ---------------------------
-def handle_contact_queries(question, user_data, messenger_id):
-    """Handles contact-related queries."""
-    try:
-        contact_phrases = [
-            "talk to agent", "contact agent", "how to reach admin", "contact admin",
-            "need help", "who do I talk to", "connect with admin"
-        ]
-
-        # Match keywords for contact
-        if any(phrase in question.lower() for phrase in contact_phrases):
-            return "Sure! You can reach our admin here: https://wa.me/60126181683"
-
-        return None  # No match
-
-    except Exception as e:
-        logging.error(f"Error in handle_contact_queries: {str(e)}")
-        return "I'm here to help! Connect with admin here: https://wa.me/60126181683"
-
-# ---------------------------
-# Intent Classification with GPT
-# ---------------------------
-def classify_intent_with_gpt(question):
-    """Classify user intent using GPT."""
-    try:
-        # Prompt GPT to classify user intent
-        prompt = (
-            "You are a smart assistant that identifies the user's intent based on the question. "
-            "Classify the intent: 'contact_agent', 'contact_admin', 'ask_rates', 'refinance_steps', "
-            "'loan_eligibility', 'application_process', 'greeting', or 'unknown'. Provide only the intent as output."
-        )
-
-        # Send query to GPT-3.5 Turbo
-        gpt_response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": prompt},
-                {"role": "user", "content": question}
-            ]
-        )
-
-        # Extract and return the intent from GPT response
-        return gpt_response['choices'][0]['message']['content'].strip().lower()
-
-    except Exception as e:
-        logging.error(f"Intent classification failed: {str(e)}")
-        return "unknown"  # Default to unknown intent
-
-
-# ---------------------------
-# Dynamic Query Handling
-# ---------------------------
-def handle_dynamic_query(question, user_data, messenger_id):
-    try:
-        # Predefined keyword responses
-        keywords = {
-            "what is refinancing": "Refinancing means replacing your current loan with a new one to reduce rates or payments.",
-            "what is the step to refinance": "Refinancing involves checking loan details, preparing documents, and applying. Need help?"
-        }
-
-        # Keyword matching
-        for key, value in keywords.items():
-            if key in question.lower():
-                update_user_context(user_data, "refinance_steps")
-                return value
-
-        # Short confirmations ('yes', 'okay') based on context
-        if question.lower() in ["yes", "sure", "okay"]:
-            if hasattr(user_data, 'context') and user_data.context.get('last_intent') == "refinance_steps":
-                return "Great! I can connect you to an agent for guidance. Contact here: https://wa.me/60126181683"
-            return "Awesome! What else would you like to know?"
-
-        # Intent Classification (GPT)
-        intent = classify_intent_with_gpt(question)
-
-        # Map Intents to Actions
-        if intent == "contact_agent":
-            return "No worries! Here's how to reach an agent: https://wa.me/60126181683"
-
-        elif intent == "contact_admin":
-            return "Sure! Click here to contact admin: https://wa.me/60126181683"
-
-        elif intent == "ask_rates":
-            return "Rates vary based on loan size and tenure. Need more details?"
-
-        elif intent == "refinance_steps":
-            update_user_context(user_data, "refinance_steps")
-            return "Refinancing involves checking loan details, preparing documents, and applying. Need help?"
-
-        elif intent == "loan_eligibility":
-            return "Eligibility depends on income, credit score, and debt ratio. I can help connect you with an expert."
-
-        elif intent == "greeting":
-            return "Hey there! I'm Finzo AI Buddy. How can I assist you today?"
-
-        # Fallback to GPT
-        return handle_gpt_query(question, user_data, messenger_id)
-
-    except Exception as e:
-        logging.error(f"Error handling dynamic query: {str(e)}")
-        return "I couldn't process that right now. Click here to contact admin: https://wa.me/60126181683"
-
-
-# ---------------------------
-# GPT Query Fallback
-# ---------------------------
-def handle_gpt_query(question, user_data, messenger_id):
-    try:
+        # Build a more sophisticated system prompt
         system_prompt = (
-            "You are Finzo AI Buddy, a friendly assistant specializing in home refinancing, housing loans, "
-            "and related financial topics in Malaysia. Keep responses short, simple, and helpful."
-        )
+            "You are Finzo AI Buddy, a warm and knowledgeable financial assistant with expertise in Malaysian "
+            "home refinancing and housing loans. Your personality traits:\n"
+            "- Friendly and approachable\n"
+            "- Patient and understanding\n"
+            "- Professional but not overly formal\n"
+            "- Empathetic to financial concerns\n\n"
+            "Current conversation context: {}\n"
+            "Respond naturally as if chatting with a friend while maintaining professionalism."
+        ).format(context.get('conversation_stage', 'initial'))
 
-        gpt_response = openai.ChatCompletion.create(
+        # Include conversation history for context
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        if hasattr(user_data, 'context') and user_data.context.get('conversation_history'):
+            # Add relevant history for context
+            for hist in user_data.context['conversation_history'][-2:]:  # Last 2 interactions
+                messages.append({"role": "user", "content": hist['context']})
+        
+        messages.append({"role": "user", "content": question})
+
+        response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "system", "content": system_prompt},
-                      {"role": "user", "content": question}]
+            messages=messages,
+            temperature=0.7  # Add some variety to responses
         )
 
-        # Return GPT-generated answer
-        return gpt_response['choices'][0]['message']['content'].strip()
+        return response['choices'][0]['message']['content'].strip()
 
     except Exception as e:
         logging.error(f"GPT Query Failed: {str(e)}")
-        return "I couldn't process that. Contact us: https://wa.me/60126181683"
+        return "I'm having a moment here. Would you mind reaching out to our team? They're super helpful: https://wa.me/60126181683"
 
+def analyze_emotional_tone(text):
+    """Analyzes the emotional tone of user input."""
+    # Simple sentiment analysis
+    positive_words = {'thanks', 'good', 'great', 'awesome', 'help', 'appreciate'}
+    negative_words = {'bad', 'wrong', 'terrible', 'unhappy', 'confused', 'difficult'}
+    
+    words = set(text.lower().split())
+    
+    if words & positive_words:
+        return 'positive'
+    elif words & negative_words:
+        return 'negative'
+    return 'neutral'
 
+def generate_friendly_error_message():
+    """Generates varied, friendly error messages."""
+    messages = [
+        "Oops! Let me connect you with our awesome team for better assistance: https://wa.me/60126181683",
+        "I seem to be having a small hiccup. Our team would love to help you directly: https://wa.me/60126181683",
+        "Something's not quite right on my end. Our friendly team is ready to assist: https://wa.me/60126181683"
+    ]
+    return random.choice(messages)
 # ---------------------------
 # Preprocessing Queries
 # ---------------------------
