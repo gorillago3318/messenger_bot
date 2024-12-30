@@ -348,7 +348,17 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.debug(f"Processing step: {current_step} with input: {message_body}")
 
         # ----------------------------
-        # 1. Initialize Step Mapping
+        # 1. Skip Validation in Inquiry Mode
+        # ----------------------------
+        if user_data.mode == 'inquiry':
+            # In Inquiry mode, skip loan-related input validation
+            logging.info(f"🛑 User {messenger_id} is in Inquiry Mode. Skipping validation.")
+            # You can add your logic to directly respond to general questions instead of processing loan details.
+            send_messenger_message(messenger_id, "You can ask about refinancing, home loans, or anything related. How can I assist you today?")
+            return {"status": "success"}, 200  # Continue in inquiry mode
+
+        # ----------------------------
+        # 2. Initialize Step Mapping
         # ----------------------------
         next_step_mapping = {
             'choose_language': 'get_name',
@@ -360,7 +370,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         }
 
         # ----------------------------
-        # 2. Handle 'skip' Command Before Validation
+        # 3. Handle 'skip' Command Before Validation
         # ----------------------------
         if message_body.lower() == 'skip':
             logging.info(f"🔄 Skipping input for step: {current_step}")
@@ -378,7 +388,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             return {"status": "success", "next_step": next_step}, 200
 
         # ----------------------------
-        # 3. Input Validation
+        # 4. Input Validation (Only for relevant steps)
         # ----------------------------
         def validate_input(step, value):
             if step == 'get_name':
@@ -401,7 +411,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             return {"status": "failed"}, 200  # Return without moving forward
 
         # ----------------------------
-        # 4. Apply Updates Based on Input
+        # 5. Apply Updates Based on Input
         # ----------------------------
 
         # Update language_code if the step is 'choose_language'
@@ -425,10 +435,10 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
                 setattr(user_data, key, value)
 
         # Commit updated data
-
         db.session.commit()
+
         # ----------------------------
-        # 5. Move to the Next Step
+        # 6. Move to the Next Step
         # ----------------------------
         next_step = next_step_mapping.get(current_step, None)
 
@@ -563,7 +573,17 @@ def process_message():
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
-        # 8. Process Regular Flow (Ask for user details)
+        # 8. Check Mode Before Processing Repayment Amounts
+        # ----------------------------
+        # If the user is in 'inquiry' mode, do not process repayment amount or any loan-related inputs
+        if user_data.mode == 'inquiry':
+            logging.info(f"🛑 User {sender_id} is in Inquiry Mode. Skipping repayment validation.")
+            # Continue with answering queries and not repayment-related validations
+            send_messenger_message(sender_id, "You can ask about refinancing, home loans, or anything related. How can I assist you today?")
+            return jsonify({"status": "success"}), 200
+
+        # ----------------------------
+        # 9. Process Regular Flow (Ask for user details)
         # ----------------------------
         current_step = user_data.current_step
         process_response, status = process_user_input(current_step, user_data, message_body, messenger_id)
