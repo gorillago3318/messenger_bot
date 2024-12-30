@@ -995,23 +995,13 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # -------------------
 # 9) GPT Query Handling
 # -------------------
-# Function to load presets from presets.json
-
-# ---------------------------
-# Handle Queries
-# ---------------------------
-# -------------------
-# Query Handling System
-# -------------------
-
-import re
-import logging
-from difflib import get_close_matches
-import openai
 
 # ---------------------------
 # Main Query Handler
 # ---------------------------
+def update_user_context(user_data, intent):
+    user_data['last_intent'] = intent
+
 def handle_query(question, user_data, messenger_id):
     try:
         # Handle dynamic queries
@@ -1048,12 +1038,11 @@ def handle_query(question, user_data, messenger_id):
 def classify_intent_with_gpt(question):
     system_prompt = (
         "You are a smart assistant that identifies the user's intent based on the question provided. "
-        "Classify the intent from this list: 'contact_agent', 'ask_rates', 'refinance_steps', "
+        "Classify the intent from this list: 'contact_agent', 'contact_admin', 'ask_rates', 'refinance_steps', "
         "'loan_eligibility', 'application_process', 'greeting', or 'unknown'. "
         "Provide only the intent as the response."
     )
 
-    # Send query to GPT
     gpt_response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -1062,51 +1051,66 @@ def classify_intent_with_gpt(question):
         ]
     )
 
-    # Extract classified intent
+    # Extract intent
     intent = gpt_response['choices'][0]['message']['content'].strip().lower()
     return intent
+
 
 # ---------------------------
 # Dynamic Query Handling
 # ---------------------------
 def handle_dynamic_query(question, user_data, messenger_id):
     try:
-        # Manual keyword mapping for fast responses
+        # Keywords for quick answers
         keywords = {
-            "what is refinancing": "Refinancing is replacing your current loan with a new one to reduce rates or payments.",
-            "why do we refinance": "We refinance to save money, reduce payments, or access cash. Need more info?"
+            "what is refinancing": "Refinancing means replacing your current loan with a new one to reduce rates or payments.",
+            "what is the step to refinance": "Refinancing involves checking loan details, preparing documents, and applying. Need help?"
         }
 
-        # Quick match check before GPT classification
+        # Match keywords
         for key, value in keywords.items():
             if key in question.lower():
+                # Update context for follow-up tracking
+                update_user_context(user_data, "refinance_steps")
                 return value
 
-        # Classify intent dynamically with GPT
+        # Handle short responses based on last intent
+        if question.lower() in ["yes", "sure", "okay"]:
+            # React based on context
+            if user_data.get('last_intent') == "refinance_steps":
+                return "Great! I can connect you to an agent for guidance. Contact here: https://wa.me/60126181683"
+            else:
+                return "Awesome! What else would you like to know?"
+
+        # Intent classification
         intent = classify_intent_with_gpt(question)
 
-        # Map intent-based responses
+        # Map intents
         if intent == "contact_agent":
+            return "No worries! Here's how to reach an agent: https://wa.me/60126181683"
+
+        elif intent == "contact_admin":
             return "Sure! Click here to contact admin: https://wa.me/60126181683"
 
         elif intent == "ask_rates":
-            return "Rates depend on your loan size and tenure. Would you like to connect with an agent?"
+            return "Rates vary based on loan size and tenure. Need more details?"
 
         elif intent == "refinance_steps":
+            update_user_context(user_data, "refinance_steps")
             return "Refinancing involves checking loan details, preparing documents, and applying. Need help?"
 
         elif intent == "loan_eligibility":
-            return "Eligibility depends on income and credit scores. Should I connect you with an expert?"
+            return "Eligibility depends on income, credit score, and debt ratio. I can help connect you with an expert."
 
         elif intent == "greeting":
-            return "Hey there! I'm Finzo AI Buddy. How can I help you today?"
+            return "Hey there! I'm Finzo AI Buddy. How can I assist you today?"
 
-        # GPT fallback for unknown intents
+        # Fallback to GPT for other queries
         return handle_gpt_query(question, user_data, messenger_id)
 
     except Exception as e:
         logging.error(f"Error handling dynamic query: {str(e)}")
-        return "I'm not sure about that. Click here to contact admin: https://wa.me/60126181683"
+        return "I couldn't process that right now. Click here to contact admin: https://wa.me/60126181683"
 
 # ---------------------------
 # FAQ Query Handling
@@ -1158,16 +1162,16 @@ def handle_contact_queries(question, user_data, messenger_id):
 # ---------------------------
 def handle_contextual_query(question, user_data):
     try:
-        # Build context with previous chats
-        chat_history = [{"role": "system", "content": "You are a refinancing assistant for home loans."}]
+        # Build chat history
+        chat_history = [{"role": "system", "content": "You are an assistant specializing in home refinancing."}]
         for chat in user_data.chat_history:
             chat_history.append({"role": "user", "content": chat['question']})
             chat_history.append({"role": "assistant", "content": chat['answer']})
 
-        # Add latest question
+        # Add new question
         chat_history.append({"role": "user", "content": question})
 
-        # Query GPT dynamically
+        # Query GPT
         gpt_response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=chat_history
@@ -1177,7 +1181,7 @@ def handle_contextual_query(question, user_data):
 
     except Exception as e:
         logging.error(f"Contextual query failed: {str(e)}")
-        return "Sorry, I couldn't find an answer. Let me connect you to someone: https://wa.me/60126181683"
+        return "Not sure about that. Let me connect you with someone: https://wa.me/60126181683"
 
 
 
