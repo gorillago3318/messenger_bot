@@ -1002,32 +1002,31 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # ---------------------------
 def handle_query(question, user_data, messenger_id):
     try:
-        # Handle contextual queries
-        contextual_response = handle_contextual_query(question, user_data)
-        if contextual_response:
-            return contextual_response
-
-        # Handle dynamic queries
-        dynamic_response = handle_dynamic_query(question, user_data, messenger_id)
-        if dynamic_response:
-            return dynamic_response
-
-        # Check if the question matches contact-related queries
+        # --- 1. Process FAQs and Contact Queries First ---
         contact_response = handle_contact_queries(question, user_data, messenger_id)
         if contact_response:
-            return contact_response
+            return contact_response  # Matches contact queries directly
 
-        # Handle FAQs
         faq_response = handle_faq_queries(question, user_data)
         if faq_response:
-            return faq_response
+            return faq_response  # Matches FAQ responses directly
 
-        # GPT Fallback with error handling
+        # --- 2. Contextual Handling with Limited History ---
+        contextual_response = handle_contextual_query(question, user_data)
+        if contextual_response:
+            return contextual_response  # Uses past chat history for context
+
+        # --- 3. Dynamic Query Handling with Intent Detection ---
+        dynamic_response = handle_dynamic_query(question, user_data, messenger_id)
+        if dynamic_response:
+            return dynamic_response  # Handles intent classification
+
+        # --- 4. GPT Fallback ---
         return handle_gpt_query(question, user_data, messenger_id)
 
     except Exception as e:
         logging.error(f"Error in handle_query: {str(e)}")
-        return "Sorry, I couldn't find an answer. Let me connect you to someone who can help: https://wa.me/60126181683"
+        return "I'm not sure about that. Let me get someone to assist you: https://wa.me/60126181683"
 
 # ---------------------------
 # Contextual Query Handling
