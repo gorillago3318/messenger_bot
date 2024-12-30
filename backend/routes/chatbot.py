@@ -1001,14 +1001,15 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # Context Update (In-Memory)
 # ---------------------------
 def update_user_context(user_data, intent):
-    """Update user context using in-memory dictionary."""
     try:
-        # Use in-memory context tracking instead of database
+        # Ensure context is initialized in-memory
         if not hasattr(user_data, 'context'):
-            user_data.context = {}  # Create context if missing
+            user_data.context = {}  # Initialize context as a dictionary
 
+        # Update the last_intent in the context
         user_data.context['last_intent'] = intent
         logging.info(f"Updated user intent: {intent}")
+
     except Exception as e:
         logging.error(f"Error updating user context: {str(e)}")
 
@@ -1039,7 +1040,6 @@ def handle_query(question, user_data, messenger_id):
         logging.error(f"Error in handle_query: {str(e)}")
         return "Sorry, I couldn't find an answer. Let me connect you to someone who can help: https://wa.me/60126181683"
 
-
 # ---------------------------
 # Dynamic Query Handling
 # ---------------------------
@@ -1057,17 +1057,17 @@ def handle_dynamic_query(question, user_data, messenger_id):
                 update_user_context(user_data, "refinance_steps")
                 return value
 
-        # Short responses handling (yes, okay, sure)
+        # Handle Short Responses like 'yes' or 'okay'
         if question.lower() in ["yes", "sure", "okay"]:
-            # Access context using in-memory storage
-            if 'last_intent' in user_data.context and user_data.context['last_intent'] == "refinance_steps":
+            # Check context in-memory
+            if hasattr(user_data, 'context') and user_data.context.get('last_intent') == "refinance_steps":
                 return "Great! I can connect you to an agent for guidance. Contact here: https://wa.me/60126181683"
             return "Awesome! What else would you like to know?"
 
         # Classify Intent with GPT
         intent = classify_intent_with_gpt(question)
 
-        # Handle Intent Responses
+        # Intent Responses
         if intent == "contact_agent":
             return "No worries! Here's how to reach an agent: https://wa.me/60126181683"
 
@@ -1094,7 +1094,6 @@ def handle_dynamic_query(question, user_data, messenger_id):
         logging.error(f"Error handling dynamic query: {str(e)}")
         return "I couldn't process that right now. Click here to contact admin: https://wa.me/60126181683"
 
-
 # ---------------------------
 # Intent Classification
 # ---------------------------
@@ -1116,7 +1115,6 @@ def classify_intent_with_gpt(question):
     except Exception as e:
         logging.error(f"Intent classification failed: {str(e)}")
         return "unknown"
-
 
 # ---------------------------
 # FAQ Query Handling
@@ -1140,11 +1138,10 @@ def handle_faq_queries(question, user_data):
 # GPT Query Fallback
 # ---------------------------
 def handle_gpt_query(question, user_data, messenger_id):
-    """GPT Fallback with strict topic enforcement."""
     try:
         system_prompt = (
             "You are Finzo AI Buddy, a friendly assistant specializing in home refinancing, housing loans, "
-            "and related financial topics in Malaysia. ONLY answer questions related to these topics. Politely decline unrelated topics."
+            "and related financial topics in Malaysia. Keep responses short, simple, and helpful. Avoid jargon."
         )
 
         gpt_response = openai.ChatCompletion.create(
@@ -1152,6 +1149,7 @@ def handle_gpt_query(question, user_data, messenger_id):
             messages=[{"role": "system", "content": system_prompt},
                       {"role": "user", "content": question}]
         )
+
         return gpt_response['choices'][0]['message']['content'].strip()
 
     except Exception as e:
