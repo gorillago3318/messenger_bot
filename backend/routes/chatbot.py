@@ -24,7 +24,7 @@ import openai  # Correctly import the openai module
 from backend.utils.presets import get_preset_response
 from datetime import datetime
 from difflib import get_close_matches
-from utils.chatbot_enhanced import ChatbotHandler
+from backend.utils.chatbot_enhanced import ChatbotHandler
 
 chatbot = ChatbotHandler()
 
