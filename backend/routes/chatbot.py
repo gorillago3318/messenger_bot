@@ -993,81 +993,84 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
     except Exception as e:
         logging.error(f"❌ Error sending lead to admin: {str(e)}")
 
-# -------------------
-# 9) GPT Query Handling
-# -------------------
+import logging
+import re
+from difflib import get_close_matches
+import openai
 
 # ---------------------------
-# Context Update (In-Memory)
+# Context Handling (In-Memory)
 # ---------------------------
 def update_user_context(user_data, intent):
+    """Tracks last intent dynamically without database changes."""
     try:
-        # Ensure context is initialized in-memory
+        # Initialize context if not available
         if not hasattr(user_data, 'context'):
             user_data.context = {}  # Initialize context as a dictionary
-
-        # Update the last_intent in the context
+        
+        # Update the intent in context
         user_data.context['last_intent'] = intent
         logging.info(f"Updated user intent: {intent}")
 
     except Exception as e:
         logging.error(f"Error updating user context: {str(e)}")
 
+
 # ---------------------------
 # Main Query Handler
 # ---------------------------
 def handle_query(question, user_data, messenger_id):
     try:
-        # Handle Dynamic Queries
-        dynamic_response = handle_dynamic_query(question, user_data, messenger_id)
-        if dynamic_response:
-            return dynamic_response
-
-        # Handle FAQ Queries BEFORE contact queries
+        # Step 1: FAQ Queries (Presets.json lookup)
         faq_response = handle_faq_queries(question, user_data)
         if faq_response:
             return faq_response
 
-        # Handle Contact Queries
+        # Step 2: Contact Queries
         contact_response = handle_contact_queries(question, user_data, messenger_id)
         if contact_response:
             return contact_response
 
-        # GPT Fallback
+        # Step 3: Dynamic Queries
+        dynamic_response = handle_dynamic_query(question, user_data, messenger_id)
+        if dynamic_response:
+            return dynamic_response
+
+        # Step 4: GPT Fallback
         return handle_gpt_query(question, user_data, messenger_id)
 
     except Exception as e:
         logging.error(f"Error in handle_query: {str(e)}")
         return "Sorry, I couldn't find an answer. Let me connect you to someone who can help: https://wa.me/60126181683"
 
+
 # ---------------------------
 # Dynamic Query Handling
 # ---------------------------
 def handle_dynamic_query(question, user_data, messenger_id):
     try:
-        # Predefined keyword responses
+        # Quick keyword responses
         keywords = {
             "what is refinancing": "Refinancing means replacing your current loan with a new one to reduce rates or payments.",
             "what is the step to refinance": "Refinancing involves checking loan details, preparing documents, and applying. Need help?"
         }
 
-        # Keyword match lookup
+        # Keyword matching
         for key, value in keywords.items():
             if key in question.lower():
                 update_user_context(user_data, "refinance_steps")
                 return value
 
-        # Handle Short Responses like 'yes' or 'okay'
+        # Short responses like 'yes'
         if question.lower() in ["yes", "sure", "okay"]:
-            # Check context in-memory
             if hasattr(user_data, 'context') and user_data.context.get('last_intent') == "refinance_steps":
                 return "Great! I can connect you to an agent for guidance. Contact here: https://wa.me/60126181683"
             return "Awesome! What else would you like to know?"
 
-        # Classify Intent with GPT
+        # Intent classification via GPT
         intent = classify_intent_with_gpt(question)
 
-        # Intent Responses
+        # Intent-specific responses
         if intent == "contact_agent":
             return "No worries! Here's how to reach an agent: https://wa.me/60126181683"
 
@@ -1087,37 +1090,16 @@ def handle_dynamic_query(question, user_data, messenger_id):
         elif intent == "greeting":
             return "Hey there! I'm Finzo AI Buddy. How can I assist you today?"
 
-        # Fallback to GPT
+        # GPT fallback if no match
         return handle_gpt_query(question, user_data, messenger_id)
 
     except Exception as e:
         logging.error(f"Error handling dynamic query: {str(e)}")
         return "I couldn't process that right now. Click here to contact admin: https://wa.me/60126181683"
 
-# ---------------------------
-# Intent Classification
-# ---------------------------
-def classify_intent_with_gpt(question):
-    try:
-        system_prompt = (
-            "You are a smart assistant that identifies the user's intent based on the question provided. "
-            "Classify the intent from this list: 'contact_agent', 'contact_admin', 'ask_rates', 'refinance_steps', "
-            "'loan_eligibility', 'application_process', 'greeting', or 'unknown'. Provide only the intent as the response."
-        )
-
-        gpt_response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "system", "content": system_prompt},
-                      {"role": "user", "content": question}]
-        )
-        return gpt_response['choices'][0]['message']['content'].strip().lower()
-
-    except Exception as e:
-        logging.error(f"Intent classification failed: {str(e)}")
-        return "unknown"
 
 # ---------------------------
-# FAQ Query Handling
+# FAQ Query Handling (Presets)
 # ---------------------------
 def handle_faq_queries(question, user_data):
     global presets_data
@@ -1158,10 +1140,30 @@ def handle_gpt_query(question, user_data, messenger_id):
 
 
 # ---------------------------
+# Intent Classification
+# ---------------------------
+def classify_intent_with_gpt(question):
+    try:
+        prompt = (
+            "You are a smart assistant that identifies the user's intent based on the question. "
+            "Classify the intent: 'contact_agent', 'contact_admin', 'ask_rates', 'refinance_steps', "
+            "'loan_eligibility', 'application_process', 'greeting', or 'unknown'. Provide only the intent as output."
+        )
+        gpt_response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "system", "content": prompt},
+                      {"role": "user", "content": question}]
+        )
+        return gpt_response['choices'][0]['message']['content'].strip().lower()
+    except Exception as e:
+        logging.error(f"Intent classification failed: {str(e)}")
+        return "unknown"
+
+
+# ---------------------------
 # Preprocessing Queries
 # ---------------------------
 def preprocess_query(text):
-    """Normalize text by removing special characters and converting to lowercase."""
     return re.sub(r'[^\w\s]', '', text).strip().lower()
 
 def log_gpt_query(messenger_id, question, response):
