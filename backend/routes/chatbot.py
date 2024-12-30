@@ -1117,7 +1117,29 @@ def handle_faq_queries(question, user_data):
         logging.error(f"Error in FAQ queries: {str(e)}")
         return None
 
+def handle_contact_queries(question, user_data, messenger_id):
+    """Handles questions about contacting agents or admin."""
+    global presets_data
+    try:
+        # Preprocess query
+        normalized_question = preprocess_query(question)
 
+        # Select language response
+        language = user_data.language_code if presets_data.get('contact_queries', {}).get(user_data.language_code) else 'en'
+        queries = presets_data['contact_queries'].get(language, {})
+
+        # Match query using fuzzy match
+        matches = get_close_matches(normalized_question, queries.keys(), n=1, cutoff=0.7)
+        if matches:
+            return queries[matches[0]]
+
+        # Default fallback
+        return "Let me get you connected! Contact here: https://wa.me/60126181683"
+
+    except Exception as e:
+        logging.error(f"Error in handle_contact_queries: {str(e)}")
+        return "I couldn't process that right now. Let me get someone to help: https://wa.me/60126181683"
+    
 # ---------------------------
 # GPT Query Fallback
 # ---------------------------
