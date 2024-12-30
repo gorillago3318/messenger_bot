@@ -1045,13 +1045,13 @@ def handle_query(question, user_data, messenger_id):
 # ---------------------------
 def handle_dynamic_query(question, user_data, messenger_id):
     try:
-        # Quick keyword responses
+        # Quick keyword-based answers
         keywords = {
             "what is refinancing": "Refinancing means replacing your current loan with a new one to reduce rates or payments.",
             "what is the step to refinance": "Refinancing involves checking loan details, preparing documents, and applying. Need help?"
         }
 
-        # Keyword matching
+        # Keyword match lookup
         for key, value in keywords.items():
             if key in question.lower():
                 update_user_context(user_data, "refinance_steps")
@@ -1063,7 +1063,7 @@ def handle_dynamic_query(question, user_data, messenger_id):
                 return "Great! I can connect you to an agent for guidance. Contact here: https://wa.me/60126181683"
             return "Awesome! What else would you like to know?"
 
-        # Intent classification via GPT
+        # Intent classification using GPT
         intent = classify_intent_with_gpt(question)
 
         # Intent-specific responses
@@ -1092,7 +1092,6 @@ def handle_dynamic_query(question, user_data, messenger_id):
     except Exception as e:
         logging.error(f"Error handling dynamic query: {str(e)}")
         return "I couldn't process that right now. Click here to contact admin: https://wa.me/60126181683"
-
 
 # ---------------------------
 # FAQ Query Handling (Presets)
