@@ -1043,24 +1043,38 @@ def handle_query(question, user_data, messenger_id):
 
 
 # ---------------------------
+# Intent Classification
+# ---------------------------
+def classify_intent_with_gpt(question):
+    system_prompt = (
+        "You are a smart assistant that identifies the user's intent based on the question provided. "
+        "Classify the intent from this list: 'contact_agent', 'ask_rates', 'refinance_steps', "
+        "'loan_eligibility', 'application_process', 'greeting', or 'unknown'. "
+        "Provide only the intent as the response."
+    )
+
+    # Send query to GPT
+    gpt_response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": question}
+        ]
+    )
+
+    # Extract classified intent
+    intent = gpt_response['choices'][0]['message']['content'].strip().lower()
+    return intent
+
+# ---------------------------
 # Dynamic Query Handling
 # ---------------------------
 def handle_dynamic_query(question, user_data, messenger_id):
     try:
-        # Manual intent overrides for FAQs
-        keywords = {
-            "what is refinancing": "Refinancing means replacing your existing home loan with a new one, often to get better rates or terms.",
-            "why do we refinance": "People refinance to reduce interest rates, lower payments, or access extra cash. Need more details?",
-        }
-
-        for key, value in keywords.items():
-            if key in question.lower():
-                return value
-
-        # Continue with intent classification
+        # Intent Classification
         intent = classify_intent_with_gpt(question)
 
-        # Intent-based responses
+        # Intent-based Responses
         if intent == "contact_agent":
             return "No worries! Click here to contact our admin: https://wa.me/60126181683"
 
@@ -1082,7 +1096,6 @@ def handle_dynamic_query(question, user_data, messenger_id):
     except Exception as e:
         logging.error(f"Error handling query: {str(e)}")
         return "I couldn't process that right now. Click here to contact admin: https://wa.me/60126181683"
-
 
 # ---------------------------
 # FAQ Query Handling
