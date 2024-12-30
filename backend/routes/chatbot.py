@@ -1071,31 +1071,42 @@ def classify_intent_with_gpt(question):
 # ---------------------------
 def handle_dynamic_query(question, user_data, messenger_id):
     try:
-        # Intent Classification
+        # Manual keyword mapping for fast responses
+        keywords = {
+            "what is refinancing": "Refinancing is replacing your current loan with a new one to reduce rates or payments.",
+            "why do we refinance": "We refinance to save money, reduce payments, or access cash. Need more info?"
+        }
+
+        # Quick match check before GPT classification
+        for key, value in keywords.items():
+            if key in question.lower():
+                return value
+
+        # Classify intent dynamically with GPT
         intent = classify_intent_with_gpt(question)
 
-        # Intent-based Responses
+        # Map intent-based responses
         if intent == "contact_agent":
-            return "No worries! Click here to contact our admin: https://wa.me/60126181683"
+            return "Sure! Click here to contact admin: https://wa.me/60126181683"
 
         elif intent == "ask_rates":
-            return "Interest rates vary based on your loan amount and tenure. Want me to connect you with an agent?"
+            return "Rates depend on your loan size and tenure. Would you like to connect with an agent?"
 
         elif intent == "refinance_steps":
-            return "Refinancing is simple! Check your loan details, gather documents, and apply. Need more info?"
+            return "Refinancing involves checking loan details, preparing documents, and applying. Need help?"
 
         elif intent == "loan_eligibility":
-            return "Eligibility depends on income, credit score, and debt ratio. I can help connect you with an expert."
+            return "Eligibility depends on income and credit scores. Should I connect you with an expert?"
 
         elif intent == "greeting":
-            return "Hey there! I'm Finzo AI Buddy. How can I help with your refinancing needs?"
+            return "Hey there! I'm Finzo AI Buddy. How can I help you today?"
 
-        # Fallback to GPT
+        # GPT fallback for unknown intents
         return handle_gpt_query(question, user_data, messenger_id)
 
     except Exception as e:
-        logging.error(f"Error handling query: {str(e)}")
-        return "I couldn't process that right now. Click here to contact admin: https://wa.me/60126181683"
+        logging.error(f"Error handling dynamic query: {str(e)}")
+        return "I'm not sure about that. Click here to contact admin: https://wa.me/60126181683"
 
 # ---------------------------
 # FAQ Query Handling
@@ -1147,19 +1158,16 @@ def handle_contact_queries(question, user_data, messenger_id):
 # ---------------------------
 def handle_contextual_query(question, user_data):
     try:
-        chat_history = [
-            {"role": "system", "content": "You are a helpful assistant specializing in home refinancing."}
-        ]
-
-        # Append previous chats
+        # Build context with previous chats
+        chat_history = [{"role": "system", "content": "You are a refinancing assistant for home loans."}]
         for chat in user_data.chat_history:
             chat_history.append({"role": "user", "content": chat['question']})
             chat_history.append({"role": "assistant", "content": chat['answer']})
 
-        # Add the latest question
+        # Add latest question
         chat_history.append({"role": "user", "content": question})
 
-        # Get GPT response
+        # Query GPT dynamically
         gpt_response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=chat_history
@@ -1168,8 +1176,9 @@ def handle_contextual_query(question, user_data):
         return gpt_response['choices'][0]['message']['content'].strip()
 
     except Exception as e:
-        logging.error(f"Error in handle_contextual_query: {str(e)}")
-        return None
+        logging.error(f"Contextual query failed: {str(e)}")
+        return "Sorry, I couldn't find an answer. Let me connect you to someone: https://wa.me/60126181683"
+
 
 
 # ---------------------------
@@ -1178,7 +1187,8 @@ def handle_contextual_query(question, user_data):
 def handle_gpt_query(question, user_data, messenger_id):
     try:
         system_prompt = (
-            "You are Finzo AI Buddy, a friendly assistant specializing in home refinancing, housing loans, and related financial topics in Malaysia. Keep responses short, simple, and conversational. Avoid jargon and suggest talking to admin if needed."
+            "You are Finzo AI Buddy, a friendly assistant specializing in home refinancing, housing loans, "
+            "and related financial topics in Malaysia. Keep responses short, simple, and helpful. Avoid jargon."
         )
 
         gpt_response = openai.ChatCompletion.create(
@@ -1189,7 +1199,9 @@ def handle_gpt_query(question, user_data, messenger_id):
             ]
         )
 
-        return gpt_response['choices'][0]['message']['content'].strip()
+        # Return GPT-generated answer
+        reply = gpt_response['choices'][0]['message']['content'].strip()
+        return reply
 
     except Exception as e:
         logging.error(f"GPT Query Failed: {str(e)}")
