@@ -997,23 +997,21 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # ---------------------------
 # Context Handling (In-Memory)
 # ---------------------------
-# ---------------------------
-# Context Handling (In-Memory)
-# ---------------------------
-def update_user_context(user_data, intent):
-    """Tracks user intent without database updates."""
-    try:
-        # Initialize context if not already present
-        if 'context' not in user_data:
-            user_data['context'] = {}
 
-        # Update context dynamically
-        user_data['context']['last_intent'] = intent
+def update_user_context(user_data, intent):
+    """Tracks user intent without treating user_data as a dictionary."""
+    try:
+        # Check if 'context' is already an attribute in user_data
+        if not hasattr(user_data, 'context') or user_data.context is None:
+            # Create context as an empty dictionary (in-memory)
+            user_data.context = {}  
+
+        # Update last intent in the context
+        user_data.context['last_intent'] = intent
         logging.info(f"Updated user intent: {intent}")
 
     except Exception as e:
         logging.error(f"Error updating user context: {str(e)}")
-
 
 # ---------------------------
 # Main Query Handler
@@ -1120,7 +1118,6 @@ def classify_intent_with_gpt(question):
         return "unknown"  # Default to unknown intent
 
 
-
 # ---------------------------
 # Dynamic Query Handling
 # ---------------------------
@@ -1140,7 +1137,7 @@ def handle_dynamic_query(question, user_data, messenger_id):
 
         # Short confirmations ('yes', 'okay') based on context
         if question.lower() in ["yes", "sure", "okay"]:
-            if user_data['context'].get('last_intent') == "refinance_steps":
+            if hasattr(user_data, 'context') and user_data.context.get('last_intent') == "refinance_steps":
                 return "Great! I can connect you to an agent for guidance. Contact here: https://wa.me/60126181683"
             return "Awesome! What else would you like to know?"
 
