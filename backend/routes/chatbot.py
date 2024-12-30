@@ -997,6 +997,9 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # ---------------------------
 # Context Handling (In-Memory)
 # ---------------------------
+# ---------------------------
+# Context Handling (In-Memory)
+# ---------------------------
 def update_user_context(user_data, intent):
     """Tracks user intent without database updates."""
     try:
@@ -1011,27 +1014,28 @@ def update_user_context(user_data, intent):
     except Exception as e:
         logging.error(f"Error updating user context: {str(e)}")
 
+
 # ---------------------------
 # Main Query Handler
 # ---------------------------
 def handle_query(question, user_data, messenger_id):
     try:
-        # Step 1: Dynamic Queries (Quick Responses)
-        dynamic_response = handle_dynamic_query(question, user_data, messenger_id)
-        if dynamic_response:
-            return dynamic_response
-
-        # Step 2: FAQ Queries (Presets Lookup)
+        # Step 1: FAQ Queries (Presets Lookup)
         faq_response = handle_faq_queries(question, user_data)
         if faq_response:
             return faq_response
 
-        # Step 3: Contact Queries (Only fallback to this for contact-related intents)
+        # Step 2: Contact Queries
         contact_response = handle_contact_queries(question, user_data, messenger_id)
         if contact_response:
             return contact_response
 
-        # Step 4: GPT Fallback (When nothing matches)
+        # Step 3: Dynamic Queries (Quick Keywords)
+        dynamic_response = handle_dynamic_query(question, user_data, messenger_id)
+        if dynamic_response:
+            return dynamic_response
+
+        # Step 4: GPT Fallback (Freestyle)
         return handle_gpt_query(question, user_data, messenger_id)
 
     except Exception as e:
@@ -1040,29 +1044,77 @@ def handle_query(question, user_data, messenger_id):
 
 
 # ---------------------------
+# FAQ Query Handling (Presets)
+# ---------------------------
+def handle_faq_queries(question, user_data):
+    try:
+        # Preprocess query for better matching
+        normalized_question = preprocess_query(question)
+
+        # Lookup exact or fuzzy match in presets.json
+        faq_responses = presets_data.get('faq', {}).get(user_data.language_code, {})
+        if normalized_question in faq_responses:
+            return faq_responses[normalized_question]
+
+        # Fuzzy matching as a fallback
+        matches = get_close_matches(normalized_question, faq_responses.keys(), n=1, cutoff=0.7)
+        if matches:
+            return faq_responses[matches[0]]
+
+        # No match found
+        return None
+
+    except Exception as e:
+        logging.error(f"Error in FAQ queries: {str(e)}")
+        return None
+
+
+# ---------------------------
+# Contact Queries
+# ---------------------------
+def handle_contact_queries(question, user_data, messenger_id):
+    """Handles contact-related queries."""
+    try:
+        contact_phrases = [
+            "talk to agent", "contact agent", "how to reach admin", "contact admin",
+            "need help", "who do I talk to", "connect with admin"
+        ]
+
+        # Match keywords for contact
+        if any(phrase in question.lower() for phrase in contact_phrases):
+            return "Sure! You can reach our admin here: https://wa.me/60126181683"
+
+        return None  # No match
+
+    except Exception as e:
+        logging.error(f"Error in handle_contact_queries: {str(e)}")
+        return "I'm here to help! Connect with admin here: https://wa.me/60126181683"
+
+
+# ---------------------------
 # Dynamic Query Handling
 # ---------------------------
 def handle_dynamic_query(question, user_data, messenger_id):
     try:
-        # Keyword matching for direct responses
+        # Predefined keyword responses
         keywords = {
             "what is refinancing": "Refinancing means replacing your current loan with a new one to reduce rates or payments.",
             "what is the step to refinance": "Refinancing involves checking loan details, preparing documents, and applying. Need help?"
         }
 
-        # Keyword-based response lookup
+        # Keyword matching
         for key, value in keywords.items():
             if key in question.lower():
                 update_user_context(user_data, "refinance_steps")
                 return value
 
-        # Handle Short Answers ('yes', 'okay') based on context
+        # Short confirmations ('yes', 'okay') based on context
         if question.lower() in ["yes", "sure", "okay"]:
             if user_data['context'].get('last_intent') == "refinance_steps":
                 return "Great! I can connect you to an agent for guidance. Contact here: https://wa.me/60126181683"
             return "Awesome! What else would you like to know?"
 
-        # Intent Classification (via GPT)
+        # Intent Classification (GPT)
         intent = classify_intent_with_gpt(question)
 
         # Map Intents to Actions
@@ -1085,7 +1137,7 @@ def handle_dynamic_query(question, user_data, messenger_id):
         elif intent == "greeting":
             return "Hey there! I'm Finzo AI Buddy. How can I assist you today?"
 
-        # Fallback if all fails
+        # Fallback to GPT
         return handle_gpt_query(question, user_data, messenger_id)
 
     except Exception as e:
@@ -1094,58 +1146,13 @@ def handle_dynamic_query(question, user_data, messenger_id):
 
 
 # ---------------------------
-# FAQ Query Handling (Presets)
-# ---------------------------
-def handle_faq_queries(question, user_data):
-    try:
-        # Preprocess query for better matching
-        normalized_question = preprocess_query(question)
-
-        # Look up exact or fuzzy match in presets.json
-        faq_responses = presets_data.get('faq', {}).get(user_data.language_code, {})
-        if normalized_question in faq_responses:
-            return faq_responses[normalized_question]
-
-        # Fuzzy matching as a fallback
-        matches = get_close_matches(normalized_question, faq_responses.keys(), n=1, cutoff=0.7)
-        if matches:
-            return faq_responses[matches[0]]
-
-        # No match found
-        return None
-
-    except Exception as e:
-        logging.error(f"Error in FAQ queries: {str(e)}")
-        return None
-
-    
-def handle_contact_queries(question, user_data, messenger_id):
-    """Handles direct contact queries and links to agents or admin."""
-    try:
-        contact_phrases = [
-            "talk to agent", "contact agent", "how to reach admin", "contact admin", "need help"
-        ]
-
-        # Match common queries for contact
-        if any(phrase in question.lower() for phrase in contact_phrases):
-            return "Sure! You can reach our admin here: https://wa.me/60126181683"
-
-        return None  # No match, continue to other handlers
-
-    except Exception as e:
-        logging.error(f"Error in handle_contact_queries: {str(e)}")
-        return "I'm here to help! Connect with admin here: https://wa.me/60126181683"
-
-    
-# ---------------------------
 # GPT Query Fallback
 # ---------------------------
 def handle_gpt_query(question, user_data, messenger_id):
     try:
-        # Friendly but specific prompt for GPT
         system_prompt = (
             "You are Finzo AI Buddy, a friendly assistant specializing in home refinancing, housing loans, "
-            "and related financial topics in Malaysia. Keep responses short, simple, and helpful. Avoid jargon."
+            "and related financial topics in Malaysia. Keep responses short, simple, and helpful."
         )
 
         gpt_response = openai.ChatCompletion.create(
@@ -1159,34 +1166,13 @@ def handle_gpt_query(question, user_data, messenger_id):
 
     except Exception as e:
         logging.error(f"GPT Query Failed: {str(e)}")
-        return "I couldn't process that right now. Let me get someone to help: https://wa.me/60126181683"
-
-# ---------------------------
-# Intent Classification
-# ---------------------------
-def classify_intent_with_gpt(question):
-    try:
-        prompt = (
-            "You are a smart assistant that identifies the user's intent based on the question. "
-            "Classify the intent: 'contact_agent', 'contact_admin', 'ask_rates', 'refinance_steps', "
-            "'loan_eligibility', 'application_process', 'greeting', or 'unknown'. Provide only the intent as output."
-        )
-        gpt_response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "system", "content": prompt},
-                      {"role": "user", "content": question}]
-        )
-        return gpt_response['choices'][0]['message']['content'].strip().lower()
-    except Exception as e:
-        logging.error(f"Intent classification failed: {str(e)}")
-        return "unknown"
+        return "I couldn't process that. Contact us: https://wa.me/60126181683"
 
 
 # ---------------------------
 # Preprocessing Queries
 # ---------------------------
 def preprocess_query(text):
-    """Normalize text by removing special characters and converting to lowercase."""
     return re.sub(r'[^\w\s]', '', text).strip().lower()
 
 def log_gpt_query(messenger_id, question, response):
