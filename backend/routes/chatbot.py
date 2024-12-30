@@ -1011,26 +1011,25 @@ def handle_query(question, user_data, messenger_id):
 
 
 
-def handle_faq_queries(question, user_data):
-    """Handle frequently asked questions related to home loans and refinancing."""
-    # Ensure 'faq' section is present in presets_data
-    faq_responses = presets_data.get('faq', {}).get(user_data.language_code, {})
+def handle_contact_queries(question, user_data, messenger_id):
+    """Handle questions related to contacting agents or admin."""
+    language = user_data.language_code if user_data.language_code in presets_data['contact_queries'] else 'en'
+    logging.info(f"Selected Language for Contact Queries: {language}")
 
-    if not faq_responses:
-        logging.error("❌ 'faq' not found in presets.json for the selected language.")
+    if 'contact_queries' not in presets_data:
+        logging.error("❌ 'contact_queries' not found in presets.json")
         return None
 
-    question = question.lower()
-
-    # Check if the question exists in the FAQ list
-    for key, value in faq_responses.items():
-        logging.debug(f"Checking if '{key.lower()}' is in the question: '{question}'")  # Log the match check
-        if key.lower() in question:  # Case-insensitive matching
-            logging.info(f"Matched FAQ: {key} -> {value}")  # Log the match
+    # Iterate over the contact queries for the selected language
+    for key, value in presets_data['contact_queries'].get(language, {}).items():
+        logging.debug(f"Checking if '{key.lower()}' is in the question: '{question.lower()}'")  # Log the match check
+        if key.lower() in question.lower():  # Case-insensitive matching
+            logging.info(f"Matched Contact Query: {key} -> {value}")  # Log the match
             return value
 
-    logging.info(f"No match found for FAQ: {question}")  # Log if no match found
+    logging.info(f"No match found for contact query: {question}")  # Log if no match found
     return None
+
 
 def handle_faq_queries(question, user_data):
     """Handle frequently asked questions related to home loans and refinancing."""
