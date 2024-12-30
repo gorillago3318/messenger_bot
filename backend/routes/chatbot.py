@@ -21,6 +21,8 @@ from backend.extensions import db
 import openai  # Correctly import the openai module
 from backend.utils.presets import get_preset_response
 from datetime import datetime
+from difflib import get_close_matches
+
 
 MYT = pytz.timezone('Asia/Kuala_Lumpur')  # Malaysia timezone
 
@@ -348,50 +350,43 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.debug(f"Processing step: {current_step} with input: {message_body}")
 
         # ----------------------------
-        # 1. Skip Validation in Inquiry Mode
+        # 1. Inquiry Mode Handling
         # ----------------------------
         if user_data.mode == 'inquiry':
             logging.info(f"🛑 User {messenger_id} is in Inquiry Mode. Proceeding with query processing.")
-            
-            # Check contact queries and FAQ queries first in inquiry mode
-            contact_response = handle_contact_queries(message_body, user_data, messenger_id)
-            if contact_response:
-                send_messenger_message(messenger_id, contact_response)
-                return {"status": "success"}, 200  # Respond with contact message
 
-            # Handle general loan and refinancing queries using predefined FAQs
-            faq_response = handle_faq_queries(message_body, user_data)
-            if faq_response:
-                send_messenger_message(messenger_id, faq_response)
-                return {"status": "success"}, 200  # Respond with FAQ answer
+            # Handle query using updated handler
+            response = handle_query(message_body, user_data, messenger_id)
+            if not response:
+                response = "I'm not sure how to answer that. Please contact our support team for assistance."
 
-            # If no match is found, send GPT response (fallback)
-            gpt_response = handle_gpt_query(message_body, user_data, messenger_id)
-            send_messenger_message(messenger_id, gpt_response)
+            send_messenger_message(messenger_id, response)
+            user_data.mode = 'flow'  # Reset mode to flow after processing
+            db.session.commit()
             return {"status": "success"}, 200
 
-        # If the user is not in inquiry mode, continue with regular flow
+        # ----------------------------
+        # 2. Define Next Step Mapping
+        # ----------------------------
         next_step_mapping = {
             'choose_language': 'get_name',
             'get_name': 'get_phone_number',
             'get_phone_number': 'get_loan_amount',
             'get_loan_amount': 'get_loan_tenure',
             'get_loan_tenure': 'get_monthly_repayment',
-            'get_monthly_repayment': 'process_completion'  # No need for interest rate or remaining tenure anymore
+            'get_monthly_repayment': 'process_completion'
         }
 
         # ----------------------------
-        # 2. Handle 'skip' Command Before Validation
+        # 3. Handle 'skip' Command Before Validation
         # ----------------------------
         if message_body.lower() == 'skip':
             logging.info(f"🔄 Skipping input for step: {current_step}")
             next_step = next_step_mapping.get(current_step, None)
 
-            # Update user step and commit changes before sending the next prompt
             user_data.current_step = next_step
             db.session.commit()
 
-            # Fetch and send the next prompt
             language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
             next_prompt = PROMPTS[language].get(next_step, "⚠️ Invalid input. Please check and try again.")
             send_messenger_message(messenger_id, next_prompt)
@@ -399,7 +394,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             return {"status": "success", "next_step": next_step}, 200
 
         # ----------------------------
-        # 3. Input Validation (Only for relevant steps)
+        # 4. Input Validation
         # ----------------------------
         def validate_input(step, value):
             if step == 'get_name':
@@ -407,29 +402,26 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             if step == 'get_phone_number':
                 return value.isdigit() and value.startswith('01') and len(value) in [10, 11]
             if step == 'get_loan_amount':
-                return value.replace(',', '').isdigit() and float(value.replace(',', '')) > 0  # Ensure loan amount is positive
+                return value.replace(',', '').isdigit() and float(value.replace(',', '')) > 0
             if step == 'get_loan_tenure':
-                return value.isdigit() and 1 <= int(value) <= 40  # Validate loan tenure is between 1 and 40
+                return value.isdigit() and 1 <= int(value) <= 40
             if step == 'get_monthly_repayment':
-                return value.replace('.', '', 1).isdigit() and float(value) > 0  # Ensure repayment is a positive number
+                return value.replace('.', '', 1).isdigit() and float(value) > 0
             return True
 
-        # Validate Input
         if not validate_input(current_step, message_body):
             language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
             error_msg = PROMPTS[language].get(f"invalid_{current_step}", "⚠️ Invalid input. Please check and try again.")
             send_messenger_message(messenger_id, error_msg)
-            return {"status": "failed"}, 200  # Return without moving forward
+            return {"status": "failed"}, 200
 
         # ----------------------------
-        # 4. Apply Updates Based on Input
+        # 5. Apply Updates Based on Input
         # ----------------------------
-
-        # Update language_code if the step is 'choose_language'
         if current_step == 'choose_language':
             language_map = {'1': 'en', '2': 'ms', '3': 'zh'}
-            user_data.language_code = language_map.get(message_body, 'en')  # Default to 'en' if invalid input
-            db.session.commit()  # Commit the change immediately
+            user_data.language_code = language_map.get(message_body, 'en')
+            db.session.commit()
 
         update_mapping = {
             'get_name': lambda x: {'name': x.title()},
@@ -439,32 +431,30 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             'get_monthly_repayment': lambda x: {'current_repayment': float(x)},
         }
 
-        # Update user data
         if current_step in update_mapping:
             updates = update_mapping[current_step](message_body)
             for key, value in updates.items():
                 setattr(user_data, key, value)
 
-        # Commit updated data
         db.session.commit()
 
         # ----------------------------
-        # 5. Move to the Next Step
+        # 6. Move to the Next Step
         # ----------------------------
         next_step = next_step_mapping.get(current_step, None)
 
-        # Trigger Calculation for Final Step
         if next_step == 'process_completion':
             result = handle_process_completion(messenger_id)
 
-            if result[1] != 200:  # Error during calculation
+            if result[1] != 200:
                 send_messenger_message(messenger_id, "⚠️ Error calculating savings. Please restart the process.")
             return {"status": "success"}, 200
 
         user_data.current_step = next_step
         db.session.commit()
+
         language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
-        next_prompt = PROMPTS[language].get(next_step, "⚠️ Invalid input.")
+        next_prompt = PROMPTS[language].get(next_step, "I'm not sure how to handle this step. Please contact support.")
         send_messenger_message(messenger_id, next_prompt)
 
         logging.debug(f"🔄 Moved to next step: {next_step}")
@@ -474,6 +464,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         logging.error(f"❌ Error in process_user_input: {str(e)}")
         db.session.rollback()
         return {"status": "error", "message": "An error occurred while processing your input."}, 500
+
 
 @chatbot_bp.route('/process_message', methods=['POST'])
 def process_message():
@@ -588,9 +579,11 @@ def process_message():
         # ----------------------------
         # If the user is in 'inquiry' mode, do not process repayment amount or any loan-related inputs
         if user_data.mode == 'inquiry':
-            logging.info(f"🛑 User {sender_id} is in Inquiry Mode. Skipping repayment validation.")
-            # Continue with answering queries and not repayment-related validations
-            send_messenger_message(sender_id, "You can ask about refinancing, home loans, or anything related. How can I assist you today?")
+            logging.info(f"🛑 User {sender_id} is in Inquiry Mode. Proceeding with query processing.")
+
+            # Attempt to handle the query using FAQs or GPT
+            response = handle_query(message_body, user_data, messenger_id)
+            send_messenger_message(sender_id, response)
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
@@ -981,121 +974,134 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # 9) GPT Query Handling
 # -------------------
 # Function to load presets from presets.json
-def load_presets():
-    try:
-        with open('backend/utils/presets.json', 'r') as file:  # Make sure the path is correct for Heroku
-            data = json.load(file)
-            logging.info(f"Presets Loaded: {data}")  # Log the loaded presets
-            return data
-    except Exception as e:
-        logging.error(f"❌ Error loading presets.json: {str(e)}")
-        return {}
-
-# Cache the presets once when the app starts
-presets_data = load_presets()
-
-# Log if the presets are loaded successfully
-logging.info(f"Presets Data Loaded: {presets_data}")
-
 def handle_query(question, user_data, messenger_id):
     try:
-        logging.info(f"Received question: {question}")
-
-        # 1. Check if the question matches contact-related queries
+        # Check if the question matches contact-related queries
         contact_response = handle_contact_queries(question, user_data, messenger_id)
         if contact_response:
-            logging.info(f"Contact response: {contact_response}")
             return contact_response
 
-        # 2. Handle general loan and refinancing queries using predefined FAQs
+        # Handle FAQs
         faq_response = handle_faq_queries(question, user_data)
         if faq_response:
-            logging.info(f"FAQ response: {faq_response}")
             return faq_response
 
-        # 3. If not found in FAQ or contact, use GPT for open-ended responses
+        # GPT Fallback with error handling
         return handle_gpt_query(question, user_data, messenger_id)
 
     except Exception as e:
-        logging.error(f"❌ Error in handle_query: {str(e)}")
-        return "Sorry, something went wrong. Please try again or contact support."
+        logging.error(f"Error in handle_query: {str(e)}")
+        return "I'm unable to process your query right now. Please contact support."
 
 
+# Handle contact queries
 
 def handle_contact_queries(question, user_data, messenger_id):
     """Handle questions related to contacting agents or admin."""
-    language = user_data.language_code if user_data.language_code in presets_data['contact_queries'] else 'en'
-    logging.info(f"Selected Language for Contact Queries: {language}")
+    try:
+        language = user_data.language_code if user_data.language_code in presets_data['contact_queries'] else 'en'
+        logging.info(f"Selected Language for Contact Queries: {language}")
 
-    if 'contact_queries' not in presets_data:
-        logging.error("❌ 'contact_queries' not found in presets.json")
+        if 'contact_queries' not in presets_data:
+            logging.error("'contact_queries' not found in presets.json")
+            return None
+
+        # Iterate and match with fuzzy logic
+        queries = presets_data['contact_queries'].get(language, {})
+        matches = get_close_matches(question.lower(), queries.keys(), n=1, cutoff=0.7)
+        if matches:
+            logging.info(f"Matched Contact Query: {matches[0]} -> {queries[matches[0]]}")
+            return queries[matches[0]]
+
+        logging.info(f"No match found for contact query: {question}")
         return None
 
-    # Iterate over the contact queries for the selected language
-    for key, value in presets_data['contact_queries'].get(language, {}).items():
-        logging.debug(f"Checking if '{key.lower()}' is in the question: '{question.lower()}'")  # Log the match check
-        if key.lower() in question.lower():  # Case-insensitive matching
-            logging.info(f"Matched Contact Query: {key} -> {value}")  # Log the match
-            return value
+    except Exception as e:
+        logging.error(f"Error in handle_contact_queries: {str(e)}")
+        return None
 
-    logging.info(f"No match found for contact query: {question}")  # Log if no match found
-    return None
 
+# Handle FAQ queries
 
 def handle_faq_queries(question, user_data):
-    """Handle frequently asked questions related to home loans and refinancing."""
-    # Ensure 'faq' section is present in presets_data
-    faq_responses = presets_data.get('faq', {}).get(user_data.language_code, {})
+    try:
+        # Load FAQ responses based on language
+        faq_responses = presets_data.get('faq', {}).get(user_data.language_code, {})
+        if not faq_responses:
+            logging.error("'faq' not found in presets.json for the selected language.")
+            return None
 
-    if not faq_responses:
-        logging.error("❌ 'faq' not found in presets.json for the selected language.")
+        # Fuzzy matching for questions
+        matches = get_close_matches(question.lower(), faq_responses.keys(), n=1, cutoff=0.7)
+        if matches:
+            logging.info(f"Matched FAQ: {matches[0]} -> {faq_responses[matches[0]]}")
+            return faq_responses[matches[0]]
+
+        logging.info(f"No match found for FAQ: {question}")
         return None
 
-    question = question.lower()
+    except Exception as e:
+        logging.error(f"Error in handle_faq_queries: {str(e)}")
+        return None
 
-    # Check if the question exists in the FAQ list
-    for key, value in faq_responses.items():
-        if key.lower() in question:  # Case-insensitive matching
-            logging.info(f"Matched FAQ: {key} -> {value}")  # Log the match
-            return value
 
-    logging.info(f"No match found for question: {question}")  # Log if no match found
-    return None
+# Handle GPT query fallback
 
 def handle_gpt_query(question, user_data, messenger_id):
     """Use GPT for questions not covered in predefined queries."""
-    system_prompt = f"You are a mortgage specialist for Finzo AI, specializing solely in home refinancing, housing loans, and related financial topics in Malaysia."
-    
-    logging.info(f"Question is not found in presets, sending to GPT: {question}")
+    try:
+        system_prompt = (
+            "You are a mortgage specialist for Finzo AI, specializing in home refinancing, housing loans, "
+            "and related financial topics in Malaysia."
+        )
 
-    gpt_response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": question}]
-    )
+        logging.info(f"Question is not found in presets, sending to GPT: {question}")
 
-    reply = gpt_response['choices'][0]['message']['content'].strip()
-    log_gpt_query(messenger_id, question, reply)
-    return reply
+        gpt_response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": question}
+            ]
+        )
+
+        reply = gpt_response['choices'][0]['message']['content'].strip()
+        log_gpt_query(messenger_id, question, reply)
+        return reply
+
+    except Exception as e:
+        logging.error(f"GPT Query Failed: {str(e)}")
+        return "I couldn't process your query. Please contact support."
+
+
+# Log GPT queries
 
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
     try:
-        # Log GPT query in the database
         logging.info(f"Logging GPT Query for user {messenger_id}: {question} -> {response}")
-        # Assuming User and ChatLog are already defined in the database
+
+        # Fetch or create user
         user = User.query.filter_by(messenger_id=messenger_id).first()
         if not user:
             user = User(messenger_id=messenger_id, name="Unknown User", age=0, phone_number="Unknown")
             db.session.add(user)
             db.session.flush()
 
-        chat_log = ChatLog(user_id=user.id, message_content=f"User (GPT Query): {question}\nBot: {response}", phone_number=user.phone_number)
+        # Log query
+        chat_log = ChatLog(
+            user_id=user.id,
+            message_content=f"User (GPT Query): {question}\nBot: {response}",
+            phone_number=user.phone_number
+        )
         db.session.add(chat_log)
         db.session.commit()
-        logging.info(f"✅ GPT query logged for user {user.messenger_id}")
+        logging.info(f"GPT query logged for user {user.messenger_id}")
+
     except Exception as e:
-        logging.error(f"❌ Error logging GPT query: {str(e)}")
+        logging.error(f"Error logging GPT query: {str(e)}")
         db.session.rollback()
+
 
 # -------------------
 # 11) Helper Messages
