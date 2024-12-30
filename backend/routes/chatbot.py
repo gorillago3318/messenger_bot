@@ -1090,6 +1090,36 @@ def handle_contact_queries(question, user_data, messenger_id):
         logging.error(f"Error in handle_contact_queries: {str(e)}")
         return "I'm here to help! Connect with admin here: https://wa.me/60126181683"
 
+# ---------------------------
+# Intent Classification with GPT
+# ---------------------------
+def classify_intent_with_gpt(question):
+    """Classify user intent using GPT."""
+    try:
+        # Prompt GPT to classify user intent
+        prompt = (
+            "You are a smart assistant that identifies the user's intent based on the question. "
+            "Classify the intent: 'contact_agent', 'contact_admin', 'ask_rates', 'refinance_steps', "
+            "'loan_eligibility', 'application_process', 'greeting', or 'unknown'. Provide only the intent as output."
+        )
+
+        # Send query to GPT-3.5 Turbo
+        gpt_response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": question}
+            ]
+        )
+
+        # Extract and return the intent from GPT response
+        return gpt_response['choices'][0]['message']['content'].strip().lower()
+
+    except Exception as e:
+        logging.error(f"Intent classification failed: {str(e)}")
+        return "unknown"  # Default to unknown intent
+
+
 
 # ---------------------------
 # Dynamic Query Handling
