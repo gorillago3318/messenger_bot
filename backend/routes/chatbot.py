@@ -969,100 +969,115 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # -------------------
 # 9) GPT Query Handling
 # -------------------
-def handle_gpt_query(question, user_data, messenger_id):
+import json
+import logging
+import openai
+
+# Load presets from the JSON file
+def load_presets():
     try:
-        # Ensure the question is not None before processing
-        if not question:
-            return "Sorry, I didn't catch that. Could you please ask again?"
+        with open('path/to/presets.json', 'r') as file:
+            return json.load(file)
+    except Exception as e:
+        logging.error(f"❌ Error loading presets.json: {str(e)}")
+        return {}
 
-        # Check if the question matches a contact-related query
-        contact_queries = {
-            'en': {
-                "how can i contact an agent?": "Sure! To speak with an agent or get direct assistance, click here: https://wa.me/60126181683.",
-                "how do i reach admin?": "No worries! An admin will follow up with you shortly. Meanwhile, you can click here to contact us directly: https://wa.me/60126181683.",
-                "talk to someone now?": "We're happy to assist you! Click here to reach our admin directly: https://wa.me/60126181683.",
-                "i need human help": "Got it! An admin will follow up, or you can contact us directly here: https://wa.me/60126181683."
-            },
-            'ms': {
-                "bagaimana saya boleh menghubungi agen?": "Sudah tentu! Untuk bercakap dengan agen atau mendapatkan bantuan terus, klik di sini: https://wa.me/60126181683.",
-                "bagaimana saya boleh menghubungi admin?": "Jangan risau! Admin akan menghubungi anda tidak lama lagi. Sementara itu, anda juga boleh klik di sini untuk menghubungi kami terus: https://wa.me/60126181683.",
-                "boleh saya bercakap dengan seseorang sekarang?": "Kami sedia membantu anda! Klik di sini untuk menghubungi admin kami secara langsung: https://wa.me/60126181683.",
-                "saya perlukan bantuan manusia": "Baik! Admin akan menghubungi anda. Atau, anda juga boleh hubungi kami terus di sini: https://wa.me/60126181683."
-            },
-            'zh': {
-                "我如何联系代理？": "当然！如需与代理联系或直接获得帮助，请点击此链接: https://wa.me/60126181683。",
-                "我如何联系管理员？": "别担心！管理员会尽快与您联系。同时，您也可以点击此链接直接联系我们: https://wa.me/60126181683。",
-                "我现在可以和人聊聊吗？": "我们很乐意协助您！点击此链接直接联系管理员: https://wa.me/60126181683。",
-                "我需要人工帮助": "明白！管理员将会与您联系。或者，您也可以直接通过此链接联系我们: https://wa.me/60126181683。"
-            }
-        }
+# Cache the presets once when the app starts
+presets_data = load_presets()
 
-        # Check if the question matches any of the contact queries
-        language = user_data.language_code if user_data.language_code in contact_queries else 'en'
+# Log if presets are loaded correctly
+logging.info(f"Presets Loaded: {presets_data}")
 
-        # If the question matches any of the contact queries, return the appropriate response
-        for key, value in contact_queries[language].items():
-            if key.lower() in question.lower():
-                return value  # Respond with the contact message directly
+# Main function to handle user queries
+def handle_query(question, user_data, messenger_id):
+    try:
+        # 1. Check if the question matches contact-related queries
+        contact_response = handle_contact_queries(question, user_data, messenger_id)
+        if contact_response:
+            return contact_response
 
-        # If in inquiry mode, handle refinances or home loans directly
-        if user_data.mode == 'inquiry':
-            logging.info(f"🔍 Inquiry Mode Active for {messenger_id}. Processing question: {question}")
-            return handle_refinancing_or_loan_query(question, user_data, messenger_id)
+        # 2. Handle general loan and refinancing queries using predefined FAQs
+        faq_response = handle_faq_queries(question, user_data)
+        if faq_response:
+            return faq_response
 
-        # If not a contact query, proceed with GPT
-        language_map = {
-            'en': 'English',
-            'ms': 'Malay',
-            'zh': 'Chinese'
-        }
+        # 3. If not found in FAQ or contact, use GPT for open-ended responses
+        return handle_gpt_query(question, user_data, messenger_id)
 
-        # Determine preferred language
-        preferred_language = language_map.get(user_data.language_code, 'English')
+    except Exception as e:
+        logging.error(f"❌ Error in handle_query: {str(e)}")
+        return "Sorry, something went wrong. Please try again or contact support."
 
-        # Construct GPT system prompt with language preference and topic focus
-        system_prompt = (
-            f"You are a helpful assistant for home refinancing and home loan queries. "
-            f"Your responses should strictly be about home loans, mortgages, refinancing, interest rates, and related financial topics. "
-            f"Please respond in {preferred_language}."
-        )
+# Function to handle contact queries (e.g., how to contact an agent)
+def handle_contact_queries(question, user_data, messenger_id):
+    """Handle questions related to contacting agents or admin."""
+    language = user_data.language_code if user_data.language_code in presets_data['contact_queries'] else 'en'
 
-        # Making GPT request to ensure it sticks to the right topic (home loans and refinancing)
-        openai_res = openai.ChatCompletion.create(
+    # Log the language selected
+    logging.info(f"Selected Language for Contact Queries: {language}")
+
+    # Ensure 'contact_queries' section is present in presets_data
+    if 'contact_queries' not in presets_data:
+        logging.error("❌ 'contact_queries' not found in presets.json")
+        return None
+
+    # Check if the question is related to contacting admin/agent
+    for key, value in presets_data['contact_queries'].get(language, {}).items():
+        if key.lower() in question.lower():  # Case-insensitive matching
+            logging.info(f"Matched Contact Query: {key} -> {value}")  # Log the match
+            return value
+
+    logging.info(f"No match found for question: {question}")  # Log if no match found
+    return None
+
+# Function to handle FAQ queries (e.g., what is refinancing)
+def handle_faq_queries(question, user_data):
+    """Handle frequently asked questions related to home loans and refinancing."""
+    # Use presets.json for FAQ-related queries
+    faq_responses = presets_data.get('faq', {}).get(user_data.language_code, {})
+
+    # Ensure 'faq' section is present in presets_data
+    if not faq_responses:
+        logging.error("❌ 'faq' not found in presets.json for the selected language.")
+        return None
+
+    question = question.lower()
+
+    # Check if the question exists in the FAQ list
+    for key, value in faq_responses.items():
+        if key.lower() in question:  # Case-insensitive matching
+            logging.info(f"Matched FAQ: {key} -> {value}")  # Log the match
+            return value
+
+    logging.info(f"No match found for question: {question}")  # Log if no match found
+    return None
+
+# Function to handle GPT query if the question doesn't match in the JSON data
+def handle_gpt_query(question, user_data, messenger_id):
+    """Use GPT for questions not covered in predefined queries."""
+    system_prompt = f"You are a mortgage specialist for Finzo AI, specializing solely in home refinancing, housing loans, and related financial topics in Malaysia."
+    
+    try:
+        gpt_response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[ 
+            messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": question}
             ]
         )
 
-        # Extract GPT response
-        reply = openai_res['choices'][0]['message']['content'].strip()
-        logging.info(f"✅ GPT response received for user {messenger_id}: {reply}")
-
-        # Log GPT query and response
+        reply = gpt_response['choices'][0]['message']['content'].strip()
         log_gpt_query(messenger_id, question, reply)
-
-        # Return GPT response
         return reply
-
     except Exception as e:
-        # Log error and return a fallback message
-        logging.error(f"❌ Error in handle_gpt_query: {str(e)}")
-        return "Sorry, something went wrong! Please try again or contact support."
+        logging.error(f"❌ Error in GPT query: {str(e)}")
+        return "Sorry, something went wrong. Please try again or contact support."
 
-def handle_refinancing_or_loan_query(question, user_data, messenger_id):
-    """Handle refinancing or loan-related questions while in Inquiry Mode."""
-    if "what is refinancing" in question.lower():
-        return "Refinancing is the process of replacing your current mortgage with a new one, often with better terms such as a lower interest rate. This can help reduce your monthly repayments or shorten your loan tenure. For more details or to explore refinancing options, feel free to ask!"
-
-    # Add other refinancing/loan-related responses here
-
-    return "Sorry, I didn't catch that. Could you please clarify your question or ask something else related to home loans or refinancing?"
-
+# Function to log GPT queries to the database (if necessary)
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
     try:
+        # Assuming you have a User model and a ChatLog model in your DB
         messenger_id = str(messenger_id)
         user = User.query.filter_by(messenger_id=messenger_id).first()
 
@@ -1077,10 +1092,6 @@ def log_gpt_query(messenger_id, question, response):
             db.session.add(user)
             db.session.flush()  # Flush to get user ID
 
-        # Handle missing details if user exists
-        user.name = user.name or "Unknown User"
-        user.phone_number = user.phone_number or "Unknown"
-
         # Log the GPT query in ChatLog
         chat_log = ChatLog(
             user_id=user.id,
@@ -1090,11 +1101,10 @@ def log_gpt_query(messenger_id, question, response):
         db.session.add(chat_log)
         db.session.commit()
         logging.info(f"✅ GPT query logged for user {user.messenger_id}")
-
     except Exception as e:
-        # Log error and rollback
         logging.error(f"❌ Error logging GPT query: {str(e)}")
         db.session.rollback()
+
 
 # -------------------
 # 11) Helper Messages
