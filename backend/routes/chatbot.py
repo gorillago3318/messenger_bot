@@ -6,6 +6,7 @@ import json
 import traceback
 import os
 import pytz
+import re
 
 # Flask imports
 from flask import Blueprint, request, jsonify
@@ -997,34 +998,44 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # -------------------
 
 # ---------------------------
-# Main Query Handler
+# Update User Context
 # ---------------------------
 def update_user_context(user_data, intent):
-    user_data['last_intent'] = intent
+    try:
+        # Assign intent and commit to DB
+        user_data.last_intent = intent
+        db.session.commit()
+        logging.info(f"Updated user intent: {intent}")
+    except Exception as e:
+        logging.error(f"Error updating user context: {str(e)}")
 
+
+# ---------------------------
+# Main Query Handler
+# ---------------------------
 def handle_query(question, user_data, messenger_id):
     try:
-        # Handle dynamic queries
+        # Handle Dynamic Queries
         dynamic_response = handle_dynamic_query(question, user_data, messenger_id)
         if dynamic_response:
             return dynamic_response
 
-        # Handle FAQ queries BEFORE contact queries
+        # Handle FAQ Queries BEFORE contact queries
         faq_response = handle_faq_queries(question, user_data)
         if faq_response:
             return faq_response
 
-        # Handle contact queries
+        # Handle Contact Queries
         contact_response = handle_contact_queries(question, user_data, messenger_id)
         if contact_response:
             return contact_response
 
-        # Handle contextual queries
+        # Handle Contextual Queries
         contextual_response = handle_contextual_query(question, user_data)
         if contextual_response:
             return contextual_response
 
-        # GPT fallback
+        # GPT Fallback
         return handle_gpt_query(question, user_data, messenger_id)
 
     except Exception as e:
@@ -1033,59 +1044,31 @@ def handle_query(question, user_data, messenger_id):
 
 
 # ---------------------------
-# Intent Classification
-# ---------------------------
-def classify_intent_with_gpt(question):
-    system_prompt = (
-        "You are a smart assistant that identifies the user's intent based on the question provided. "
-        "Classify the intent from this list: 'contact_agent', 'contact_admin', 'ask_rates', 'refinance_steps', "
-        "'loan_eligibility', 'application_process', 'greeting', or 'unknown'. "
-        "Provide only the intent as the response."
-    )
-
-    gpt_response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": question}
-        ]
-    )
-
-    # Extract intent
-    intent = gpt_response['choices'][0]['message']['content'].strip().lower()
-    return intent
-
-
-# ---------------------------
 # Dynamic Query Handling
 # ---------------------------
 def handle_dynamic_query(question, user_data, messenger_id):
     try:
-        # Keywords for quick answers
+        # Quick Keyword Responses
         keywords = {
             "what is refinancing": "Refinancing means replacing your current loan with a new one to reduce rates or payments.",
             "what is the step to refinance": "Refinancing involves checking loan details, preparing documents, and applying. Need help?"
         }
 
-        # Match keywords
         for key, value in keywords.items():
             if key in question.lower():
-                # Update context for follow-up tracking
                 update_user_context(user_data, "refinance_steps")
                 return value
 
-        # Handle short responses based on last intent
+        # Handle Short Responses like 'yes' or 'okay'
         if question.lower() in ["yes", "sure", "okay"]:
-            # React based on context
-            if user_data.get('last_intent') == "refinance_steps":
+            if user_data.last_intent == "refinance_steps":
                 return "Great! I can connect you to an agent for guidance. Contact here: https://wa.me/60126181683"
-            else:
-                return "Awesome! What else would you like to know?"
+            return "Awesome! What else would you like to know?"
 
-        # Intent classification
+        # Classify Intent with GPT
         intent = classify_intent_with_gpt(question)
 
-        # Map intents
+        # Map Intent Responses
         if intent == "contact_agent":
             return "No worries! Here's how to reach an agent: https://wa.me/60126181683"
 
@@ -1105,12 +1088,39 @@ def handle_dynamic_query(question, user_data, messenger_id):
         elif intent == "greeting":
             return "Hey there! I'm Finzo AI Buddy. How can I assist you today?"
 
-        # Fallback to GPT for other queries
+        # Fallback to GPT
         return handle_gpt_query(question, user_data, messenger_id)
 
     except Exception as e:
         logging.error(f"Error handling dynamic query: {str(e)}")
         return "I couldn't process that right now. Click here to contact admin: https://wa.me/60126181683"
+
+
+# ---------------------------
+# Intent Classification
+# ---------------------------
+def classify_intent_with_gpt(question):
+    try:
+        system_prompt = (
+            "You are a smart assistant that identifies the user's intent based on the question provided. "
+            "Classify the intent from this list: 'contact_agent', 'contact_admin', 'ask_rates', 'refinance_steps', "
+            "'loan_eligibility', 'application_process', 'greeting', or 'unknown'. Provide only the intent as the response."
+        )
+
+        gpt_response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": question}
+            ]
+        )
+        intent = gpt_response['choices'][0]['message']['content'].strip().lower()
+        return intent
+
+    except Exception as e:
+        logging.error(f"Intent classification failed: {str(e)}")
+        return "unknown"
+
 
 # ---------------------------
 # FAQ Query Handling
@@ -1132,60 +1142,6 @@ def handle_faq_queries(question, user_data):
 
 
 # ---------------------------
-# Contact Query Handling
-# ---------------------------
-def handle_contact_queries(question, user_data, messenger_id):
-    global presets_data
-    try:
-        # Preprocess query
-        normalized_question = preprocess_query(question)
-
-        # Select language for response
-        language = user_data.language_code if presets_data.get('contact_queries', {}).get(user_data.language_code) else 'en'
-        queries = presets_data['contact_queries'].get(language, {})
-
-        # Match query
-        matches = get_close_matches(normalized_question, queries.keys(), n=1, cutoff=0.4)
-        if matches:
-            return queries[matches[0]]
-
-        # Default response
-        return None
-
-    except Exception as e:
-        logging.error(f"Error in handle_contact_queries: {str(e)}")
-        return None
-
-
-# ---------------------------
-# Contextual Query Handling
-# ---------------------------
-def handle_contextual_query(question, user_data):
-    try:
-        # Build chat history
-        chat_history = [{"role": "system", "content": "You are an assistant specializing in home refinancing."}]
-        for chat in user_data.chat_history:
-            chat_history.append({"role": "user", "content": chat['question']})
-            chat_history.append({"role": "assistant", "content": chat['answer']})
-
-        # Add new question
-        chat_history.append({"role": "user", "content": question})
-
-        # Query GPT
-        gpt_response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=chat_history
-        )
-
-        return gpt_response['choices'][0]['message']['content'].strip()
-
-    except Exception as e:
-        logging.error(f"Contextual query failed: {str(e)}")
-        return "Not sure about that. Let me connect you with someone: https://wa.me/60126181683"
-
-
-
-# ---------------------------
 # GPT Query Fallback
 # ---------------------------
 def handle_gpt_query(question, user_data, messenger_id):
@@ -1203,9 +1159,7 @@ def handle_gpt_query(question, user_data, messenger_id):
             ]
         )
 
-        # Return GPT-generated answer
-        reply = gpt_response['choices'][0]['message']['content'].strip()
-        return reply
+        return gpt_response['choices'][0]['message']['content'].strip()
 
     except Exception as e:
         logging.error(f"GPT Query Failed: {str(e)}")
@@ -1217,9 +1171,6 @@ def handle_gpt_query(question, user_data, messenger_id):
 # ---------------------------
 def preprocess_query(text):
     return re.sub(r'[^\w\s]', '', text).strip().lower()
-
-
-# Log GPT queries
 
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
@@ -1246,8 +1197,6 @@ def log_gpt_query(messenger_id, question, response):
     except Exception as e:
         logging.error(f"Error logging GPT query: {str(e)}")
         db.session.rollback()
-
-
 
 # -------------------
 # 11) Helper Messages
