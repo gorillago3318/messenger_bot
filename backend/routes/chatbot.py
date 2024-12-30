@@ -948,6 +948,10 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # -------------------
 def handle_gpt_query(question, user_data, messenger_id):
     try:
+        # Ensure the question is not None before processing
+        if not question:
+            return "Sorry, I didn't catch that. Could you please ask again?"
+
         # Check if the question matches a contact-related query
         contact_queries = {
             'en': {
@@ -970,7 +974,7 @@ def handle_gpt_query(question, user_data, messenger_id):
             }
         }
 
-        # Check if the query matches a contact query in any language
+        # Check if the question matches any of the contact queries
         language = user_data.language_code if user_data.language_code in contact_queries else 'en'
 
         # If the question matches any of the contact queries, return the appropriate response
