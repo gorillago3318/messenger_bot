@@ -24,6 +24,9 @@ import openai  # Correctly import the openai module
 from backend.utils.presets import get_preset_response
 from datetime import datetime
 from difflib import get_close_matches
+from utils.chatbot_enhanced import ChatbotHandler
+
+chatbot = ChatbotHandler()
 
 
 MYT = pytz.timezone('Asia/Kuala_Lumpur')  # Malaysia timezone
@@ -376,18 +379,20 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         # ----------------------------
         # 1. Inquiry Mode Handling
         # ----------------------------
+        # If the user is in 'inquiry' mode, do not process repayment amount or any loan-related inputs
         if user_data.mode == 'inquiry':
-            logging.info(f"🛑 User {messenger_id} is in Inquiry Mode. Proceeding with query processing.")
+            logging.info(f"🛑 User {sender_id} is in Inquiry Mode. Proceeding with query processing.")
 
-            # Handle query using updated handler
-            response = handle_query(message_body, user_data, messenger_id)
-            if not response:
-                response = "I'm not sure how to answer that. Please contact our support team for assistance."
-
-            send_messenger_message(messenger_id, response)
-            user_data.mode = 'flow'  # Reset mode to flow after processing
-            db.session.commit()
-            return {"status": "success"}, 200
+            try:
+                # Use the enhanced chatbot to handle the query
+                response = chatbot.handle_query(message_body, user_data, messenger_id)
+                send_messenger_message(sender_id, response)
+                return jsonify({"status": "success"}), 200
+            except Exception as e:
+                logging.error(f"❌ Error in chatbot response: {str(e)}")
+                fallback_message = "I'm having trouble right now. Please contact our team: https://wa.me/60126181683"
+                send_messenger_message(sender_id, fallback_message)
+                return jsonify({"status": "error"}), 500
 
         # ----------------------------
         # 2. Define Next Step Mapping
@@ -998,188 +1003,13 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # ---------------------------
 # Context Handling (In-Memory)
 # ---------------------------
-# backend/utils/chatbot_enhanced.py
-
-import re
-import random
-import logging
-import json
-import os
-from datetime import datetime
-from difflib import get_close_matches
-import openai
-
-def load_faq_data():
-    """Load FAQ data from presets.json in utils folder."""
+def handle_query(question, user_data, messenger_id):
+    """Main query handler function that uses the enhanced chatbot."""
     try:
-        # Adjust this path based on your actual structure
-        preset_path = os.path.join(os.path.dirname(__file__), 'presets.json')
-        with open(preset_path, 'r') as file:
-            presets_data = json.load(file)
-        return presets_data.get('faq', {})
+        return chatbot.handle_query(question, user_data, messenger_id)
     except Exception as e:
-        logging.error(f"Error loading FAQ data: {str(e)}")
-        return {}
-
-class ChatbotHandler:
-    def __init__(self):
-        self.faq_data = load_faq_data()
-    
-    def handle_query(self, question, user_data, messenger_id):
-        try:
-            # First, analyze conversation context
-            context = self._analyze_conversation_context(question, user_data)
-            
-            # Handle greetings with personality
-            if context.get('is_greeting'):
-                return self._generate_contextual_greeting(user_data)
-            
-            # Standard pipeline with enhanced responses
-            responses = []
-            
-            # Check FAQ with improved matching
-            faq_response = self._handle_faq_queries(question, user_data)
-            if faq_response:
-                responses.append(faq_response)
-            
-            # Check for contact intent
-            contact_response = self._handle_contact_queries(question, user_data)
-            if contact_response:
-                responses.append(contact_response)
-            
-            # Dynamic handling
-            dynamic_response = self._handle_dynamic_query(question, user_data)
-            if dynamic_response:
-                responses.append(dynamic_response)
-            
-            # If we have multiple responses, choose the best one
-            if responses:
-                return self._select_best_response(responses, context)
-            
-            # GPT fallback
-            return self._handle_gpt_query(question, user_data, context)
-            
-        except Exception as e:
-            logging.error(f"Error in handle_query: {str(e)}")
-            return "I'm having a moment. Connect with our team: https://wa.me/60126181683"
-
-    def _handle_faq_queries(self, question, user_data):
-        """Handle FAQ matching with loaded presets."""
-        try:
-            language_code = getattr(user_data, 'language_code', 'en')
-            faq_responses = self.faq_data.get(language_code, {})
-            
-            normalized_question = self._preprocess_query(question)
-            
-            # Direct match
-            if normalized_question in faq_responses:
-                return faq_responses[normalized_question]
-            
-            # Fuzzy match
-            matches = get_close_matches(normalized_question, faq_responses.keys(), n=1, cutoff=0.7)
-            if matches:
-                return faq_responses[matches[0]]
-            
-            return None
-            
-        except Exception as e:
-            logging.error(f"Error in FAQ queries: {str(e)}")
-            return None
-
-    def _analyze_conversation_context(self, question, user_data):
-        """Analyze conversation context."""
-        return {
-            'is_greeting': any(word in question.lower() for word in ['hi', 'hello', 'hey']),
-            'is_followup': any(word in question.lower() for word in ['and', 'also', 'what about']),
-            'emotional_tone': self._analyze_emotional_tone(question)
-        }
-
-    def _handle_contact_queries(self, question, user_data):
-        """Handle contact-related queries."""
-        contact_phrases = ["talk to agent", "contact agent", "need help"]
-        if any(phrase in question.lower() for phrase in contact_phrases):
-            return "Sure! Connect with our team here: https://wa.me/60126181683"
-        return None
-
-    def _handle_dynamic_query(self, question, user_data):
-        """Handle dynamic queries with context."""
-        try:
-            # Basic intent matching
-            intents = {
-                'refinancing': 'Refinancing means replacing your current loan with a new one. Need more details?',
-                'rates': 'Our rates are competitive and vary based on your loan details. Want to know more?'
-            }
-            
-            for key, response in intents.items():
-                if key in question.lower():
-                    self._update_user_context(user_data, key)
-                    return response
-                    
-            return None
-            
-        except Exception as e:
-            logging.error(f"Error in dynamic query: {str(e)}")
-            return None
-
-    def _handle_gpt_query(self, question, user_data, context):
-        """Handle GPT queries with enhanced context."""
-        try:
-            system_prompt = (
-                "You are Finzo AI Buddy, a friendly Malaysian financial assistant. "
-                "Keep responses natural and helpful, focusing on home loans and refinancing."
-            )
-            
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": question}
-                ],
-                temperature=0.7
-            )
-            
-            return response['choices'][0]['message']['content'].strip()
-            
-        except Exception as e:
-            logging.error(f"GPT Query Failed: {str(e)}")
-            return "I'm not quite sure. Our team can help better: https://wa.me/60126181683"
-
-    def _update_user_context(self, user_data, intent):
-        """Update user context."""
-        if not hasattr(user_data, 'context'):
-            user_data.context = {}
-        user_data.context['last_intent'] = intent
-
-    def _preprocess_query(self, text):
-        """Preprocess user query."""
-        return re.sub(r'[^\w\s]', '', text).strip().lower()
-
-    def _analyze_emotional_tone(self, text):
-        """Analyze text emotional tone."""
-        positive = ['thanks', 'good', 'great', 'awesome']
-        negative = ['bad', 'wrong', 'terrible', 'unhappy']
-        
-        text_lower = text.lower()
-        if any(word in text_lower for word in positive):
-            return 'positive'
-        if any(word in text_lower for word in negative):
-            return 'negative'
-        return 'neutral'
-
-    def _generate_contextual_greeting(self, user_data):
-        """Generate contextual greeting."""
-        greetings = [
-            "Hey! How can I help with your financial needs today?",
-            "Hi there! Ready to explore your loan options?",
-            "Hello! What would you like to know about refinancing?"
-        ]
-        return random.choice(greetings)
-
-    def _select_best_response(self, responses, context):
-        """Select best response based on context."""
-        if context.get('emotional_tone') == 'negative':
-            return "I understand your concern. Let me connect you with our expert team: https://wa.me/60126181683"
-        return max(responses, key=len)
+        logging.error(f"Error in handle_query: {str(e)}")
+        return "I'm having trouble right now. Please contact our team: https://wa.me/60126181683"
     
 # ---------------------------
 # Preprocessing Queries
