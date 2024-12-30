@@ -351,10 +351,9 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         # 1. Skip Validation in Inquiry Mode
         # ----------------------------
         if user_data.mode == 'inquiry':
-            # Check contact queries and FAQ queries first in inquiry mode
             logging.info(f"🛑 User {messenger_id} is in Inquiry Mode. Proceeding with query processing.")
             
-            # Check if the question matches contact-related queries
+            # Check contact queries and FAQ queries first in inquiry mode
             contact_response = handle_contact_queries(message_body, user_data, messenger_id)
             if contact_response:
                 send_messenger_message(messenger_id, contact_response)
@@ -371,9 +370,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             send_messenger_message(messenger_id, gpt_response)
             return {"status": "success"}, 200
 
-        # ----------------------------
-        # 2. Handle Normal Flow (Loan-related steps)
-        # ----------------------------
+        # If the user is not in inquiry mode, continue with regular flow
         next_step_mapping = {
             'choose_language': 'get_name',
             'get_name': 'get_phone_number',
@@ -384,7 +381,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         }
 
         # ----------------------------
-        # 3. Handle 'skip' Command Before Validation
+        # 2. Handle 'skip' Command Before Validation
         # ----------------------------
         if message_body.lower() == 'skip':
             logging.info(f"🔄 Skipping input for step: {current_step}")
@@ -402,7 +399,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             return {"status": "success", "next_step": next_step}, 200
 
         # ----------------------------
-        # 4. Input Validation (Only for relevant steps)
+        # 3. Input Validation (Only for relevant steps)
         # ----------------------------
         def validate_input(step, value):
             if step == 'get_name':
@@ -425,7 +422,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
             return {"status": "failed"}, 200  # Return without moving forward
 
         # ----------------------------
-        # 5. Apply Updates Based on Input
+        # 4. Apply Updates Based on Input
         # ----------------------------
 
         # Update language_code if the step is 'choose_language'
@@ -452,7 +449,7 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         db.session.commit()
 
         # ----------------------------
-        # 6. Move to the Next Step
+        # 5. Move to the Next Step
         # ----------------------------
         next_step = next_step_mapping.get(current_step, None)
 
