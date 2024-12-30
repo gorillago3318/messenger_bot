@@ -1,9 +1,9 @@
 {
-  "gpt3_role": "You are a mortgage specialist for Finzo AI, specializing solely in home refinancing, housing loans, and related financial topics in Malaysia. Your focus is to assist users with home loan eligibility, refinancing processes, interest rates, fees, documents required, and other relevant home loan-related queries. Do not provide answers to queries outside of these areas.",
+  "gpt3_role": "You are Finzo AI Buddy, a friendly and approachable mortgage assistant. You specialize in refinancing, home loans, and housing-related topics in Malaysia. Keep answers short, conversational, and easy to understand—no jargon. If you can't answer, suggest talking to an admin and provide a contact link.",
 
   "bot_profile": {
     "name": "Finzo AI Buddy",
-    "introduction": "Hi there, I'm Finzo AI Buddy—your friendly mortgage sidekick. I'm here to guide you through the ins and outs of home loans and refinancing in Malaysia. My aim is to translate all that finance jargon into straightforward solutions and sprinkle in a hint of humor, so you can feel relaxed and confident every step of the way."
+    "introduction": "Hi, I’m Finzo AI Buddy—your go-to mortgage sidekick! 💬 I’m here to make home loans and refinancing easy to understand. Ask me anything about saving money, rates, or refinancing steps. If things get too tricky, I’ll connect you to our friendly admin!"
   },
 
   "contact_queries": {
@@ -11,7 +11,18 @@
       "1. how can i contact an agent?": "Sure! To speak with an agent or get direct assistance, click here: https://wa.me/60126181683.",
       "2. how do i reach admin?": "No worries! An admin will follow up with you shortly. Meanwhile, you can click here to contact us directly: https://wa.me/60126181683.",
       "3. talk to someone now?": "We're happy to assist you! Click here to reach our admin directly: https://wa.me/60126181683.",
-      "4. i need human help": "Got it! An admin will follow up, or you can contact us directly here: https://wa.me/60126181683."
+      "4. i need human help": "Got it! An admin will follow up, or you can contact us directly here: https://wa.me/60126181683.",
+      "contact admin": "📞 You can contact our admin via WhatsApp: https://wa.me/60167177813",
+      "contact agent": "📞 Reach out to our agent directly at https://wa.me/60167177813",
+      "talk to admin": "📞 You can contact our admin via WhatsApp: https://wa.me/60167177813",
+      "talk to agent": "📞 Reach out to our agent directly at https://wa.me/60167177813",
+      "reach out": "📞 Reach out to our admin or agent at https://wa.me/60167177813",
+      "any human": "📞 Our agent is ready to help. Contact: https://wa.me/60167177813",
+      "i want to talk to admin": "An admin will follow up with you shortly. Meanwhile, click here to contact us directly: https://wa.me/60126181683",
+      "how do i talk to your admin": "You can contact our admin at https://wa.me/60126181683 for assistance.",
+      "can i talk to an agent?": "Sure! An agent will reach out soon. You can also contact us directly here: https://wa.me/60126181683",
+      "any human i can talk to?": "Yes, you can talk to our admin directly by clicking here: https://wa.me/60126181683",
+      "i want to reach out": "No worries! Click here to connect with us: https://wa.me/60126181683"
     },
     "ms": {
   "1. bagaimana saya boleh menghubungi agen?": "Sudah tentu! Untuk bercakap dengan agen atau mendapatkan bantuan terus, klik di sini: https://wa.me/60126181683.",

@@ -1014,15 +1014,25 @@ def handle_query(question, user_data, messenger_id):
 
     except Exception as e:
         logging.error(f"Error in handle_query: {str(e)}")
-        return "I'm unable to process your query right now. Please contact support."
+        return "Sorry, I couldn't find an answer. Let me connect you to someone who can help: https://wa.me/60126181683"  
+
+
+# Preprocessing function for contact queries
+def preprocess_contact_query(text):
+    """Normalize text by removing punctuation and converting to lowercase."""
+    return text.lower().strip().replace('?', '').replace('.', '').replace(',', '').replace('!', '')
 
 
 # Handle contact queries
-
 def handle_contact_queries(question, user_data, messenger_id):
     """Handle questions related to contacting agents or admin."""
     global presets_data  # Ensure access to global presets_data
+
     try:
+        # Preprocess the query for better matching
+        normalized_question = preprocess_contact_query(question)
+
+        # Select language for response
         language = user_data.language_code if presets_data.get('contact_queries', {}).get(user_data.language_code) else 'en'
         logging.info(f"Selected Language for Contact Queries: {language}")
 
@@ -1030,52 +1040,60 @@ def handle_contact_queries(question, user_data, messenger_id):
             logging.error("'contact_queries' not found in presets.json")
             return None
 
+        # Retrieve queries from presets
         queries = presets_data['contact_queries'].get(language, {})
-        matches = get_close_matches(question.lower(), queries.keys(), n=1, cutoff=0.7)
+
+        # Perform fuzzy matching with a lenient cutoff
+        matches = get_close_matches(normalized_question, queries.keys(), n=1, cutoff=0.4)
         if matches:
             logging.info(f"Matched Contact Query: {matches[0]} -> {queries[matches[0]]}")
             return queries[matches[0]]
 
+        # Fallback response
         logging.info(f"No match found for contact query: {question}")
-        return None
+        return "No worries, you can reach us directly here: https://wa.me/60126181683"
 
     except Exception as e:
         logging.error(f"Error in handle_contact_queries: {str(e)}")
-        return None
+        return "Let me get you connected! Reach out here: https://wa.me/60126181683"
 
+
+# Handle FAQ queries
 def handle_faq_queries(question, user_data):
     """Handle frequently asked questions related to home loans and refinancing."""
     global presets_data  # Ensure access to global presets_data
     try:
+        # Preprocess query for better matching
+        normalized_question = preprocess_contact_query(question)
+
         faq_responses = presets_data.get('faq', {}).get(user_data.language_code, {})
         if not faq_responses:
             logging.error("'faq' not found in presets.json for the selected language.")
             return None
 
-        matches = get_close_matches(question.lower(), faq_responses.keys(), n=1, cutoff=0.7)
+        matches = get_close_matches(normalized_question, faq_responses.keys(), n=1, cutoff=0.4)
         if matches:
             logging.info(f"Matched FAQ: {matches[0]} -> {faq_responses[matches[0]]}")
             return faq_responses[matches[0]]
 
+        # Fallback response
         logging.info(f"No match found for FAQ: {question}")
-        return None
+        return "Hmm, not sure about that! Need more help? Click here: https://wa.me/60126181683"
 
     except Exception as e:
         logging.error(f"Error in handle_faq_queries: {str(e)}")
-        return None
+        return "I'm not sure about that. Let me connect you to someone who can help: https://wa.me/60126181683"
 
 
 # Handle GPT query fallback
-
 def handle_gpt_query(question, user_data, messenger_id):
     """Use GPT for questions not covered in predefined queries."""
     try:
         system_prompt = (
-            "You are a mortgage specialist for Finzo AI, specializing in home refinancing, housing loans, "
-            "and related financial topics in Malaysia."
+            "You are Finzo AI Buddy, a friendly assistant specializing in home refinancing, housing loans, and related financial topics in Malaysia. Keep responses short, simple, and conversational. Avoid jargon and suggest talking to admin if needed."
         )
 
-        logging.info(f"Question is not found in presets, sending to GPT: {question}")
+        logging.info(f"Question not found in presets, sending to GPT: {question}")
 
         gpt_response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -1091,7 +1109,7 @@ def handle_gpt_query(question, user_data, messenger_id):
 
     except Exception as e:
         logging.error(f"GPT Query Failed: {str(e)}")
-        return "I couldn't process your query. Please contact support."
+        return "I couldn't process that right now. Let me get someone to help: https://wa.me/60126181683"
 
 
 # Log GPT queries
