@@ -993,10 +993,6 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
     except Exception as e:
         logging.error(f"❌ Error sending lead to admin: {str(e)}")
 
-import logging
-import re
-from difflib import get_close_matches
-import openai
 
 # ---------------------------
 # Context Handling (In-Memory)
@@ -1007,7 +1003,7 @@ def update_user_context(user_data, intent):
         # Initialize context if not available
         if not hasattr(user_data, 'context'):
             user_data.context = {}  # Initialize context as a dictionary
-        
+
         # Update the intent in context
         user_data.context['last_intent'] = intent
         logging.info(f"Updated user intent: {intent}")
@@ -1102,17 +1098,23 @@ def handle_dynamic_query(question, user_data, messenger_id):
 # FAQ Query Handling (Presets)
 # ---------------------------
 def handle_faq_queries(question, user_data):
-    global presets_data
     try:
         normalized_question = preprocess_query(question)
+
+        # Exact match first
         faq_responses = presets_data.get('faq', {}).get(user_data.language_code, {})
-        matches = get_close_matches(normalized_question, faq_responses.keys(), n=1, cutoff=0.4)
+        if normalized_question in faq_responses:
+            return faq_responses[normalized_question]
+
+        # Fuzzy match as backup (higher cutoff)
+        matches = get_close_matches(normalized_question, faq_responses.keys(), n=1, cutoff=0.7)
         if matches:
             return faq_responses[matches[0]]
+
         return None
 
     except Exception as e:
-        logging.error(f"Error in handle_faq_queries: {str(e)}")
+        logging.error(f"Error in FAQ queries: {str(e)}")
         return None
 
 
@@ -1164,6 +1166,7 @@ def classify_intent_with_gpt(question):
 # Preprocessing Queries
 # ---------------------------
 def preprocess_query(text):
+    """Normalize text by removing special characters and converting to lowercase."""
     return re.sub(r'[^\w\s]', '', text).strip().lower()
 
 def log_gpt_query(messenger_id, question, response):
