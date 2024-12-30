@@ -543,34 +543,24 @@ def process_message():
                 return jsonify({"status": "success"}), 200
 
         # ----------------------------
-        # 6. Process Other User Messages (Including Regular Flow)
+        # 6. Check If User is in Inquiry Mode
         # ----------------------------
-        if not message_body:
-            if 'quick_reply' in message_data:
-                message_body = message_data['quick_reply']['payload'].strip().lower()
-            elif 'text' in message_data:
-                message_body = message_data['text'].strip()
-
-        if not message_body:
-            logging.error(f"❌ No valid message found from {sender_id}")
-            send_messenger_message(sender_id, "Sorry, I can only process text or button replies for now.")
-            return jsonify({"status": "error", "message": "No valid message found"}), 400
-
-        logging.info(f"💎 Incoming message from {sender_id}: {message_body}")
-
-        # ----------------------------
-        # 7. Handle Reset Commands (restart, reset, etc.)
-        # ----------------------------
-        if message_body.lower() in ['restart', 'reset', 'start over']:
-            logging.info(f"🔄 Restarting flow for user {sender_id}")
-            reset_user_data(user_data, mode='flow')
-            user_data.current_step = 'choose_language'
-            db.session.commit()
-            send_messenger_message(sender_id, PROMPTS['en']['choose_language'])
-            return jsonify({"status": "success"}), 200
+        if user_data.mode == 'inquiry':
+            logging.info(f"💬 User {sender_id} is in Inquiry Mode.")
+            # Skip loan validation and process user queries directly
+            try:
+                # Handle user query in inquiry mode (respond to user questions about refinancing, etc.)
+                response = handle_gpt_query(message_body, user_data, messenger_id)
+                send_messenger_message(sender_id, response)
+                log_chat(sender_id, message_body, response, user_data)
+                return jsonify({"status": "success"}), 200
+            except Exception as e:
+                logging.error(f"❌ Error processing inquiry: {str(e)}")
+                send_messenger_message(sender_id, "Sorry, I couldn't process your inquiry. Please try again later.")
+                return jsonify({"status": "error", "message": "Inquiry processing failed."}), 500
 
         # ----------------------------
-        # 8. Process Regular Flow (Ask for user details)
+        # 7. Process Regular Flow (Ask for user details)
         # ----------------------------
         current_step = user_data.current_step
         process_response, status = process_user_input(current_step, user_data, message_body, messenger_id)
@@ -595,9 +585,8 @@ def process_message():
                     if result[1] != 200:
                         send_messenger_message(sender_id, "Sorry, we encountered an error. Please restart.")
                     else:
-                        user_data.mode = 'inquiry'
+                        user_data.mode = 'inquiry'  # Ensure mode is set to inquiry after completing process
                         db.session.commit()
-                        # Send inquiry greeting only once here
                         inquiry_greeting = (
                             "🎉 Welcome to Inquiry Mode! 🎉\n\n"
                             "🤖 FinZo AI Assistant* is now activated. Ask me anything about *home refinancing* or *housing loans*.\n\n"
@@ -619,7 +608,7 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
-        
+
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
     logging.debug(f"🚀 Entered handle_process_completion() for Messenger ID: {messenger_id}")
@@ -689,7 +678,7 @@ def handle_process_completion(messenger_id):
             send_messenger_message(messenger_id, msg)
 
             # Switch to inquiry mode
-            user_data.mode = 'inquiry'
+            user_data.mode = 'inquiry'  # Update mode to 'inquiry'
             db.session.commit()
             logging.info(f"✅ No savings case handled. User switched to inquiry mode.")
             return jsonify({"status": "success"}), 200
@@ -717,7 +706,7 @@ def handle_process_completion(messenger_id):
             logging.error(f"❌ Failed to save results in database: {str(e)}")
 
         # Step 8: Switch to inquiry mode with language-specific greeting
-        user_data.mode = 'inquiry'
+        user_data.mode = 'inquiry'  # Update mode to 'inquiry'
         db.session.commit()
 
         # Inquiry Mode Greeting based on user language
@@ -761,7 +750,6 @@ def handle_process_completion(messenger_id):
             "An error occurred. Please restart the process by typing 'restart'."
         )
         return jsonify({"status": "error", "message": "An error occurred."}), 500
-
 
 def prepare_summary_messages(user_data, calc_results, language_code):
     """Builds shortened summary messages about the user's savings."""
@@ -960,22 +948,37 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # -------------------
 def handle_gpt_query(question, user_data, messenger_id):
     try:
-        # Step 1: Check if the user is in inquiry mode
-        if user_data.mode != 'inquiry':
-            logging.info(f"🚫 User {messenger_id} is not in inquiry mode. Ignoring GPT query.")
-            return "Please complete the process before asking questions."
+        # Check if the question matches a contact-related query
+        contact_queries = {
+            'en': {
+                "how can i contact an agent?": "Sure! To speak with an agent or get direct assistance, click here: https://wa.me/60126181683.",
+                "how do i reach admin?": "No worries! An admin will follow up with you shortly. Meanwhile, you can click here to contact us directly: https://wa.me/60126181683.",
+                "talk to someone now?": "We're happy to assist you! Click here to reach our admin directly: https://wa.me/60126181683.",
+                "i need human help": "Got it! An admin will follow up, or you can contact us directly here: https://wa.me/60126181683."
+            },
+            'ms': {
+                "bagaimana saya boleh menghubungi agen?": "Sudah tentu! Untuk bercakap dengan agen atau mendapatkan bantuan terus, klik di sini: https://wa.me/60126181683.",
+                "bagaimana saya boleh menghubungi admin?": "Jangan risau! Admin akan menghubungi anda tidak lama lagi. Sementara itu, anda juga boleh klik di sini untuk menghubungi kami terus: https://wa.me/60126181683.",
+                "boleh saya bercakap dengan seseorang sekarang?": "Kami sedia membantu anda! Klik di sini untuk menghubungi admin kami secara langsung: https://wa.me/60126181683.",
+                "saya perlukan bantuan manusia": "Baik! Admin akan menghubungi anda. Atau, anda juga boleh hubungi kami terus di sini: https://wa.me/60126181683."
+            },
+            'zh': {
+                "我如何联系代理？": "当然！如需与代理联系或直接获得帮助，请点击此链接: https://wa.me/60126181683。",
+                "我如何联系管理员？": "别担心！管理员会尽快与您联系。同时，您也可以点击此链接直接联系我们: https://wa.me/60126181683。",
+                "我现在可以和人聊聊吗？": "我们很乐意协助您！点击此链接直接联系管理员: https://wa.me/60126181683。",
+                "我需要人工帮助": "明白！管理员将会与您联系。或者，您也可以直接通过此链接联系我们: https://wa.me/60126181683。"
+            }
+        }
 
-        # Step 2: Fetch preset response first
-        response = get_preset_response(question, user_data.language_code or 'en')
-        if response:
-            logging.info(f"✅ Preset response found for query: {question}")
-            return response  # Only return the preset response if found
+        # Check if the query matches a contact query in any language
+        language = user_data.language_code if user_data.language_code in contact_queries else 'en'
 
-        # ----------------------------
-        # Step 3: Query GPT if no preset response is found
-        # ----------------------------
+        # If the question matches any of the contact queries, return the appropriate response
+        for key, value in contact_queries[language].items():
+            if key.lower() in question.lower():
+                return value  # Respond with the contact message directly
 
-        # Map language code to full names for GPT instruction
+        # If not a contact query, proceed with GPT
         language_map = {
             'en': 'English',
             'ms': 'Malay',
@@ -986,7 +989,6 @@ def handle_gpt_query(question, user_data, messenger_id):
         preferred_language = language_map.get(user_data.language_code, 'English')
 
         # Construct GPT system prompt with language preference and topic focus
-        logging.info(f"❌ No preset match. Querying GPT in {preferred_language} for: {question}")
         system_prompt = (
             f"You are a helpful assistant for home refinancing and home loan queries. "
             f"Your responses should strictly be about home loans, mortgages, refinancing, interest rates, and related financial topics. "
