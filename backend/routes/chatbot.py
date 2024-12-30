@@ -525,42 +525,45 @@ def process_message():
             if message_body == 'get_started':
                 logging.info(f"🌟 User {sender_id} clicked the 'Get Started' button.")
                 user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
-                if user_data:
-                    reset_user_data(user_data, mode='flow')
-                else:
-                    user_data = ChatflowTemp(
-                        sender_id=sender_id,
-                        messenger_id=messenger_id,
-                        current_step='choose_language',  # Start with language selection
-                        language_code='en',  # Default to English if no language selected
-                        mode='flow'
-                    )
-                    db.session.add(user_data)
-                    db.session.commit()
+
+                # Force restart if 'Get Started' is clicked (reset user data and start fresh)
+                reset_user_data(user_data, mode='flow')  # Reset the user data to start fresh
+                user_data.current_step = 'choose_language'  # Start with language selection
+                db.session.commit()
 
                 # Send Language Selection Prompt
                 send_messenger_message(sender_id, PROMPTS['en']['choose_language'])
                 return jsonify({"status": "success"}), 200
 
         # ----------------------------
-        # 6. Check If User is in Inquiry Mode
+        # 6. Process Other User Messages (Including Regular Flow)
         # ----------------------------
-        if user_data.mode == 'inquiry':
-            logging.info(f"💬 User {sender_id} is in Inquiry Mode.")
-            # Skip loan validation and process user queries directly
-            try:
-                # Handle user query in inquiry mode (respond to user questions about refinancing, etc.)
-                response = handle_gpt_query(message_body, user_data, messenger_id)
-                send_messenger_message(sender_id, response)
-                log_chat(sender_id, message_body, response, user_data)
-                return jsonify({"status": "success"}), 200
-            except Exception as e:
-                logging.error(f"❌ Error processing inquiry: {str(e)}")
-                send_messenger_message(sender_id, "Sorry, I couldn't process your inquiry. Please try again later.")
-                return jsonify({"status": "error", "message": "Inquiry processing failed."}), 500
+        if not message_body:
+            if 'quick_reply' in message_data:
+                message_body = message_data['quick_reply']['payload'].strip().lower()
+            elif 'text' in message_data:
+                message_body = message_data['text'].strip()
+
+        if not message_body:
+            logging.error(f"❌ No valid message found from {sender_id}")
+            send_messenger_message(sender_id, "Sorry, I can only process text or button replies for now.")
+            return jsonify({"status": "error", "message": "No valid message found"}), 400
+
+        logging.info(f"💎 Incoming message from {sender_id}: {message_body}")
 
         # ----------------------------
-        # 7. Process Regular Flow (Ask for user details)
+        # 7. Handle Reset Commands (restart, reset, etc.)
+        # ----------------------------
+        if message_body.lower() in ['restart', 'reset', 'start over']:
+            logging.info(f"🔄 Restarting flow for user {sender_id}")
+            reset_user_data(user_data, mode='flow')
+            user_data.current_step = 'choose_language'
+            db.session.commit()
+            send_messenger_message(sender_id, PROMPTS['en']['choose_language'])
+            return jsonify({"status": "success"}), 200
+
+        # ----------------------------
+        # 8. Process Regular Flow (Ask for user details)
         # ----------------------------
         current_step = user_data.current_step
         process_response, status = process_user_input(current_step, user_data, message_body, messenger_id)
