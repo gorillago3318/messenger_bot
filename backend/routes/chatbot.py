@@ -87,6 +87,8 @@ PROMPTS = {
             }
         }
 
+
+
 # -------------------
 # 2) Initialize OpenAI client
 # -------------------
@@ -116,6 +118,26 @@ def is_valid_number(input_text, min_val=None, max_val=None, decimal_allowed=Fals
         return False
     
     return True
+
+# -------------------
+# 3) Load Presets Data
+# -------------------
+def load_presets():
+    try:
+        with open('backend/utils/presets.json', 'r') as file:
+            data = json.load(file)
+            logging.info("✅ Presets loaded successfully.")
+            return data
+    except Exception as e:
+        logging.error(f"❌ Error loading presets.json: {str(e)}")
+        return {}
+    
+    logging.debug(f"Presets Data: {presets_data}")
+
+
+# Load presets globally
+presets_data = load_presets()
+
 
 # -------------------
 # Validation Functions
@@ -974,6 +996,7 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # 9) GPT Query Handling
 # -------------------
 # Function to load presets from presets.json
+
 def handle_query(question, user_data, messenger_id):
     try:
         # Check if the question matches contact-related queries
@@ -998,15 +1021,15 @@ def handle_query(question, user_data, messenger_id):
 
 def handle_contact_queries(question, user_data, messenger_id):
     """Handle questions related to contacting agents or admin."""
+    global presets_data  # Ensure access to global presets_data
     try:
-        language = user_data.language_code if user_data.language_code in presets_data['contact_queries'] else 'en'
+        language = user_data.language_code if presets_data.get('contact_queries', {}).get(user_data.language_code) else 'en'
         logging.info(f"Selected Language for Contact Queries: {language}")
 
         if 'contact_queries' not in presets_data:
             logging.error("'contact_queries' not found in presets.json")
             return None
 
-        # Iterate and match with fuzzy logic
         queries = presets_data['contact_queries'].get(language, {})
         matches = get_close_matches(question.lower(), queries.keys(), n=1, cutoff=0.7)
         if matches:
@@ -1020,18 +1043,15 @@ def handle_contact_queries(question, user_data, messenger_id):
         logging.error(f"Error in handle_contact_queries: {str(e)}")
         return None
 
-
-# Handle FAQ queries
-
 def handle_faq_queries(question, user_data):
+    """Handle frequently asked questions related to home loans and refinancing."""
+    global presets_data  # Ensure access to global presets_data
     try:
-        # Load FAQ responses based on language
         faq_responses = presets_data.get('faq', {}).get(user_data.language_code, {})
         if not faq_responses:
             logging.error("'faq' not found in presets.json for the selected language.")
             return None
 
-        # Fuzzy matching for questions
         matches = get_close_matches(question.lower(), faq_responses.keys(), n=1, cutoff=0.7)
         if matches:
             logging.info(f"Matched FAQ: {matches[0]} -> {faq_responses[matches[0]]}")
