@@ -720,9 +720,6 @@ def handle_process_completion(messenger_id):
         user_data.mode = 'inquiry'
         db.session.commit()
 
-        # Fetch WhatsApp link from environment variable
-        whatsapp_link = os.getenv('ADMIN_WHATSAPP_LINK', "https://wa.me/60126181683")
-
         # Inquiry Mode Greeting based on user language
         language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
         inquiry_greetings = {
@@ -806,9 +803,9 @@ def prepare_summary_messages(user_data, calc_results, language_code):
             whats_next_msg = (
                 "🛠 Apa Seterusnya? Laluan Anda ke Penjimatan\n\n"
                 "Anda kini mempunyai 3 pilihan yang berkuasa untuk mencapai matlamat kewangan anda:\n\n"
-                "⿡ Kurangkan Bayaran Bulanan Anda – Nikmati penjimatan segera dan aliran tunai tambahan.\n"
-                "⿢ Pendekkan Tempoh Pinjaman Anda – Capai kebebasan kewangan lebih cepat dan jimat lebih banyak faedah.\n"
-                "⿣ Keluarkan Ekuiti Rumah – Buka dana untuk pengubahsuaian, pelaburan, atau keperluan kewangan lain.\n\n"
+                "1️⃣ Kurangkan Bayaran Bulanan Anda – Nikmati penjimatan segera dan aliran tunai tambahan.\n"
+                "2️⃣ Pendekkan Tempoh Pinjaman Anda – Capai kebebasan kewangan lebih cepat dan jimat lebih banyak faedah.\n"
+                "3️⃣ Keluarkan Ekuiti Rumah – Buka dana untuk pengubahsuaian, pelaburan, atau keperluan kewangan lain.\n\n"
                 "🌟 Pakar Kami Akan Membantu Anda! Seorang pakar pembiayaan semula akan menghubungi anda tidak lama lagi untuk membincangkan pilihan anda dan memastikan anda membuat keputusan terbaik.\n\n"
                 f"📞 Perlukan bantuan segera? Hubungi kami terus di {whatsapp_link}."
             )
@@ -827,9 +824,9 @@ def prepare_summary_messages(user_data, calc_results, language_code):
             whats_next_msg = (
                 "🛠 接下来是什么？您的节省路径\n\n"
                 "您现在有 3 个强大的选项来实现您的财务目标：\n\n"
-                "⿡ 降低每月还款额 – 立即享受节省并获得额外现金流。\n"
-                "⿢ 缩短贷款期限 – 更快实现财务自由并节省利息。\n"
-                "⿣ 提取房屋净值 – 解锁用于翻新、投资或其他财务需求的资金。\n\n"
+                "1️⃣ 降低每月还款额 – 立即享受节省并获得额外现金流。\n"
+                "2️⃣ 缩短贷款期限 – 更快实现财务自由并节省利息。\n"
+                "3️⃣ 提取房屋净值 – 解锁用于翻新、投资或其他财务需求的资金。\n\n"
                 "🌟 我们的专家将协助您！我们的再融资专家将很快与您联系，讨论您的选项并确保您做出最佳决定。\n\n"
                 f"📞 需要紧急帮助吗？请直接联系我们：{whatsapp_link}。"
             )
@@ -848,9 +845,9 @@ def prepare_summary_messages(user_data, calc_results, language_code):
             whats_next_msg = (
                 "🛠 What's Next? Your Path to Savings\n\n"
                 "You now have 3 powerful options to achieve your financial goals:\n\n"
-                "⿡ Lower Your Monthly Repayment – Enjoy immediate savings and extra cash flow.\n"
-                "⿢ Shorten Your Loan Tenure – Achieve financial freedom faster and save on total interest paid.\n"
-                "⿣ Cash Out Home Equity – Unlock funds for renovations, investments, or other financial needs.\n\n"
+                "1️⃣ Lower Your Monthly Repayment – Enjoy immediate savings and extra cash flow.\n"
+                "2️⃣ Shorten Your Loan Tenure – Achieve financial freedom faster and save on total interest paid.\n"
+                "3️⃣ Cash Out Home Equity – Unlock funds for renovations, investments, or other financial needs.\n\n"
                 "🌟 Our Specialist Will Assist You! A refinance expert will reach out to you shortly to discuss your options and ensure you make the best decision.\n\n"
                 f"📞 Need urgent assistance? Contact us directly at {whatsapp_link}."
             )
@@ -861,7 +858,6 @@ def prepare_summary_messages(user_data, calc_results, language_code):
     except Exception as e:
         logging.error(f"❌ Error preparing summary messages: {str(e)}")
         return ["An error occurred while generating your savings summary. Please try again later or contact support."]
-
 
 def update_database(messenger_id, user_data, calc_results):
     """Save user data and calculations to the database."""
