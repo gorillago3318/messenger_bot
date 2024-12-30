@@ -1017,22 +1017,22 @@ def update_user_context(user_data, intent):
 # ---------------------------
 def handle_query(question, user_data, messenger_id):
     try:
-        # Step 1: FAQ Queries (Presets.json lookup)
-        faq_response = handle_faq_queries(question, user_data)
-        if faq_response:
-            return faq_response
-
-        # Step 2: Contact Queries
-        contact_response = handle_contact_queries(question, user_data, messenger_id)
-        if contact_response:
-            return contact_response
-
-        # Step 3: Dynamic Queries
+        # Step 1: Dynamic Queries (Quick Responses)
         dynamic_response = handle_dynamic_query(question, user_data, messenger_id)
         if dynamic_response:
             return dynamic_response
 
-        # Step 4: GPT Fallback
+        # Step 2: FAQ Queries (Presets Lookup)
+        faq_response = handle_faq_queries(question, user_data)
+        if faq_response:
+            return faq_response
+
+        # Step 3: Contact Queries (Only fallback to this for contact-related intents)
+        contact_response = handle_contact_queries(question, user_data, messenger_id)
+        if contact_response:
+            return contact_response
+
+        # Step 4: GPT Fallback (When nothing matches)
         return handle_gpt_query(question, user_data, messenger_id)
 
     except Exception as e:
@@ -1099,46 +1099,43 @@ def handle_dynamic_query(question, user_data, messenger_id):
 # ---------------------------
 def handle_faq_queries(question, user_data):
     try:
+        # Preprocess input for matching
         normalized_question = preprocess_query(question)
 
-        # Exact match first
+        # Lookup preset FAQ responses
         faq_responses = presets_data.get('faq', {}).get(user_data.language_code, {})
+
+        # Exact match first
         if normalized_question in faq_responses:
             return faq_responses[normalized_question]
 
-        # Fuzzy match as backup (higher cutoff)
-        matches = get_close_matches(normalized_question, faq_responses.keys(), n=1, cutoff=0.7)
+        # Fuzzy match for slight variations
+        matches = get_close_matches(normalized_question, faq_responses.keys(), n=1, cutoff=0.6)
         if matches:
             return faq_responses[matches[0]]
 
+        # No match found
         return None
 
     except Exception as e:
         logging.error(f"Error in FAQ queries: {str(e)}")
         return None
-
+    
 def handle_contact_queries(question, user_data, messenger_id):
-    """Handles questions about contacting agents or admin."""
-    global presets_data
+    """Handle questions related to contacting admin or agents only."""
     try:
-        # Preprocess query
         normalized_question = preprocess_query(question)
 
-        # Select language response
-        language = user_data.language_code if presets_data.get('contact_queries', {}).get(user_data.language_code) else 'en'
-        queries = presets_data['contact_queries'].get(language, {})
+        # Match only if the query is contact-related
+        contact_phrases = ["contact admin", "talk to agent", "who do i talk to"]
+        if any(phrase in normalized_question for phrase in contact_phrases):
+            return "Let me get you connected! Contact here: https://wa.me/60126181683"
 
-        # Match query using fuzzy match
-        matches = get_close_matches(normalized_question, queries.keys(), n=1, cutoff=0.7)
-        if matches:
-            return queries[matches[0]]
-
-        # Default fallback
-        return "Let me get you connected! Contact here: https://wa.me/60126181683"
+        return None  # Avoid overusing this response
 
     except Exception as e:
         logging.error(f"Error in handle_contact_queries: {str(e)}")
-        return "I couldn't process that right now. Let me get someone to help: https://wa.me/60126181683"
+        return None
     
 # ---------------------------
 # GPT Query Fallback
