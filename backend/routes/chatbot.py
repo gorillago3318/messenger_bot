@@ -998,13 +998,13 @@ def send_new_lead_to_admin(messenger_id, user_data, calc_results):
 # -------------------
 
 # ---------------------------
-# Update User Context
+# Context Update (In-Memory)
 # ---------------------------
 def update_user_context(user_data, intent):
+    """Update user context without DB modification."""
     try:
-        # Assign intent and commit to DB
-        user_data.last_intent = intent
-        db.session.commit()
+        # In-memory context update
+        user_data['last_intent'] = intent
         logging.info(f"Updated user intent: {intent}")
     except Exception as e:
         logging.error(f"Error updating user context: {str(e)}")
@@ -1030,11 +1030,6 @@ def handle_query(question, user_data, messenger_id):
         if contact_response:
             return contact_response
 
-        # Handle Contextual Queries
-        contextual_response = handle_contextual_query(question, user_data)
-        if contextual_response:
-            return contextual_response
-
         # GPT Fallback
         return handle_gpt_query(question, user_data, messenger_id)
 
@@ -1048,27 +1043,29 @@ def handle_query(question, user_data, messenger_id):
 # ---------------------------
 def handle_dynamic_query(question, user_data, messenger_id):
     try:
-        # Quick Keyword Responses
+        # Predefined keyword responses
         keywords = {
             "what is refinancing": "Refinancing means replacing your current loan with a new one to reduce rates or payments.",
             "what is the step to refinance": "Refinancing involves checking loan details, preparing documents, and applying. Need help?"
         }
 
+        # Keyword match lookup
         for key, value in keywords.items():
             if key in question.lower():
+                # Update context
                 update_user_context(user_data, "refinance_steps")
                 return value
 
-        # Handle Short Responses like 'yes' or 'okay'
+        # Short responses handling (yes, okay, sure)
         if question.lower() in ["yes", "sure", "okay"]:
-            if user_data.last_intent == "refinance_steps":
+            if user_data.get('last_intent') == "refinance_steps":
                 return "Great! I can connect you to an agent for guidance. Contact here: https://wa.me/60126181683"
             return "Awesome! What else would you like to know?"
 
-        # Classify Intent with GPT
+        # Intent classification using GPT
         intent = classify_intent_with_gpt(question)
 
-        # Map Intent Responses
+        # Handle Intent Responses
         if intent == "contact_agent":
             return "No worries! Here's how to reach an agent: https://wa.me/60126181683"
 
@@ -1088,7 +1085,7 @@ def handle_dynamic_query(question, user_data, messenger_id):
         elif intent == "greeting":
             return "Hey there! I'm Finzo AI Buddy. How can I assist you today?"
 
-        # Fallback to GPT
+        # Fallback to GPT if intent is unknown
         return handle_gpt_query(question, user_data, messenger_id)
 
     except Exception as e:
@@ -1100,6 +1097,7 @@ def handle_dynamic_query(question, user_data, messenger_id):
 # Intent Classification
 # ---------------------------
 def classify_intent_with_gpt(question):
+    """Classify intent using GPT."""
     try:
         system_prompt = (
             "You are a smart assistant that identifies the user's intent based on the question provided. "
@@ -1114,8 +1112,7 @@ def classify_intent_with_gpt(question):
                 {"role": "user", "content": question}
             ]
         )
-        intent = gpt_response['choices'][0]['message']['content'].strip().lower()
-        return intent
+        return gpt_response['choices'][0]['message']['content'].strip().lower()
 
     except Exception as e:
         logging.error(f"Intent classification failed: {str(e)}")
@@ -1133,7 +1130,6 @@ def handle_faq_queries(question, user_data):
         matches = get_close_matches(normalized_question, faq_responses.keys(), n=1, cutoff=0.4)
         if matches:
             return faq_responses[matches[0]]
-
         return None
 
     except Exception as e:
@@ -1145,10 +1141,11 @@ def handle_faq_queries(question, user_data):
 # GPT Query Fallback
 # ---------------------------
 def handle_gpt_query(question, user_data, messenger_id):
+    """GPT Fallback with strict topic enforcement."""
     try:
         system_prompt = (
             "You are Finzo AI Buddy, a friendly assistant specializing in home refinancing, housing loans, "
-            "and related financial topics in Malaysia. Keep responses short, simple, and helpful. Avoid jargon."
+            "and related financial topics in Malaysia. ONLY answer questions related to these topics. Politely decline unrelated topics."
         )
 
         gpt_response = openai.ChatCompletion.create(
@@ -1158,7 +1155,6 @@ def handle_gpt_query(question, user_data, messenger_id):
                 {"role": "user", "content": question}
             ]
         )
-
         return gpt_response['choices'][0]['message']['content'].strip()
 
     except Exception as e:
@@ -1170,6 +1166,7 @@ def handle_gpt_query(question, user_data, messenger_id):
 # Preprocessing Queries
 # ---------------------------
 def preprocess_query(text):
+    """Normalize text by removing special characters and converting to lowercase."""
     return re.sub(r'[^\w\s]', '', text).strip().lower()
 
 def log_gpt_query(messenger_id, question, response):
