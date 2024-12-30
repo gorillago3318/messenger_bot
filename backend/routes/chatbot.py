@@ -351,14 +351,28 @@ def process_user_input(current_step, user_data, message_body, messenger_id):
         # 1. Skip Validation in Inquiry Mode
         # ----------------------------
         if user_data.mode == 'inquiry':
-            # In Inquiry mode, skip loan-related input validation
-            logging.info(f"🛑 User {messenger_id} is in Inquiry Mode. Skipping validation.")
-            # You can add your logic to directly respond to general questions instead of processing loan details.
-            send_messenger_message(messenger_id, "You can ask about refinancing, home loans, or anything related. How can I assist you today?")
-            return {"status": "success"}, 200  # Continue in inquiry mode
+            # Check contact queries and FAQ queries first in inquiry mode
+            logging.info(f"🛑 User {messenger_id} is in Inquiry Mode. Proceeding with query processing.")
+            
+            # Check if the question matches contact-related queries
+            contact_response = handle_contact_queries(message_body, user_data, messenger_id)
+            if contact_response:
+                send_messenger_message(messenger_id, contact_response)
+                return {"status": "success"}, 200  # Respond with contact message
+
+            # Handle general loan and refinancing queries using predefined FAQs
+            faq_response = handle_faq_queries(message_body, user_data)
+            if faq_response:
+                send_messenger_message(messenger_id, faq_response)
+                return {"status": "success"}, 200  # Respond with FAQ answer
+
+            # If no match is found, send GPT response (fallback)
+            gpt_response = handle_gpt_query(message_body, user_data, messenger_id)
+            send_messenger_message(messenger_id, gpt_response)
+            return {"status": "success"}, 200
 
         # ----------------------------
-        # 2. Initialize Step Mapping
+        # 2. Handle Normal Flow (Loan-related steps)
         # ----------------------------
         next_step_mapping = {
             'choose_language': 'get_name',
