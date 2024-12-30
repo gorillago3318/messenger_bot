@@ -1005,6 +1005,11 @@ def handle_gpt_query(question, user_data, messenger_id):
             if key.lower() in question.lower():
                 return value  # Respond with the contact message directly
 
+        # If in inquiry mode, handle refinances or home loans directly
+        if user_data.mode == 'inquiry':
+            logging.info(f"🔍 Inquiry Mode Active for {messenger_id}. Processing question: {question}")
+            return handle_refinancing_or_loan_query(question, user_data, messenger_id)
+
         # If not a contact query, proceed with GPT
         language_map = {
             'en': 'English',
@@ -1025,7 +1030,7 @@ def handle_gpt_query(question, user_data, messenger_id):
         # Making GPT request to ensure it sticks to the right topic (home loans and refinancing)
         openai_res = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[
+            messages=[ 
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": question}
             ]
@@ -1045,6 +1050,15 @@ def handle_gpt_query(question, user_data, messenger_id):
         # Log error and return a fallback message
         logging.error(f"❌ Error in handle_gpt_query: {str(e)}")
         return "Sorry, something went wrong! Please try again or contact support."
+
+def handle_refinancing_or_loan_query(question, user_data, messenger_id):
+    """Handle refinancing or loan-related questions while in Inquiry Mode."""
+    if "what is refinancing" in question.lower():
+        return "Refinancing is the process of replacing your current mortgage with a new one, often with better terms such as a lower interest rate. This can help reduce your monthly repayments or shorten your loan tenure. For more details or to explore refinancing options, feel free to ask!"
+
+    # Add other refinancing/loan-related responses here
+
+    return "Sorry, I didn't catch that. Could you please clarify your question or ask something else related to home loans or refinancing?"
 
 def log_gpt_query(messenger_id, question, response):
     """Logs GPT queries to ChatLog."""
