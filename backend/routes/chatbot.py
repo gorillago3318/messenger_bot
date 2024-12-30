@@ -480,7 +480,45 @@ def process_message():
         postback_data = messaging_event.get('postback', {})
         message_body = None
 
-        # Handle 'Get Started' Payload (i.e., user clicks "Get Started" button)
+        # ----------------------------
+        # 3. Retrieve User Data
+        # ----------------------------
+        user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
+
+        # If no user data exists, create a new entry and start the language selection
+        if not user_data:
+            user_data = ChatflowTemp(
+                sender_id=sender_id,
+                messenger_id=messenger_id,
+                current_step='choose_language',
+                language_code='en',  # Default to English if no language selected
+                mode='flow'
+            )
+            db.session.add(user_data)
+            db.session.commit()
+
+            # Send Language Selection Prompt
+            send_messenger_message(sender_id, PROMPTS['en']['choose_language'])
+            return jsonify({"status": "success"}), 200
+
+        # ----------------------------
+        # 4. Check Last Active Time (Inactivity > 24 hours)
+        # ----------------------------
+        last_active = user_data.updated_at.replace(tzinfo=MYT)
+        time_difference = (datetime.now(MYT) - last_active).total_seconds()
+
+        if time_difference > 86400:  # 24 hours (86400 seconds)
+            logging.info(f"🔥 User {sender_id} has been inactive for more than 24 hours.")
+            # Prompt the user that they can continue their process or ask any questions
+            inactivity_message = (
+                "👋 Welcome back! It's been a while. If you'd like to recalculate your savings, please type 'restart'.\n"
+                "Otherwise, feel free to ask any questions about refinancing or home loans!"
+            )
+            send_messenger_message(sender_id, inactivity_message)
+
+        # ----------------------------
+        # 5. Handle 'Get Started' Payload (i.e., user clicks "Get Started" button)
+        # ----------------------------
         if 'payload' in postback_data:
             message_body = postback_data['payload'].strip().lower()
 
@@ -505,36 +543,7 @@ def process_message():
                 return jsonify({"status": "success"}), 200
 
         # ----------------------------
-        # 3. Handle Simple Greetings
-        # ----------------------------
-        # Check if the message body contains a greeting (e.g., 'hi', 'hello', etc.)
-        greetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening']
-        if 'text' in message_data:
-            message_body = message_data['text'].strip().lower()
-            if any(greeting in message_body for greeting in greetings):
-                logging.info(f"🌟 User {sender_id} greeted with '{message_body}'")
-
-                # Retrieve or Create User Data
-                user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
-                if user_data:
-                    reset_user_data(user_data, mode='flow')
-                else:
-                    user_data = ChatflowTemp(
-                        sender_id=sender_id,
-                        messenger_id=messenger_id,
-                        current_step='choose_language',  # Start with language selection
-                        language_code='en',  # Default to English if no language selected
-                        mode='flow'
-                    )
-                    db.session.add(user_data)
-                    db.session.commit()
-
-                # Send Language Selection Prompt
-                send_messenger_message(sender_id, PROMPTS['en']['choose_language'])
-                return jsonify({"status": "success"}), 200
-
-        # ----------------------------
-        # 4. Process Other User Messages (Including Regular Flow)
+        # 6. Process Other User Messages (Including Regular Flow)
         # ----------------------------
         if not message_body:
             if 'quick_reply' in message_data:
@@ -550,28 +559,7 @@ def process_message():
         logging.info(f"💎 Incoming message from {sender_id}: {message_body}")
 
         # ----------------------------
-        # 5. Retrieve User Data
-        # ----------------------------
-        user_data = db.session.query(ChatflowTemp).filter_by(messenger_id=sender_id).first()
-
-        # If no user data exists, create a new entry and start the language selection
-        if not user_data:
-            user_data = ChatflowTemp(
-                sender_id=sender_id,
-                messenger_id=messenger_id,
-                current_step='choose_language',
-                language_code='en',  # Default to English if no language selected
-                mode='flow'
-            )
-            db.session.add(user_data)
-            db.session.commit()
-
-            # Send Language Selection Prompt
-            send_messenger_message(sender_id, PROMPTS['en']['choose_language'])
-            return jsonify({"status": "success"}), 200
-
-        # ----------------------------
-        # 6. Handle Reset Commands (restart, reset, etc.)
+        # 7. Handle Reset Commands (restart, reset, etc.)
         # ----------------------------
         if message_body.lower() in ['restart', 'reset', 'start over']:
             logging.info(f"🔄 Restarting flow for user {sender_id}")
@@ -579,21 +567,6 @@ def process_message():
             user_data.current_step = 'choose_language'
             db.session.commit()
             send_messenger_message(sender_id, PROMPTS['en']['choose_language'])
-            return jsonify({"status": "success"}), 200
-
-        # ----------------------------
-        # 7. Handle Inquiry Mode
-        # ----------------------------
-        if user_data.mode == 'inquiry':
-            logging.info(f"💬 Inquiry mode for user {sender_id}")
-            try:
-                response = handle_gpt_query(message_body, user_data, messenger_id)
-            except Exception as e:
-                logging.error(f"❌ GPT query error: {str(e)}")
-                language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
-                response = PROMPTS[language].get('inquiry_mode_message', "⚠️ An error occurred. Please try again.")
-            log_chat(sender_id, message_body, response, user_data)
-            send_messenger_message(sender_id, response)
             return jsonify({"status": "success"}), 200
 
         # ----------------------------
@@ -627,8 +600,8 @@ def process_message():
                         # Send inquiry greeting only once here
                         inquiry_greeting = (
                             "🎉 Welcome to Inquiry Mode! 🎉\n\n"
-                            "🤖 FinZo AI Assistant* is now activated. Ask me anything about home refinancing or housing loans.\n\n"
-                            "💬 You can ask about loan eligibility, refinancing steps, or required documents.*\n\n"
+                            "🤖 FinZo AI Assistant* is now activated. Ask me anything about *home refinancing* or *housing loans*.\n\n"
+                            "💬 *You can ask about loan eligibility, refinancing steps, or required documents.*\n\n"
                             f"📱 Need urgent help? Contact admin via WhatsApp: https://wa.me/60167177813"
                         )
                         send_messenger_message(sender_id, inquiry_greeting)
@@ -646,7 +619,7 @@ def process_message():
         logging.error(f"❌ Error in process_message: {str(e)}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"status": "error", "message": "Something went wrong."}), 500
-
+        
 def handle_process_completion(messenger_id):
     """Handles the final step and calculates refinance savings."""
     logging.debug(f"🚀 Entered handle_process_completion() for Messenger ID: {messenger_id}")
@@ -748,28 +721,28 @@ def handle_process_completion(messenger_id):
         db.session.commit()
 
         # Fetch WhatsApp link from environment variable
-        whatsapp_link = os.getenv('ADMIN_WHATSAPP_LINK', "https://wa.me/60167177813")
+        whatsapp_link = os.getenv('ADMIN_WHATSAPP_LINK', "https://wa.me/60126181683")
 
         # Inquiry Mode Greeting based on user language
         language = user_data.language_code if user_data.language_code in PROMPTS else 'en'
         inquiry_greetings = {
             'en': (
-                "🎉 *Welcome to Inquiry Mode!* 🎉\n\n"
-                "🤖 *FinZo AI Assistant* is now activated. Ask me anything about *home refinancing* or *housing loans*.\n\n"
-                "💬 *You can ask about loan eligibility, refinancing steps, or required documents.*\n\n"
-                f"📱 Need urgent help? Contact admin via WhatsApp: {whatsapp_link}"
+                "🎉 *Inquiry Mode Activated* 🎉\n\n"
+                "You're now talking to FinZo AI.\n\n"
+                "Just ask any questions in regards to refinancing and home loans. I will try my best to assist you.\n\n"
+                "Since I am still a language model, I might not be able to answer some of your questions. Not to worry, you can always drop a message to our admin at https://wa.me/60126181683 if you need further assistance."
             ),
             'ms': (
-                "🎉 *Selamat datang ke Mod Pertanyaan!* 🎉\n\n"
-                "🤖 *Pembantu AI FinZo* kini diaktifkan. Tanyakan apa sahaja tentang *pembiayaan semula rumah* atau *pinjaman perumahan*.\n\n"
-                "💬 *Anda boleh bertanya tentang kelayakan pinjaman, langkah pembiayaan semula, atau dokumen yang diperlukan.*\n\n"
-                f"📱 Perlukan bantuan segera? Hubungi admin melalui WhatsApp: {whatsapp_link}"
+                "🎉 *Mod Pertanyaan Diaktifkan* 🎉\n\n"
+                "Anda kini sedang bercakap dengan FinZo AI.\n\n"
+                "Tanya sahaja apa-apa soalan mengenai pembiayaan semula dan pinjaman rumah. Saya akan cuba membantu sebaik mungkin.\n\n"
+                "Oleh kerana saya masih model bahasa, mungkin saya tidak dapat menjawab beberapa soalan anda. Tidak perlu risau, anda boleh sentiasa mesej admin kami di https://wa.me/60126181683 jika anda memerlukan bantuan lanjut."
             ),
             'zh': (
-                "🎉 *欢迎进入咨询模式!* 🎉\n\n"
-                "🤖 *FinZo AI 助手* 现在已启动。您可以询问关于 *房屋再融资* 或 *住房贷款* 的任何问题。\n\n"
-                "💬 *您可以询问贷款资格、再融资步骤或所需文件。*\n\n"
-                f"📱 如需帮助，请通过 WhatsApp 联系管理员: {whatsapp_link}"
+                "🎉 *咨询模式已激活* 🎉\n\n"
+                "您现在正在与 FinZo AI 交谈。\n\n"
+                "请随时提问有关房屋再融资和贷款的问题，我将尽力为您提供帮助。\n\n"
+                "由于我仍然是语言模型，可能无法回答您的部分问题。别担心，您可以随时通过 https://wa.me/60126181683 联系我们的管理员，获取进一步的帮助。"
             )
         }
 
@@ -798,9 +771,13 @@ def prepare_summary_messages(user_data, calc_results, language_code):
 
     try:
         # Retrieve WhatsApp link
-        whatsapp_link = os.getenv('ADMIN_WHATSAPP_LINK', "https://wa.me/60167177813")
+        whatsapp_link = os.getenv('ADMIN_WHATSAPP_LINK', "https://wa.me/60126181683")
 
-        # Format values
+        # Static messages
+        summary_msg = ""
+        whats_next_msg = ""
+
+        # Format the summary with the provided values
         current_repayment = f"RM {float(user_data.current_repayment):,.2f}"
         new_repayment = f"RM {float(calc_results.get('new_monthly_repayment', 0.0)):,.2f}"
         monthly_savings = f"RM {float(calc_results.get('monthly_savings', 0.0)):,.2f}"
@@ -818,52 +795,64 @@ def prepare_summary_messages(user_data, calc_results, language_code):
         if language_code == 'ms':  # Bahasa Malaysia
             summary_msg = (
                 f"📊 Ringkasan Penjimatan:\n\n"
-                f"💸 Bayaran Bulanan Semasa: {current_repayment}\n"
-                f"💸 Bayaran Bulanan Baru: {new_repayment}\n"
-                f"💰 Penjimatan Bulanan: {monthly_savings}\n"
-                f"💰 Penjimatan Tahunan: {yearly_savings}\n"
-                f"🎉 Penjimatan Sepanjang Hayat: {lifetime_savings}\n\n"
-                f"⏳ Bersamaan dengan penjimatan selama {years_saved} tahun dan {remaining_months} bulan pembayaran! 🚀"
+                f"💳 Bayaran Bulanan Semasa: {current_repayment}\n"
+                f"📉 Bayaran Bulanan Baru: {new_repayment}\n"
+                f"💸 Penjimatan Bulanan: {monthly_savings}\n"
+                f"📆 Penjimatan Tahunan: {yearly_savings}\n"
+                f"💰 Penjimatan Sepanjang Hayat: {lifetime_savings}\n\n"
+                f"🎉 Berita Baik! Dengan membiayai semula, anda boleh menjimatkan sehingga {years_saved} tahun dan {remaining_months} bulan pembayaran. Bayangkan kebebasan membayar pinjaman lebih cepat atau memiliki lebih banyak wang setiap bulan!"
             )
 
             whats_next_msg = (
-                "🔜 Apa Seterusnya?\n\n"
-                "Seorang pakar kami akan menghubungi anda tidak lama lagi untuk membantu dengan pilihan pembiayaan semula anda.\n"
-                f"Jika anda memerlukan bantuan segera, hubungi kami terus di {whatsapp_link}."
+                "🛠 Apa Seterusnya? Laluan Anda ke Penjimatan\n\n"
+                "Anda kini mempunyai 3 pilihan yang berkuasa untuk mencapai matlamat kewangan anda:\n\n"
+                "⿡ Kurangkan Bayaran Bulanan Anda – Nikmati penjimatan segera dan aliran tunai tambahan.\n"
+                "⿢ Pendekkan Tempoh Pinjaman Anda – Capai kebebasan kewangan lebih cepat dan jimat lebih banyak faedah.\n"
+                "⿣ Keluarkan Ekuiti Rumah – Buka dana untuk pengubahsuaian, pelaburan, atau keperluan kewangan lain.\n\n"
+                "🌟 Pakar Kami Akan Membantu Anda! Seorang pakar pembiayaan semula akan menghubungi anda tidak lama lagi untuk membincangkan pilihan anda dan memastikan anda membuat keputusan terbaik.\n\n"
+                f"📞 Perlukan bantuan segera? Hubungi kami terus di {whatsapp_link}."
             )
 
         elif language_code == 'zh':  # Chinese
             summary_msg = (
                 f"📊 储蓄摘要:\n\n"
-                f"💸 当前还款: {current_repayment}\n"
-                f"💸 新还款: {new_repayment}\n"
-                f"💰 每月节省: {monthly_savings}\n"
-                f"💰 每年节省: {yearly_savings}\n"
-                f"🎉 终生节省: {lifetime_savings}\n\n"
-                f"⏳ 相当于节省 {years_saved} 年和 {remaining_months} 个月的还款! 🚀"
+                f"💳 当前还款: {current_repayment}\n"
+                f"📉 新还款: {new_repayment}\n"
+                f"💸 每月节省: {monthly_savings}\n"
+                f"📆 每年节省: {yearly_savings}\n"
+                f"💰 终生节省: {lifetime_savings}\n\n"
+                f"🎉 好消息！通过再融资，您可以节省高达 {years_saved} 年和 {remaining_months} 个月的还款。想象一下，您可以更快地清偿贷款或每月拥有更多的现金流！"
             )
 
             whats_next_msg = (
-                "🔜 接下来是什么？\n\n"
-                "我们的专家将很快联系您，以协助您完成再融资选项。\n"
-                f"如需紧急帮助，请直接联系我们: {whatsapp_link}。"
+                "🛠 接下来是什么？您的节省路径\n\n"
+                "您现在有 3 个强大的选项来实现您的财务目标：\n\n"
+                "⿡ 降低每月还款额 – 立即享受节省并获得额外现金流。\n"
+                "⿢ 缩短贷款期限 – 更快实现财务自由并节省利息。\n"
+                "⿣ 提取房屋净值 – 解锁用于翻新、投资或其他财务需求的资金。\n\n"
+                "🌟 我们的专家将协助您！我们的再融资专家将很快与您联系，讨论您的选项并确保您做出最佳决定。\n\n"
+                f"📞 需要紧急帮助吗？请直接联系我们：{whatsapp_link}。"
             )
 
         else:  # Default to English
             summary_msg = (
-                f"📊 Savings Summary:\n\n"
-                f"💸 Current Repayment: {current_repayment}\n"
-                f"💸 New Repayment: {new_repayment}\n"
-                f"💰 Monthly Savings: {monthly_savings}\n"
-                f"💰 Yearly Savings: {yearly_savings}\n"
-                f"🎉 Lifetime Savings: {lifetime_savings}\n\n"
-                f"⏳ Equivalent to saving {years_saved} year(s) and {remaining_months} month(s) of repayments! 🚀"
+                f"📊 Savings Summary Report\n\n"
+                f"💳 Current Repayment: {current_repayment}\n"
+                f"📉 New Repayment: {new_repayment}\n"
+                f"💸 Monthly Savings: {monthly_savings}\n"
+                f"📆 Yearly Savings: {yearly_savings}\n"
+                f"💰 Lifetime Savings: {lifetime_savings}\n\n"
+                f"🎉 Great News! By refinancing, you could save up to {years_saved} year(s) and {remaining_months} month(s) of repayments. Imagine the freedom of clearing your loan faster or having extra cash every month!"
             )
 
             whats_next_msg = (
-                "🔜 What's Next?\n\n"
-                "One of our specialists will contact you shortly to assist with your refinancing options.\n"
-                f"If you need urgent assistance, contact us directly at {whatsapp_link}."
+                "🛠 What's Next? Your Path to Savings\n\n"
+                "You now have 3 powerful options to achieve your financial goals:\n\n"
+                "⿡ Lower Your Monthly Repayment – Enjoy immediate savings and extra cash flow.\n"
+                "⿢ Shorten Your Loan Tenure – Achieve financial freedom faster and save on total interest paid.\n"
+                "⿣ Cash Out Home Equity – Unlock funds for renovations, investments, or other financial needs.\n\n"
+                "🌟 Our Specialist Will Assist You! A refinance expert will reach out to you shortly to discuss your options and ensure you make the best decision.\n\n"
+                f"📞 Need urgent assistance? Contact us directly at {whatsapp_link}."
             )
 
         # Return the messages based on the language
@@ -872,6 +861,7 @@ def prepare_summary_messages(user_data, calc_results, language_code):
     except Exception as e:
         logging.error(f"❌ Error preparing summary messages: {str(e)}")
         return ["An error occurred while generating your savings summary. Please try again later or contact support."]
+
 
 def update_database(messenger_id, user_data, calc_results):
     """Save user data and calculations to the database."""
