@@ -1,32 +1,28 @@
 {
-    "choose_language_message": "🎉 Selamat Datang ke FinZo AI — Pembantu Pintar Pembiayaan Perumahan Anda! 🤖\n\n💼 *Dengan meneruskan, tuan/puan bersetuju dengan [Terma Perkhidmatan](https://raw.githubusercontent.com/gorillago3318/refinancechatbotv2/refs/heads/main/terms-of-service.txt).* \n\n💸 **Potensi Penjimatan Anda** – Kira serta-merta berapa banyak yang tuan/puan boleh jimatkan melalui pembiayaan semula pembiayaan perumahan.\n💡 **Bantuan Pakar Di Hujung Jari Anda** – Dapatkan jawapan segera untuk soalan pembiayaan semula dan pembiayaan perumahan (sehingga 15 soalan).\n🔄 **Mudah Untuk Mulakan Semula** – Perlu mulakan semula? Taip 'restart' pada bila-bila masa.\n\n👉 Jom mulakan! Sila pilih bahasa pilihan tuan/puan:\n\n🌐 **Pilih Bahasa:**\n1️⃣ *Bahasa Inggeris* \n2️⃣ *Bahasa Malaysia* \n3️⃣ *中文 (Cina)*",
-
-    "name_message": "📝 *Langkah 1: Masukkan Nama Tuan/Puan* \n\nSila masukkan *nama penuh* seperti yang tertera pada dokumen rasmi tuan/puan. \n\n💡 *Contoh*: Ahmad bin Ali",
-
-    "phone_number_message": "📞 *Langkah 2: Masukkan Nombor Telefon Tuan/Puan* \n\nSila masukkan *nombor telefon* (minimum 10 digit). \n\n💡 *Contoh*: 0123456789",
-
-    "age_message": "🎂 *Langkah 3: Masukkan Umur Tuan/Puan* \n\nSila masukkan *umur dalam tahun* (antara *18 hingga 70 tahun*). \n\n💡 *Contoh*: 35",
-
-    "loan_amount_message": "💸 *Langkah 4: Masukkan Jumlah Pembiayaan Perumahan* \n\nSila masukkan *jumlah pembiayaan perumahan asal* yang diterima daripada bank. \n\n💡 *Contoh*: 250000 (tanpa koma atau simbol khas).",
-
-    "loan_tenure_message": "📆 *Langkah 5: Masukkan Tempoh Pembiayaan Perumahan* \n\nSila masukkan *tempoh pembiayaan perumahan asal* yang diluluskan oleh bank. (Biasanya 30 atau 35 tahun.) \n\n💡 *Contoh*: 30",
-
-    "repayment_message": "💳 *Langkah 6: Masukkan Bayaran Bulanan* \n\nSila masukkan *jumlah bayaran bulanan semasa* untuk pembiayaan perumahan. \n\n💡 *Contoh*: 2500 (tanpa koma atau simbol khas).",
-
-    "interest_rate_message": "📈 *Langkah 7: Masukkan Kadar Faedah* \n\nJika tuan/puan tahu *kadar faedah semasa* pembiayaan, sila masukkan (contoh: 3.85). \n\nTuan/puan juga boleh taip *skip* jika tidak pasti. \n\n💡 *Contoh*: 4.25 atau *skip*",
-
-    "remaining_tenure_message": "📅 *Langkah 8: Masukkan Baki Tempoh Pembiayaan* \n\nSila masukkan *baki tempoh pembiayaan* dalam tahun. \n\n💡 *Nota*: Jika tidak pasti, taip *skip*. \n\n💡 *Contoh*: 15 atau *skip*.",
-
-    "completion_message": "🎉 *Terima Kasih!* 🎉\n\nTerima kasih kerana memberikan maklumat tuan/puan. Kami sedang memproses permintaan ini. \n\n📊 Sila tunggu sebentar sementara kami mengira penjimatan dan menyediakan laporan terperinci.",
-
-    "summary_title_1": "📊 *Ringkasan Penjimatan Pembiayaan Semula* 📊",
-
-    "summary_content_1": "💳 *Bayaran Bulanan Semasa*: RM {current_repayment:,.2f} \n📉 *Bayaran Baharu (Anggaran)*: RM {new_repayment:,.2f} \n💸 *Penjimatan Bulanan*: RM {monthly_savings:,.2f} \n💥 *Penjimatan Tahunan*: RM {yearly_savings:,.2f} \n💰 *Jumlah Penjimatan Sepanjang Tempoh*: RM {lifetime_savings:,.2f}",
-
-    "summary_title_2": "🎉 *BERITA BAIK!* 🎉",
-
-    "summary_content_2": "🚀 *Penjimatan Besar Menanti Anda!* 🚀\n\nDengan pembiayaan semula, tuan/puan boleh menjimatkan: \n\n💸 *RM {monthly_savings:,.2f} setiap bulan* \n💰 *RM {yearly_savings:,.2f} setiap tahun* \n💥 *RM {lifetime_savings:,.2f} sepanjang tempoh pembiayaan* \n\nIni bersamaan dengan penjimatan selama *{years_saved} tahun dan {months_saved} bulan*! 🚀\n\n🎉 *Peluang untuk mengurangkan kos dan berjimat besar!*",
-
-    "summary_title_3": "🔍 *Langkah Seterusnya?*",
-
-    "summary_content_3": "✅ *Pakar Akan Dihubungi!* \n\nKami akan menyediakan *LAPORAN TERPERINCI* untuk tuan/puan — *percuma* dan *tanpa sebarang kewajipan*! \n\n💡 Pakar kami boleh membimbing tuan/puan sepanjang proses ini dan membantu membuat keputusan terbaik. \n\n📞 *Ada soalan atau perlukan bantuan?* Hubungi pentadbir kami di *{whatsapp_link}*. \n\n💬 *Ada lagi soalan?* Tanyakan kepada FinZo AI untuk jawapan segera! 🚀"}
+    "welcome_message": "👋 Selamat datang ke Pembantu AI Finzo!\n\n• Saya di sini untuk membantu anda meneroka pilihan pembiayaan semula.\n• Kita akan bekerjasama untuk mengoptimumkan pinjaman perumahan anda.\n• Matlamat saya adalah untuk membantu anda mengenal pasti potensi penjimatan dan meningkatkan kecekapan kewangan anda.\n\nAdakah anda bersedia untuk memulakan?",
+    "get_started_yes": "Ya, mari mula!",
+    "contact_admin": "Saya mahu bercakap dengan admin",
+    "ask_name": "Hebat! Bolehkah kami dapatkan nama anda?",
+    "ask_phone": "Bolehkah saya dapatkan nombor telefon anda untuk meneruskan? Contoh: 0123456789 (tanpa kod negara)",
+    "path_selection": "Adakah anda tahu baki pinjaman, kadar faedah, dan baki tempoh pinjaman anda?\n\nJika tidak, kami akan menggunakan anggaran untuk pengiraan. Untuk hasil yang lebih tepat, sila semak maklumat ini di aplikasi bank anda sebelum meneruskan.",
+    "path_a_balance": "Bolehkah anda kongsi jumlah baki pinjaman anda?\n\nMasukkan angka, sebagai contoh: 500k atau 500000",
+    "path_a_interest": "Apakah kadar faedah semasa anda (dalam %)?",
+    "path_a_tenure": "Berapa tahun baki tempoh pinjaman anda? Contoh: 20 atau 25",
+    "path_b_original_amount": "Bolehkah anda beritahu jumlah pinjaman asal anda?\n\nMasukkan angka, sebagai contoh: 500k atau 500000",
+    "path_b_original_tenure": "Bolehkah saya tahu tempoh pinjaman asal dalam tahun?",
+    "path_b_monthly_payment": "Apakah bayaran bulanan anda sekarang?",
+    "path_b_years_paid": "Berapa tahun anda telah bayar setakat ini?",
+    "calculate_summary": "🏦 Pinjaman Semasa:\n• Bayaran Bulanan: RM{current_monthly:.2f}\n• Kadar Faedah: {interest:.2f}%\n\n💰 Selepas Pembiayaan Semula:\n• Bayaran Bulanan Baru: RM{new_monthly:.2f}\n• Kadar Faedah Baru: {new_rate:.2f}%\n\n🎯 Penjimatan Anda:\n• Bulanan: RM{monthly_savings:.2f}\n• Tahunan: RM{yearly_savings:.2f}\n• Jumlah: RM{total_savings:.2f} selama {tenure} tahun\n\nFinzo AI sedang menganalisis butiran pembiayaan semula anda untuk menentukan sama ada ia menguntungkan. Sila tunggu sebentar.",
+    "convincing_message_1": "Berdasarkan maklumat anda, penjimatan yang dianggarkan daripada pembiayaan semula adalah di bawah RM10,000. Memandangkan pembiayaan semula melibatkan yuran guaman dan duti setem, ia mungkin tidak berbaloi pada masa ini. Namun, kami gembira untuk membantu jika anda mempunyai sebarang soalan atau memerlukan panduan lanjut. Sila hubungi kami di https://wa.me/60126181683.",
+    "convincing_message_2": "Berdasarkan maklumat anda, nampaknya pinjaman semasa anda sudah dioptimumkan dengan baik, dan pembiayaan semula mungkin tidak menghasilkan penjimatan yang signifikan. Namun, kami di sini untuk membantu anda dengan sebarang soalan atau keperluan pembiayaan semula pada masa depan. Perkhidmatan kami adalah percuma, dan anda sentiasa boleh menghubungi kami di https://wa.me/60126181683 jika anda ingin mendapatkan maklumat lanjut atau memerlukan bantuan!",
+    "convincing_message_default": "Anda mungkin membayar lebih daripada yang sepatutnya untuk pinjaman perumahan anda. Pembiayaan semula pada kadar {new_rate:.2f}% boleh menjimatkan anda RM{monthly_savings:.2f} sebulan dan RM{total_savings:.2f} selama {tenure} tahun. Perkhidmatan kami adalah percuma sepenuhnya, dan ejen kami sedia membantu—kecuali jika anda kata 'tidak', kami akan menghubungi anda untuk membantu anda meneroka penjimatan anda. Sila ajukan sebarang soalan lanjut!",
+    "cashout_message": "Adakah anda berminat untuk meneroka pilihan pembiayaan semula dengan pengeluaran tunai?\n\nPembiayaan semula dengan pengeluaran tunai membolehkan anda mengakses dana tambahan dengan menggunakan ekuiti rumah anda. Ia adalah cara yang fleksibel untuk membiayai perbelanjaan penting sambil menyatukan pinjaman sedia ada anda.\n\nAnda boleh menggunakan dana tambahan untuk tujuan seperti:\n• Penambahbaikan atau pengubahsuaian rumah\n• Yuran pendidikan dan tuisyen\n• Peluang pelaburan\n• Menggabungkan hutang untuk pengurusan kewangan yang lebih baik\n\nNota: Mengikut garis panduan Bank Negara Malaysia (BNM), pembiayaan semula dengan pengeluaran tunai terhad kepada tempoh pembayaran balik maksimum 10 tahun atau sehingga usia 70 tahun, yang mana lebih awal.",
+    "cashout_offer_yes": "Ya, beritahu saya lebih lanjut",
+    "cashout_offer_no": "Tidak, terima kasih",
+    "admin_contact": "Anda boleh menghubungi admin kami terus di:\n\n📞 WhatsApp: [Klik di sini untuk berbual](https://wa.me/60126181683)\n\nSila beritahu kami jika anda memerlukan bantuan lanjut!",
+    "faq_prompt": "Anda kini sedang berbual dengan Finzo AI. Anda boleh bertanya apa sahaja mengenai pembiayaan semula dan pinjaman perumahan.\n\nSoalan lazim yang mungkin anda ada:\n• Apakah dokumen yang diperlukan untuk pembiayaan semula?\n• Berapa lama proses pembiayaan semula mengambil masa?\n• Adakah terdapat sebarang yuran yang terlibat?\n• Apakah faktor yang mempengaruhi kelulusan pinjaman saya?",
+    "waiting_input": "Saya tidak pasti bagaimana untuk mengendalikan itu. Taip 'restart' untuk mula semula.",
+    "restart": "Taip 'restart' untuk mula semula.",
+    "error_message": "Saya mohon maaf atas kesulitan teknikal ini. Sila hubungi admin kami terus di https://wa.me/60126181683 untuk bantuan segera.",
+    "unhandled_state": "Saya tidak pasti bagaimana untuk mengendalikan itu. Taip 'restart' untuk mula semula."
+}
