@@ -18,7 +18,7 @@ load_dotenv()
 
 def create_app(environ=None, start_response=None):
     """Create and configure the Flask app."""
-    app = Flask(__name__, static_folder='static')  # Adjust static folder path
+    app = Flask(__name__, static_folder='../static')  # Adjust static folder path to point one level up
 
     # Setup database config
     database_url = os.getenv('DATABASE_URL', 'sqlite:///local.db')
