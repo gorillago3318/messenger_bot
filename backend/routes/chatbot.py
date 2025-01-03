@@ -1241,21 +1241,27 @@ def process_message():
 
         for event in messaging_events:
             sender_id = str(event['sender']['id']).strip()
-            message = event['message']
 
-            # Check if the message contains a quick_reply
-            if 'quick_reply' in message:
-                user_input = message['quick_reply']['payload']
-                logging.debug(f"Received quick_reply payload: {user_input}")
-            else:
-                user_input = message.get('text', '').strip()
-                logging.debug(f"Received text: {user_input}")
+            # Check if it's a message event or postback event
+            if 'message' in event:
+                message = event['message']
+                # Check if the message contains a quick_reply
+                if 'quick_reply' in message:
+                    user_input = message['quick_reply']['payload']
+                    logging.debug(f"Received quick_reply payload: {user_input}")
+                else:
+                    user_input = message.get('text', '').strip()
+                    logging.debug(f"Received text: {user_input}")
+            elif 'postback' in event:
+                postback = event['postback']
+                user_input = postback.get('payload', '').strip()
+                logging.debug(f"Received postback payload: {user_input}")
 
             if not sender_id or not sender_id.isdigit():
                 logging.error("Invalid messenger ID.")
                 continue  # Skip to the next event
 
-            # Check if user exists, else create new user
+            # Handle the user input
             user = User.query.filter_by(messenger_id=sender_id).first()
             if not user:
                 # Create new user with default state
@@ -1264,7 +1270,7 @@ def process_message():
                     name="Unknown",
                     phone_number="Unknown",
                     language='en',  # Default to English
-                    state=STATES['GET_STARTED_YES'],  # Start with name collection
+                    state=STATES['GET_STARTED_YES']  # Start with name collection
                 )
                 db.session.add(user)
                 db.session.commit()
@@ -1273,15 +1279,6 @@ def process_message():
                 logging.debug("New user created and initial message sent.")
                 continue  # Move to the next event
 
-            # Check if the user has been idle for 24 hours
-            if datetime.utcnow() - user.last_interaction > timedelta(hours=24):
-                send_welcome_back_message(sender_id)
-                logging.debug("User has been idle for 24 hours. Sent welcome back message.")
-                # Update the last interaction timestamp
-                user.last_interaction = datetime.utcnow()
-                db.session.commit()
-                continue  # Skip further processing
-
             # Handle 'restart' command at any time
             if user_input.lower() == 'restart':
                 reset_user(user)
@@ -1289,35 +1286,24 @@ def process_message():
                 logging.debug("User initiated restart. State reset and initial message sent.")
                 continue  # Move to the next event
 
-            # Handle "CONTACT_ADMIN" payload
+            # Handle other specific payloads like "CONTACT_ADMIN" or "GET_STARTED_YES"
             if user_input == "CONTACT_ADMIN":
                 handle_contact_admin(user, sender_id, user_input)
-                continue  # Skip further processing
+                continue
 
-            # Handle "GET_STARTED_YES" payload
             if user_input == "GET_STARTED_YES":
                 handle_get_started_yes(user, sender_id, user_input)
-                continue  # Skip further processing
+                continue
 
-            # Handle greetings like "hi", "hey", "start"
-            if user_input.lower() in ["hi", "hey", "start"]:
-                send_initial_message(sender_id)
-                logging.debug(f"User triggered a start event (hi, hey, start). Initial message sent.")
-                continue  # Skip further processing
-
-            # Fallback to the current state if undefined
+            # Main Logic Flow
             if not user.state:
-                user.state = STATES['GET_STARTED_YES']  # Default state is to collect name
+                user.state = STATES['GET_STARTED_YES']
                 db.session.commit()
                 logging.debug("User state was None. Set to GET_STARTED_YES.")
-
-            # MAIN LOGIC FLOW
+            
+            # Call the appropriate state handler
             state_handler = STATE_HANDLERS.get(user.state, handle_unhandled_state)
             state_handler(user, sender_id, user_input)
-
-            # Update last interaction timestamp after processing message
-            user.last_interaction = datetime.utcnow()
-            db.session.commit()
 
         return jsonify({"status": "success"}), 200
 
