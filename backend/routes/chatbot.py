@@ -402,7 +402,7 @@ def handle_phone_collection(user: User, messenger_id: str, user_input: str):
     message = {
         "text": (
             "Do you know your outstanding balance, interest rate, and remaining tenure?\n\n"
-            "For calculations accuracy, we suggest checking this info in your bank app before proceeding."
+            "If not, we'll use estimations for the calculation. For the most accurate results, please check this information in your bank app before proceeding."
         ),
         "quick_replies": [
             {
@@ -1010,11 +1010,11 @@ def handle_waiting_input(user: User, messenger_id: str, user_input: str):
 
 def handle_faq(user: User, messenger_id: str, user_input: str):
     """
-    Handles FAQ queries, leveraging GPT-3.5-turbo for dynamic responses and preserving session details.
+    Handles FAQ queries with enhanced admin contact detection and dynamic responses.
     """
     logging.debug("Entering handle_faq function.")
 
-    # Debug logs to check database values
+    # Debug logs for database values
     logging.debug(f"Monthly Savings: {user.monthly_savings}")
     logging.debug(f"Yearly Savings: {user.yearly_savings}")
     logging.debug(f"Total Savings: {user.total_savings}")
@@ -1022,13 +1022,38 @@ def handle_faq(user: User, messenger_id: str, user_input: str):
     logging.debug(f"New Rate: {user.new_rate}")
     logging.debug(f"Remaining Tenure: {user.remaining_tenure}")
 
-    # Check for admin or agent request
-    if any(word in user_input.lower() for word in ['admin', 'agent', 'contact']):
-        send_messenger_message(messenger_id, {"text": "You can reach our admin directly at https://wa.me/60126181683 for assistance."})
-        logging.debug("User requested admin or agent contact.")
+    # Enhanced admin contact detection keywords and patterns
+    admin_keywords = [
+        'admin', 'agent', 'contact', 'human', 'person', 'representative',
+        'staff', 'support', 'help desk', 'helpdesk', 'customer service',
+        'speak to someone', 'talk to someone', 'real person', 'live chat'
+    ]
+
+    # Improved admin contact detection with pattern matching
+    user_input_lower = user_input.lower()
+    if any(keyword in user_input_lower for keyword in admin_keywords) or \
+       any(phrase in user_input_lower for phrase in [
+           'can i speak to', 'want to speak', 'need to speak',
+           'can i talk to', 'want to talk', 'need to talk',
+           'connect me', 'transfer me', 'get in touch'
+       ]):
+        admin_response = {
+            "text": (
+                "You can reach our customer service team directly through WhatsApp:\n\n"
+                "🔗 Click here to chat with an admin: https://wa.me/60126181683\n\n"
+                "Our team typically responds within 30 minutes during business hours "
+                "(Mon-Fri, 9am-6pm MYT)."
+            )
+        }
+        send_messenger_message(messenger_id, admin_response)
+        
+        # Update user state and notify admin
+        user.last_admin_request = datetime.utcnow()  # Add this field to User model
+        notify_admin(user, "User requested admin contact")
+        logging.debug("User requested admin contact - WhatsApp link sent.")
         return
 
-    # Load previous summary and cash-out details if available, fallback to 0 if None
+    # Load context with enhanced formatting
     context = (
         f"Previous Summary:\n"
         f"Monthly Savings: RM{user.monthly_savings or 0:,.2f}\n"
@@ -1044,9 +1069,10 @@ def handle_faq(user: User, messenger_id: str, user_input: str):
                 "role": "system",
                 "content": (
                     "You are Finzo AI Buddy, an expert in refinancing and loan advisory. "
-                    "Answer user questions based on their previous calculations. "
-                    "Use the following context to guide responses:\n"
-                    f"{context}"
+                    "If users request to speak with a human, admin, or agent, always provide "
+                    "the WhatsApp contact link: https://wa.me/60126181683. "
+                    "For other questions, answer based on their previous calculations. "
+                    "Context:\n" + context
                 )
             },
             {
@@ -1058,24 +1084,30 @@ def handle_faq(user: User, messenger_id: str, user_input: str):
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=conversation,
-            temperature=0.7
+            temperature=0.7,
+            max_tokens=300
         )
 
         reply = response.choices[0].message.content.strip()
-        # **Correction:** Remove the nested "message" key
         send_messenger_message(messenger_id, {"text": reply})
         logging.debug("FAQ response generated and sent to user.")
 
     except Exception as e:
         logging.error(f"Error handling FAQ: {e}")
-        send_messenger_message(messenger_id, {"text": "I'm sorry, I couldn't process your request. An agent will follow up shortly to assist you."})
-        logging.debug("Error occurred while handling FAQ. Informed user.")
+        error_message = {
+            "text": (
+                "I apologize for the technical difficulty. Please contact our admin "
+                "directly at https://wa.me/60126181683 for immediate assistance."
+            )
+        }
+        send_messenger_message(messenger_id, error_message)
+        logging.debug("Error occurred while handling FAQ. Directed user to admin.")
 
-    # Keep session active
+    # Update session state
     user.state = STATES['WAITING_INPUT']
     db.session.commit()
 
-    # Notify admin for manual follow-up
+    # Notify admin
     notify_admin(user, f"FAQ query received: {user_input}")
     logging.debug("Admin notified about FAQ query.")
 
