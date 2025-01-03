@@ -246,9 +246,9 @@ def send_initial_message(messenger_id, language='en'):
             "Adakah anda bersedia untuk bermula?"
         )
         quick_replies = [
-            {"content_type": "text", "title": "Ya, mari mula!", "payload": "GET_STARTED_YES"},
-            {"content_type": "text", "title": "Bahasa Malaysia", "payload": "LANG_MS"},
-            {"content_type": "text", "title": "Chinese", "payload": "LANG_ZH"},
+            {"content_type": "text", "title": "Bahasa Malaysia", "payload": "LANG_MS"},  # Language selection payload
+            {"content_type": "text", "title": "English", "payload": "LANG_EN"},           # Switching to English
+            {"content_type": "text", "title": "Chinese", "payload": "LANG_ZH"},           # Switching to Chinese
         ]
     elif language == 'zh':
         message_text = (
@@ -259,9 +259,9 @@ def send_initial_message(messenger_id, language='en'):
             "准备好开始了吗？"
         )
         quick_replies = [
-            {"content_type": "text", "title": "是的，开始吧！", "payload": "GET_STARTED_YES"},
-            {"content_type": "text", "title": "马来语", "payload": "LANG_MS"},
-            {"content_type": "text", "title": "中文", "payload": "LANG_ZH"},
+            {"content_type": "text", "title": "Chinese", "payload": "LANG_ZH"},  # Language selection payload
+            {"content_type": "text", "title": "Bahasa Malaysia", "payload": "LANG_MS"},  # Switching to Malay
+            {"content_type": "text", "title": "English", "payload": "LANG_EN"},         # Switching to English
         ]
     else:  # Default is English
         message_text = (
@@ -272,9 +272,9 @@ def send_initial_message(messenger_id, language='en'):
             "Are you ready to get started?"
         )
         quick_replies = [
-            {"content_type": "text", "title": "Yes, let's start!", "payload": "GET_STARTED_YES"},
-            {"content_type": "text", "title": "Bahasa Malaysia", "payload": "LANG_MS"},
-            {"content_type": "text", "title": "Chinese", "payload": "LANG_ZH"},
+            {"content_type": "text", "title": "English", "payload": "LANG_EN"},  # Language selection payload
+            {"content_type": "text", "title": "Bahasa Malaysia", "payload": "LANG_MS"},  # Switching to Malay
+            {"content_type": "text", "title": "Chinese", "payload": "LANG_ZH"},           # Switching to Chinese
         ]
 
     # Construct message with quick replies
@@ -285,6 +285,7 @@ def send_initial_message(messenger_id, language='en'):
 
     send_messenger_message(messenger_id, message)
     logging.debug("Initial welcome message sent.")
+
 
 
 def handle_language_selection(user: User, messenger_id: str, user_input: str):
@@ -1391,6 +1392,7 @@ def send_welcome_back_message(messenger_id, user_language):
     }
     send_messenger_message(messenger_id, message)
     logging.debug(f"Sent 'Welcome back' message to user in {user_language}.")
+
 def reset_user(user: User):
     """
     Resets the user's information to start over with the current language.
@@ -1402,7 +1404,7 @@ def reset_user(user: User):
     # Retain the user's language, default to 'en' if not set
     user.language = user.language if user.language else 'en'
     
-    user.state = STATES['GET_STARTED_YES']  # Default to the first step
+    user.state = STATES['LANGUAGE_SELECTION']  # Default to the first step
     # Reset other relevant fields
     user.outstanding_balance = None
     user.current_interest_rate = None
