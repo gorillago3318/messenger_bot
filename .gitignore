@@ -1,5 +1,3 @@
-# .gitignore
-
 # Python
 __pycache__/
 *.pyc
@@ -19,11 +17,14 @@ ENV/
 # Database
 *.db
 
-# Ignore all files in migrations/versions
+# Ignore the entire migrations folder
+migrations/
 
-# But track version files (Python scripts)
-/migrations/versions/*.py
-# Still ignore pycache files
-__pycache__/
-*.pyc
+# But track version files (Python scripts) inside migrations/versions
+!migrations/versions/
+
+# Still ignore pycache files in migrations/versions
+migrations/versions/__pycache__/
+migrations/versions/*.pyc
+
 heroku-x64.exe

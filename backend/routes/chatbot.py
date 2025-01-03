@@ -285,6 +285,7 @@ def generate_convincing_message(savings_data: dict) -> str:
                         "Frame the message to emphasize how refinancing helps regain financial control and reduce costs. "
                         "Mention that continuing with the current loan benefits the banks, and exploring refinancing options provides the user with better opportunities. "
                         "Encourage questions and emphasize that an agent will assist with more details, maintaining a professional and informative tone."
+                        'Message especially amount should be structured clearly by adding , to any thousands and million.'
                     )
                 }
             ]
