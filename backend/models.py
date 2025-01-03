@@ -44,6 +44,12 @@ class User(db.Model):
     # Cash-Out fields
     temp_cashout_amount = db.Column(db.Float)  # Added field
 
+    # New field for tracking last interaction
+    last_interaction = db.Column(db.DateTime, default=datetime.utcnow)  # Add this line
+
+    def __repr__(self):
+        return f"<User {self.name}>"
+
     # Add other necessary fields here
 
 # ----------------------------

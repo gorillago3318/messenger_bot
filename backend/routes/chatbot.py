@@ -1226,7 +1226,6 @@ STATE_HANDLERS = {
     STATES['END']: handle_unhandled_state
 }
 
-# Main Route to Process Messages
 @chatbot_bp.route('/webhook', methods=['POST'])
 def process_message():
     try:
@@ -1263,7 +1262,7 @@ def process_message():
                     name="Unknown",
                     phone_number="Unknown",
                     language='en',  # Default to English
-                    state=STATES['GET_STARTED_YES']  # Start with name collection
+                    state=STATES['GET_STARTED_YES'],  # Start with name collection
                 )
                 db.session.add(user)
                 db.session.commit()
@@ -1271,6 +1270,15 @@ def process_message():
                 send_initial_message(sender_id)
                 logging.debug("New user created and initial message sent.")
                 continue  # Move to the next event
+
+            # Check if the user has been idle for 24 hours
+            if datetime.utcnow() - user.last_interaction > timedelta(hours=24):
+                send_welcome_back_message(sender_id)
+                logging.debug("User has been idle for 24 hours. Sent welcome back message.")
+                # Update the last interaction timestamp
+                user.last_interaction = datetime.utcnow()
+                db.session.commit()
+                continue  # Skip further processing
 
             # Handle 'restart' command at any time
             if user_input.lower() == 'restart':
@@ -1289,6 +1297,12 @@ def process_message():
                 handle_get_started_yes(user, sender_id, user_input)
                 continue  # Skip further processing
 
+            # Handle greetings like "hi", "hey", "start"
+            if user_input.lower() in ["hi", "hey", "start"]:
+                send_initial_message(sender_id)
+                logging.debug(f"User triggered a start event (hi, hey, start). Initial message sent.")
+                continue  # Skip further processing
+
             # Fallback to the current state if undefined
             if not user.state:
                 user.state = STATES['GET_STARTED_YES']  # Default state is to collect name
@@ -1299,13 +1313,26 @@ def process_message():
             state_handler = STATE_HANDLERS.get(user.state, handle_unhandled_state)
             state_handler(user, sender_id, user_input)
 
+            # Update last interaction timestamp after processing message
+            user.last_interaction = datetime.utcnow()
+            db.session.commit()
+
         return jsonify({"status": "success"}), 200
 
     except Exception as e:
         logging.error(f"Error in process_message: {e}")
         return jsonify({"status": "error", "message": "Internal server error"}), 500
 
-    
+def send_welcome_back_message(messenger_id):
+    message = {
+        "text": (
+            "Hi, welcome back! 👋\n\n"
+            "If you need to calculate again, please type 'restart'."
+        )
+    }
+    send_messenger_message(messenger_id, message)
+    logging.debug("Sent 'Welcome back' message to user.")
+
 def reset_user(user: User):
     """
     Resets the user's information to start over with English as the default language.
