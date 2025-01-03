@@ -1261,7 +1261,7 @@ def process_message():
                 logging.error("Invalid messenger ID.")
                 continue  # Skip to the next event
 
-            # Handle the user input
+            # Check if user exists in the database
             user = User.query.filter_by(messenger_id=sender_id).first()
             if not user:
                 # Create new user with default state
@@ -1279,6 +1279,15 @@ def process_message():
                 logging.debug("New user created and initial message sent.")
                 continue  # Move to the next event
 
+            # Check if the user has been idle for more than 24 hours
+            last_interaction = user.last_interaction
+            if last_interaction:
+                time_diff = datetime.utcnow() - last_interaction
+                if time_diff > timedelta(hours=24):
+                    # Send welcome back message if idle for more than 24 hours
+                    send_welcome_back_message(sender_id)
+                    logging.debug("User was idle for more than 24 hours. Sent welcome back message.")
+            
             # Handle 'restart' command at any time
             if user_input.lower() == 'restart':
                 reset_user(user)
@@ -1305,13 +1314,16 @@ def process_message():
             state_handler = STATE_HANDLERS.get(user.state, handle_unhandled_state)
             state_handler(user, sender_id, user_input)
 
+            # Update last interaction timestamp
+            user.last_interaction = datetime.utcnow()
+            db.session.commit()
+
         return jsonify({"status": "success"}), 200
 
     except Exception as e:
         logging.error(f"Error in process_message: {e}")
         return jsonify({"status": "error", "message": "Internal server error"}), 500
-
-
+    
 def check_user_idle(user):
     # Assume user.last_interaction is a datetime field in the User model
     if user.last_interaction:
