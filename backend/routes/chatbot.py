@@ -1211,8 +1211,13 @@ def get_message(language, message_key):
         with open(f'backend/routes/languages/{language}.json', 'r', encoding='utf-8') as f:
             lang_data = json.load(f)
             
+        # Check if the message key exists
+        if message_key not in lang_data:
+            logging.error(f"Message key '{message_key}' not found in {language} language file.")
+            return "Message key not found."
+        
         # Return the corresponding message for the key
-        return lang_data.get(message_key, "Message not found.")
+        return lang_data[message_key]
     except FileNotFoundError:
         logging.error(f"Language file for {language} not found. Defaulting to English.")
         # Fallback to English if the language file is not found
