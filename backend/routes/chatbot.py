@@ -1202,6 +1202,27 @@ def handle_unhandled_state(user: User, messenger_id: str, user_input: str):
     user.state = STATES['END']
     db.session.commit()
 
+def get_message(language, message_key):
+    """
+    Fetches the appropriate message based on the language and message key.
+    """
+    try:
+        # Load the language file
+        with open(f'backend/routes/languages/{language}.json', 'r', encoding='utf-8') as f:
+            lang_data = json.load(f)
+            
+        # Return the corresponding message for the key
+        return lang_data.get(message_key, "Message not found.")
+    except FileNotFoundError:
+        logging.error(f"Language file for {language} not found. Defaulting to English.")
+        # Fallback to English if the language file is not found
+        with open('backend/routes/languages/en.json', 'r', encoding='utf-8') as f:
+            lang_data = json.load(f)
+        return lang_data.get(message_key, "Message not found.")
+    except json.JSONDecodeError:
+        logging.error(f"Error decoding JSON for {language} language file.")
+        return "Error fetching message."
+
 
 def send_messenger_message(recipient_id, message, user_language='en'):
     """
