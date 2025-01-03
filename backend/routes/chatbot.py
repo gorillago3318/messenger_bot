@@ -18,7 +18,7 @@ chatbot_bp = Blueprint('chatbot', __name__)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Set OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = os.getenv("OPENAI_API_KEY").strip()
 
 # Define the handle_contact_admin function FIRST
 def handle_contact_admin(user: User, messenger_id: str, user_input: str):
@@ -202,10 +202,10 @@ def get_current_bank_rate(loan_size: float) -> float:
 def send_initial_message(messenger_id):
     message = {
         "text": (
-            "👋 Welcome to *Finzo AI Assistant*!\n\n"
-            "• I’m here to help you explore *refinancing options*.\n"
-            "• We’ll work together to *optimize your housing loans*.\n"
-            "• My goal is to help you *identify potential savings* and *improve financial efficiency*.\n\n"
+            "👋 Welcome to Finzo AI Assistant!\n\n"
+            "• I’m here to help you explore refinancing options.\n"
+            "• We’ll work together to optimize your housing loans.\n"
+            "• My goal is to help you identify potential savings and improve financial efficiency.\n\n"
             "Are you ready to get started?"
         ),
         "quick_replies": [
@@ -236,7 +236,7 @@ def handle_get_started_yes(user: User, messenger_id: str, user_input: str):
 
     # Ask for the user's name
     message = {
-        "text": "Great! What's your *name*?"
+        "text": "Great! Can we please get your name?"
     }
     send_messenger_message(messenger_id, message)
     logging.debug("Prompted user to provide name.")
@@ -348,7 +348,7 @@ def handle_language_selection(user: User, messenger_id: str, user_input: str):
         user.state = STATES['NAME_COLLECTION']
         db.session.commit()
 
-        question = "Great! What's your *name*?"
+        question = "Great! What's your name?"
         message = {
             "text": question
         }
@@ -364,7 +364,7 @@ def handle_language_selection(user: User, messenger_id: str, user_input: str):
 def handle_name_collection(user: User, messenger_id: str, user_input: str):
     name = user_input.strip()
     if not is_valid_name(name):
-        question = "Could you kindly share your *name* again?"
+        question = "Could you kindly share your name again?"
         message = {
             "text": f"Please provide a valid name.\n\n_{question}_"
         }
@@ -376,7 +376,7 @@ def handle_name_collection(user: User, messenger_id: str, user_input: str):
     user.state = STATES['PHONE_COLLECTION']
     db.session.commit()
 
-    question = "May I have your *phone number* to proceed further?"
+    question = "May I have your phone number to proceed further?"
     message = {
         "text": f"Nice to meet you, {user.name}! {question}\n\n_Example: 0123456789 (exclude country code)_"
     }
@@ -387,7 +387,7 @@ def handle_phone_collection(user: User, messenger_id: str, user_input: str):
     phone = re.sub(r"[^\d+]", "", user_input)
     if not is_valid_phone(phone):
         message = {
-            "text": "Please provide a *valid Malaysian phone number* starting with '01' and containing 10 or 11 digits."
+            "text": "Please provide a valid Malaysian phone number starting with '01' and containing 10 or 11 digits."
         }
         send_messenger_message(messenger_id, message)
         logging.debug("Invalid phone number provided.")
@@ -399,7 +399,7 @@ def handle_phone_collection(user: User, messenger_id: str, user_input: str):
 
     message = {
         "text": (
-            "Do you know your *outstanding balance, interest rate, and remaining tenure?*\n\n"
+            "Do you know your outstanding balance, interest rate, and remaining tenure?\n\n"
             "_For more accurate calculations, we suggest checking this info in your bank app before proceeding._"
         ),
         "quick_replies": [
@@ -423,8 +423,8 @@ def handle_path_selection(user: User, messenger_id: str, user_input: str):
         user.state = STATES['PATH_A_GATHER_BALANCE']
         db.session.commit()
         question = (
-            "Could you share your *outstanding loan amount?*\n\n"
-            "_Key in digits, for example:_ *500k* or *500000*"
+            "Could you share your outstanding loan amount?\n\n"
+            "Key in digits, for example: 500k or 500000"
         )
         message = {"text": question}
         send_messenger_message(messenger_id, message)
@@ -433,8 +433,8 @@ def handle_path_selection(user: User, messenger_id: str, user_input: str):
         user.state = STATES['PATH_B_GATHER_ORIGINAL_AMOUNT']
         db.session.commit()
         question = (
-            "Could you let us know the *original loan amount?*\n\n"
-            "_Key in digits, for example:_ *500k* or *500000*"
+            "Could you let us know the original loan amount?\n\n"
+            "Key in digits, for example: 500k or 500000"
         )
         message = {"text": question}
         send_messenger_message(messenger_id, message)
@@ -451,7 +451,7 @@ def handle_path_a_balance(user: User, messenger_id: str, user_input: str):
     try:
         balance = parse_number_with_suffix(user_input)
     except ValueError:
-        question = "Could you provide your *outstanding loan amount again?*"
+        question = "Could you provide your outstanding loan amount again?"
         message = {"text": f"Sorry, I couldn't parse that.\n\n{question}"}
         send_messenger_message(messenger_id, message)
         logging.debug("Failed to parse outstanding balance.")
@@ -462,7 +462,7 @@ def handle_path_a_balance(user: User, messenger_id: str, user_input: str):
     user.state = STATES['PATH_A_GATHER_INTEREST']
     db.session.commit()
 
-    question = "What is your *current interest rate (in %)*?"
+    question = "What is your current interest rate (in %)?"
     message = {"text": question}
     send_messenger_message(messenger_id, message)
     logging.debug("Outstanding balance collected and interest rate collection initiated.")
@@ -471,7 +471,7 @@ def handle_path_a_interest(user: User, messenger_id: str, user_input: str):
     try:
         interest = float(user_input.replace("%", "").strip())
     except ValueError:
-        question = "What is your *current interest rate (in %)?*"
+        question = "What is your current interest rate (in %)?"
         message = {
             "text": f"Sorry, I couldn't parse that.\n\n{question}\n\n_Example: 4.5 or 4.75_"
         }
@@ -483,7 +483,7 @@ def handle_path_a_interest(user: User, messenger_id: str, user_input: str):
     user.state = STATES['PATH_A_GATHER_TENURE']
     db.session.commit()
 
-    question = "How many *years remain* on your loan tenure?"
+    question = "How many years remain on your loan tenure?"
     message = {
         "text": f"{question}\n\n_Example: 20 or 25_"
     }
@@ -494,7 +494,7 @@ def handle_path_a_tenure(user: User, messenger_id: str, user_input: str):
     try:
         tenure = float(re.sub(r"[^\d\.]", "", user_input))
     except ValueError:
-        question = "Could you provide the *remaining tenure (in years) again?*"
+        question = "Could you provide the remaining tenure (in years) again?"
         message = {
             "text": f"Sorry, I couldn't parse that.\n\n{question}\n\n_Example: 10 or 15_"
         }
@@ -544,13 +544,13 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
 
     # Send calculation summary
     summary = (
-        f"🏦 *Current Loan:*\n"
+        f"🏦 Current Loan:\n"
         f"• Monthly Payment: RM{current_monthly:,.2f}\n"
         f"• Interest Rate: {interest:.2f}%\n\n"
-        f"💰 *After Refinancing:*\n"
+        f"💰 After Refinancing:\n"
         f"• New Monthly Payment: RM{new_monthly:,.2f}\n"
         f"• New Interest Rate: {new_rate:.2f}%\n\n"
-        f"🎯 *Your Savings:*\n"
+        f"🎯 Your Savings:\n"
         f"• Monthly: RM{monthly_savings:,.2f}\n"
         f"• Yearly: RM{yearly_savings:,.2f}\n"
         f"• Total: RM{total_savings:,.2f} over {int(tenure)} years\n\n"
@@ -582,7 +582,7 @@ def handle_path_b_original_amount(user: User, messenger_id: str, user_input: str
     db.session.commit()
 
     message = {
-        "text": "May I know the *original loan tenure* in years?"
+        "text": "May I know the original loan tenure in years?"
     }
     send_messenger_message(messenger_id, message)
     logging.debug("Original loan amount collected and original tenure collection initiated.")
@@ -603,7 +603,7 @@ def handle_path_b_original_tenure(user: User, messenger_id: str, user_input: str
     db.session.commit()
 
     message = {
-        "text": "What is your *current monthly payment?*"
+        "text": "What is your current monthly payment/installment?"
     }
     send_messenger_message(messenger_id, message)
     logging.debug("Original loan tenure collected and monthly payment collection initiated.")
@@ -624,7 +624,7 @@ def handle_path_b_monthly_payment(user: User, messenger_id: str, user_input: str
     db.session.commit()
 
     message = {
-        "text": "How many *years have you paid so far?*"
+        "text": "How many years have you paid so far?"
     }
     send_messenger_message(messenger_id, message)
     logging.debug("Current monthly payment collected and years paid collection initiated.")
@@ -696,13 +696,13 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
 
     # Send calculation summary
     summary = (
-        f"🏦 *Current Loan:*\n"
+        f"🏦 Current Loan:\n"
         f"• Monthly Payment: RM{current_monthly_calc:,.2f}\n"
         f"• Estimated Interest Rate: {guessed_rate:.2f}%\n\n"
-        f"💰 *After Refinancing:*\n"
+        f"💰 After Refinancing:\n"
         f"• New Monthly Payment: RM{new_monthly_calc:,.2f}\n"
         f"• New Interest Rate: {new_rate:.2f}%\n\n"
-        f"🎯 *Your Savings:*\n"
+        f"🎯 Your Savings:\n"
         f"• Monthly: RM{monthly_savings:,.2f}\n"
         f"• Yearly: RM{yearly_savings:,.2f}\n"
         f"• Total: RM{total_savings:,.2f} over {int(remain_tenure)} years\n\n"
@@ -753,8 +753,8 @@ def handle_convince(user: User, messenger_id: str, user_input: str = ""):
         "• Education and tuition fees\n"
         "• Investment opportunities\n"
         "• Consolidating debts for better financial management\n\n"
-        "_*Note: According to Bank Negara Malaysia (BNM) guidelines, cash-out refinancing is limited "
-        "to a maximum repayment period of 10 years or up to 70 years of age, whichever comes first._*"
+        "Note: According to Bank Negara Malaysia (BNM) guidelines, cash-out refinancing is limited "
+        "to a maximum repayment period of 10 years or up to 70 years of age, whichever comes first."
     )
 
     quick_replies = [
@@ -804,8 +804,8 @@ def handle_cashout_offer(user: User, messenger_id: str, user_input: str):
         user.state = STATES['CASHOUT_GATHER_AMOUNT']
         db.session.commit()
         question = (
-            "Great! How much equity would you like to cash out from your property in *Ringgit?*\n\n "
-        "_For example, RM50,000 or 50k._"
+            "Great! How much equity would you like to cash out from your property in Ringgit?\n\n "
+        "For example, RM50,000 or 50k."
         )
         send_messenger_message(messenger_id, {"text": question})
         logging.debug("User accepted cash-out offer. Cash-out amount collection initiated.")

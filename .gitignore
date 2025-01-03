@@ -22,7 +22,7 @@ ENV/
 # Ignore all files in migrations/versions
 
 # But track version files (Python scripts)
-
+/migrations/versions/*.py
 # Still ignore pycache files
 __pycache__/
 *.pyc
