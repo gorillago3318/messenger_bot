@@ -6,8 +6,8 @@ from backend.extensions import db, migrate
 from backend.routes.chatbot import chatbot_bp  # Import chatbot route
 import requests  # For Messenger API
 
-# Import all models to ensure Flask-Migrate detects them
-from backend.models import Users, Lead, ChatflowTemp, ChatLog, BankRate
+# Import required models only
+from backend.models import User, Lead, BankRate  # Removed ChatflowTemp and ChatLog
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -15,9 +15,10 @@ logging.basicConfig(level=logging.INFO)
 # Load environment variables
 load_dotenv()
 
+
 def create_app(environ=None, start_response=None):
     """Create and configure the Flask app."""
-    app = Flask(__name__, static_folder='../static')  # Adjusted path to point to root-level static folder
+    app = Flask(__name__, static_folder='static')  # Adjust static folder path
 
     # Setup database config
     database_url = os.getenv('DATABASE_URL', 'sqlite:///local.db')
@@ -39,7 +40,7 @@ def create_app(environ=None, start_response=None):
     # Serve index.html at the root URL ("/")
     @app.route('/')
     def home():
-        return send_from_directory('../static', 'index.html')  # This ensures static files are correctly found at the root
+        return send_from_directory('static', 'index.html')  # Updated static folder
 
     # Webhook setup and routing
     @app.route('/webhook', methods=['GET', 'POST'])
@@ -50,7 +51,7 @@ def create_app(environ=None, start_response=None):
             challenge = request.args.get('hub.challenge')
 
             # Verify token for Messenger
-            if mode == 'subscribe' and token == os.getenv('VERIFY_TOKEN', 'myverifytoken123'):
+            if mode == 'subscribe' and token == os.getenv('VERIFY_TOKEN'):
                 logging.info('✅ Facebook Webhook verification successful!')
                 return challenge, 200
             else:

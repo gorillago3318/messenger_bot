@@ -1,90 +1,81 @@
 from datetime import datetime
 from backend.extensions import db
 import pytz
-from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, JSON
 
 # Malaysia timezone
 MYT = pytz.timezone('Asia/Kuala_Lumpur')
 
 # ----------------------------
-# ChatflowTemp Model
+# Users Table (Simplified)
 # ----------------------------
-class ChatflowTemp(db.Model):
-    __tablename__ = 'chatflow_temp'
+# Inside backend/models.py
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    sender_id = Column(String(20), nullable=True)  # Allow null temporarily
-    messenger_id = Column(String(50), nullable=True)  # Messenger ID for Messenger Bot
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=True)  # ForeignKey reference to users
-    current_step = Column(String(50), nullable=True)
-    language_code = Column(String(10), nullable=True)
-    name = Column(String(100), nullable=True)
-    phone_number = Column(String(20), nullable=True)  # Added phone_number
-    original_loan_amount = Column(Float, nullable=True)
-    original_loan_tenure = Column(Integer, nullable=True)
-    current_repayment = Column(Float, nullable=True)
-    mode = Column(String(20), nullable=False, default='flow')  # Default value set
-    created_at = Column(DateTime, default=lambda: datetime.now(MYT))  # Consistent MYT
-    updated_at = Column(DateTime, default=lambda: datetime.now(MYT), onupdate=lambda: datetime.now(MYT))
+from backend.extensions import db
 
-# ----------------------------
-# Users Model
-# ----------------------------
-class Users(db.Model):
+class User(db.Model):
     __tablename__ = 'users'
 
-    id = db.Column(Integer, primary_key=True)
-    messenger_id = db.Column(String, nullable=False, unique=True)  # Messenger ID
-    sender_id = db.Column(String, nullable=True)  # Optional sender ID
-    phone_number = db.Column(String(20), nullable=True)  # Added phone_number
-    name = db.Column(String, nullable=True)
-    current_step = db.Column(String, nullable=True)
-    created_at = db.Column(DateTime, default=lambda: datetime.now(MYT))
-    updated_at = db.Column(DateTime, default=lambda: datetime.now(MYT), onupdate=lambda: datetime.now(MYT))
+    id = db.Column(db.Integer, primary_key=True)
+    messenger_id = db.Column(db.String(50), unique=True, nullable=False)
+    name = db.Column(db.String(100))
+    phone_number = db.Column(db.String(15))
+    language = db.Column(db.String(10))
+    state = db.Column(db.String(50))
+
+    # Path A fields
+    outstanding_balance = db.Column(db.Float)
+    current_interest_rate = db.Column(db.Float)
+    remaining_tenure = db.Column(db.Float)
+
+    # Path B fields
+    original_amount = db.Column(db.Float)
+    original_tenure = db.Column(db.Float)
+    current_monthly_payment = db.Column(db.Float)
+    years_paid = db.Column(db.Float)
+
+    monthly_savings = db.Column(db.Float)
+    yearly_savings = db.Column(db.Float)
+    total_savings = db.Column(db.Float)
+    tenure = db.Column(db.Float)
+    current_rate = db.Column(db.Float)
+    new_rate = db.Column(db.Float)
+
+    # Cash-Out fields
+    temp_cashout_amount = db.Column(db.Float)  # Added field
+
+    # Add other necessary fields here
 
 # ----------------------------
-# Lead Model
+# Leads Table (Simplified)
 # ----------------------------
 class Lead(db.Model):
     __tablename__ = 'leads'
 
     id = db.Column(Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(Integer, ForeignKey('users.id'), index=True, nullable=False)
-    sender_id = db.Column(String(20), nullable=False)
-    name = db.Column(String(50), nullable=False)
-    property_reference = db.Column(String(50), nullable=True, unique=True)
+    sender_id = db.Column(String(20), nullable=False)  # Messenger ID
+    phone_number = db.Column(String(20), nullable=False)  # Required phone number
+    name = db.Column(String(50), nullable=False)  # Required name
+
+    # Loan Details
     original_loan_amount = db.Column(Float, nullable=False)
     original_loan_tenure = db.Column(Integer, nullable=False)
     current_repayment = db.Column(Float, nullable=False)
 
     # Savings and Calculation Fields
-    new_repayment = db.Column(Float, nullable=True)
-    monthly_savings = db.Column(Float, nullable=True)
-    yearly_savings = db.Column(Float, nullable=True)
-    total_savings = db.Column(Float, nullable=True)
-    years_saved = db.Column(Integer, nullable=True)
-
-    phone_number = db.Column(String(20), nullable=True)  # Added phone_number
+    new_repayment = db.Column(Float, nullable=False)
+    monthly_savings = db.Column(Float, nullable=False)
+    yearly_savings = db.Column(Float, nullable=False)
+    total_savings = db.Column(Float, nullable=False)
+    years_saved = db.Column(Integer, nullable=False)
 
     created_at = db.Column(DateTime, default=lambda: datetime.now(MYT))
     updated_at = db.Column(DateTime, default=lambda: datetime.now(MYT), onupdate=lambda: datetime.now(MYT))
 
-# ----------------------------
-# ChatLog Model
-# ----------------------------
-class ChatLog(db.Model):
-    __tablename__ = 'chat_logs'
-
-    id = db.Column(Integer, primary_key=True)
-    user_id = db.Column(Integer, ForeignKey('users.id'), nullable=False)
-    sender_id = db.Column(String(255), nullable=True)
-    name = db.Column(String(255), nullable=True)
-    phone_number = db.Column(String(20), nullable=True)  # Changed from String(255) to String(20)
-    message_content = db.Column(Text, nullable=False)  # Updated column name
-    created_at = db.Column(DateTime, default=lambda: datetime.now(MYT))  # Corrected datetime call
 
 # ----------------------------
-# BankRate Model
+# BankRate Table (Simplified)
 # ----------------------------
 class BankRate(db.Model):
     __tablename__ = 'bank_rates'
