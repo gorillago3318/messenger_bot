@@ -236,46 +236,23 @@ def get_current_bank_rate(loan_size: float, language: str) -> float:
         return 3.8  # Fallback rate
 
 def send_initial_message(messenger_id, language='en'):
-    # Language-specific welcome message
-    if language == 'ms':
-        message_text = (
-            "👋 Selamat datang ke Pembantu AI Finzo!\n\n"
-            "• Saya di sini untuk membantu anda menjelajah pilihan pembiayaan semula.\n"
-            "• Kita akan bekerjasama untuk mengoptimumkan pinjaman perumahan anda.\n"
-            "• Matlamat saya adalah untuk membantu anda mengenal pasti potensi penjimatan dan meningkatkan kecekapan kewangan.\n\n"
-            "Adakah anda bersedia untuk bermula?"
-        )
-        quick_replies = [
-            {"content_type": "text", "title": "Bahasa Malaysia", "payload": "LANG_MS"},  # Language selection payload
-            {"content_type": "text", "title": "English", "payload": "LANG_EN"},           # Switching to English
-            {"content_type": "text", "title": "Chinese", "payload": "LANG_ZH"},           # Switching to Chinese
-        ]
-    elif language == 'zh':
-        message_text = (
-            "👋 欢迎来到Finzo AI助手！\n\n"
-            "• 我在这里帮助您探索再融资选项。\n"
-            "• 我们将共同努力优化您的住房贷款。\n"
-            "• 我的目标是帮助您识别潜在节省并提高财务效率。\n\n"
-            "准备好开始了吗？"
-        )
-        quick_replies = [
-            {"content_type": "text", "title": "Chinese", "payload": "LANG_ZH"},  # Language selection payload
-            {"content_type": "text", "title": "Bahasa Malaysia", "payload": "LANG_MS"},  # Switching to Malay
-            {"content_type": "text", "title": "English", "payload": "LANG_EN"},         # Switching to English
-        ]
-    else:  # Default is English
-        message_text = (
-            "👋 Welcome to Finzo AI Assistant!\n\n"
-            "• I’m here to help you explore refinancing options.\n"
-            "• We’ll work together to optimize your housing loans.\n"
-            "• My goal is to help you identify potential savings and improve financial efficiency.\n\n"
-            "Are you ready to get started?"
-        )
-        quick_replies = [
-            {"content_type": "text", "title": "English", "payload": "LANG_EN"},  # Language selection payload
-            {"content_type": "text", "title": "Bahasa Malaysia", "payload": "LANG_MS"},  # Switching to Malay
-            {"content_type": "text", "title": "Chinese", "payload": "LANG_ZH"},           # Switching to Chinese
-        ]
+    # Fetch message using the key from the language file
+    welcome_message = get_message(language, "welcome_message")
+    quick_replies = [
+        {"content_type": "text", "title": "Bahasa Malaysia", "payload": "LANG_MS"},
+        {"content_type": "text", "title": "English", "payload": "LANG_EN"},
+        {"content_type": "text", "title": "Chinese", "payload": "LANG_ZH"},
+    ]
+
+    # Construct and send the message
+    message = {
+        "text": welcome_message,
+        "quick_replies": quick_replies
+    }
+
+    send_messenger_message(messenger_id, message)
+    logging.debug("Initial welcome message sent.")
+
 
     # Construct message with quick replies
     message = {
@@ -1207,20 +1184,12 @@ def get_message(language, message_key):
     Fetches the appropriate message based on the language and message key.
     """
     try:
-        # Load the language file
         with open(f'backend/routes/languages/{language}.json', 'r', encoding='utf-8') as f:
             lang_data = json.load(f)
             
-        # Check if the message key exists
-        if message_key not in lang_data:
-            logging.error(f"Message key '{message_key}' not found in {language} language file.")
-            return "Message key not found."
-        
-        # Return the corresponding message for the key
-        return lang_data[message_key]
+        return lang_data.get(message_key, "Message not found.")
     except FileNotFoundError:
         logging.error(f"Language file for {language} not found. Defaulting to English.")
-        # Fallback to English if the language file is not found
         with open('backend/routes/languages/en.json', 'r', encoding='utf-8') as f:
             lang_data = json.load(f)
         return lang_data.get(message_key, "Message not found.")
