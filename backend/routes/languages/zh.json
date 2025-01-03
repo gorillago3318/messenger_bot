@@ -1,28 +1,33 @@
 {
-    "welcome_message": "👋 欢迎来到 Finzo AI 助手！\n\n• 我在这里帮助您探索再融资选项。\n• 我们将共同努力优化您的房贷。\n• 我的目标是帮助您识别潜在的节省，并提高财务效率。\n\n您准备好开始了吗？",
-    "get_started_yes": "是的，让我们开始吧！",
-    "contact_admin": "我想和管理员联系",
-    "ask_name": "太棒了！请问可以告诉我您的名字吗？",
-    "ask_phone": "请提供您的电话号码以继续操作。例子：0123456789（不包含国家代码）",
-    "path_selection": "您知道您的贷款余额、利率和剩余期限吗？\n\n如果不清楚，我们会使用估算值进行计算。为了获得最准确的结果，请在继续之前在您的银行应用程序中查看这些信息。",
-    "path_a_balance": "请告诉我您的贷款余额是多少？\n\n请输入数字，例如：500k 或 500000",
-    "path_a_interest": "您当前的利率是多少（%）？",
-    "path_a_tenure": "您的贷款剩余期限是多少年？例：20 或 25",
-    "path_b_original_amount": "请告诉我您最初的贷款金额是多少？\n\n请输入数字，例如：500k 或 500000",
-    "path_b_original_tenure": "请告诉我您的原始贷款期限是多少年？",
-    "path_b_monthly_payment": "您当前的月供是多少？",
-    "path_b_years_paid": "您已经支付了多少年？",
-    "calculate_summary": "🏦 当前贷款：\n• 月供：RM{current_monthly:.2f}\n• 利率：{interest:.2f}%\n\n💰 再融资后：\n• 新月供：RM{new_monthly:.2f}\n• 新利率：{new_rate:.2f}%\n\n🎯 您的节省：\n• 每月节省：RM{monthly_savings:.2f}\n• 每年节省：RM{yearly_savings:.2f}\n• 总节省：RM{total_savings:.2f}，共{tenure}年\n\nFinzo AI 正在分析您的再融资细节，以确定是否值得进行，请稍等。",
-    "convincing_message_1": "根据您的信息，预计再融资的节省低于 RM10,000。考虑到再融资会产生法律费用和印花税，现在可能不值得。但如果您有任何问题或需要进一步的指导，我们很乐意为您提供帮助。请随时联系我们 https://wa.me/60126181683。",
-    "convincing_message_2": "根据您的信息，看起来您的当前贷款已经优化得很好，再融资可能不会带来显著的节省。不过，我们会继续为您提供帮助，解答您将来的再融资问题。我们的服务是免费的，您可以随时联系我们 https://wa.me/60126181683，了解更多信息或需要帮助！",
-    "convincing_message_default": "您可能在您的房贷上支付了过多的费用。以 {new_rate:.2f}% 的利率进行再融资，可以帮助您每月节省 RM{monthly_savings:.2f}，并在 {tenure} 年内节省 RM{total_savings:.2f}。我们的服务完全免费，除非您说“不要”，否则我们的代理将与您联系，帮助您探索节省空间。如果您有任何后续问题，请随时提出！",
-    "cashout_message": "您有兴趣探索带现金回收的再融资选项吗？\n\n现金回收再融资可以让您通过利用房屋的股权获得额外的资金。这是一个灵活的方式，可以为重要支出提供资金，同时整合您的现有贷款。\n\n您可以将额外的资金用于以下目的：\n• 房屋装修或升级\n• 教育和学费\n• 投资机会\n• 通过整合债务来更好地管理财务\n\n注意：根据马来西亚国家银行（BNM）的规定，现金回收再融资的还款期限最多为 10 年，或至 70 岁，以先到者为准。",
-    "cashout_offer_yes": "是的，告诉我更多",
-    "cashout_offer_no": "不，谢谢",
-    "admin_contact": "您可以直接联系我们的管理员：\n\n📞 WhatsApp：[点击这里聊天](https://wa.me/60126181683)\n\n如果您需要进一步的帮助，请告知我们！",
-    "faq_prompt": "您现在正在与 Finzo AI 聊天。您可以询问任何有关再融资和房贷的问题。\n\n您可能会有的常见问题：\n• 再融资需要哪些文件？\n• 再融资过程需要多长时间？\n• 是否有任何费用？\n• 影响贷款批准的因素有哪些？",
-    "waiting_input": "我不确定该如何处理这个。请输入 'restart' 重新开始。",
-    "restart": "请输入 'restart' 重新开始。",
-    "error_message": "抱歉，我遇到了技术问题。请直接联系我们的管理员 https://wa.me/60126181683 获取即时帮助。",
-    "unhandled_state": "我不确定该如何处理这个。请输入 'restart' 重新开始。"
+    "choose_language_message": "🎉 欢迎使用 FinZo AI — 您的智能房贷再融资助手！🤖\n\n💼 *继续使用即表示您同意我们的 [服务条款](https://raw.githubusercontent.com/gorillago3318/refinancechatbotv2/refs/heads/main/terms-of-service.txt)。*\n\n💸 **发现您的节省潜力** – 快速估算通过房贷再融资您可以节省多少。\n💡 **专家指导触手可及** – 快速获取关于再融资和房贷的解答（最多 15 个问题）。\n🔄 **简单重启流程** – 需要重置？随时输入 'restart'。\n\n👉 让我们开始吧！请选择您的语言：\n\n🌐 **选择语言:**\n1️⃣ *英语* \n2️⃣ *马来语* \n3️⃣ *中文 (Chinese)*",
+
+    "name_message": "📝 *步骤 1: 输入您的姓名* \n\n请输入您在*官方文件*上显示的*全名*。 \n\n💡 *示例*: 王大明",
+
+    "phone_number_message": "📞 *步骤 2: 输入您的电话号码* \n\n请输入您的*电话号码*（至少 10 位数字）。 \n\n💡 *示例*: 0123456789",
+
+    "age_message": "🎂 *步骤 3: 输入您的年龄* \n\n请输入您的*年龄*（必须介于 *18 至 70 岁*）。 \n\n💡 *示例*: 35",
+
+    "loan_amount_message": "💸 *步骤 4: 输入您的房贷金额* \n\n请输入您*从银行获得的原始房贷金额*。 \n\n💡 *示例*: 250000（无需使用逗号或符号）。",
+
+    "loan_tenure_message": "📆 *步骤 5: 输入您的房贷期限* \n\n请输入您的*原始房贷期限*，这是银行批准的年数（通常为 30 年或 35 年）。 \n\n💡 *示例*: 30",
+
+    "repayment_message": "💳 *步骤 6: 输入您当前的每月还款金额* \n\n请输入您每月支付的*还款金额*。 \n\n💡 *示例*: 2500（无需使用逗号或符号）。",
+
+    "interest_rate_message": "📈 *步骤 7: 输入您的贷款利率* \n\n如果您知道您的*当前利率*，请输入（例如：3.85）。 \n\n如果您不确定，可以输入 *skip*。\n\n💡 *示例*: 4.25 或 *skip*",
+
+    "remaining_tenure_message": "📅 *步骤 8: 输入剩余房贷期限* \n\n请输入您的房贷*剩余年数*。\n\n💡 *提示*: 如果您不确定确切的年数，可以输入 *skip*。\n\n💡 *示例*: 15 或 *skip*",
+
+    "completion_message": "🎉 *谢谢您!* 🎉\n\n感谢您提供的信息。我们正在处理您的请求。\n\n📊 请稍候，我们将计算您的潜在节省金额并为您提供详细报告。",
+
+    "summary_title_1": "📊 *房贷再融资节省摘要* 📊",
+
+    "summary_content_1": "💳 *当前每月还款*: RM {current_repayment:,.2f} \n📉 *估计新每月还款*: RM {new_repayment:,.2f} \n💸 *每月节省*: RM {monthly_savings:,.2f} \n💥 *每年节省*: RM {yearly_savings:,.2f} \n💰 *总节省金额*: RM {lifetime_savings:,.2f}",
+
+    "summary_title_2": "🎉 *好消息!* 🎉",
+
+    "summary_content_2": "🚀 *大笔节省等着您！* 🚀\n\n通过房贷再融资，您可以节省：\n\n💸 *每月节省 RM {monthly_savings:,.2f}*\n💰 *每年节省 RM {yearly_savings:,.2f}*\n💥 *总节省金额 RM {lifetime_savings:,.2f}*\n\n这相当于节省 *{years_saved} 年 {months_saved} 月* 的还款时间！🚀\n\n🎉 *立即抓住机会，降低贷款成本并大幅节省！*",
+
+    "summary_title_3": "🔍 *下一步是什么？*",
+
+    "summary_content_3": "✅ *将为您分配一位专家!* \n\n我们将为您准备 *详细报告* — *完全免费*且*无任何义务*！\n\n💡 我们的专家将指导您完成再融资流程，帮助您做出最佳决策。\n\n📞 *需要帮助或有疑问？* 直接联系管理员 *{whatsapp_link}*。\n\n💬 *有其他问题？* 向 FinZo AI 提问，我们将为您提供最佳解答！ 🚀"
 }

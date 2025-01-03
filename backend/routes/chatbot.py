@@ -29,26 +29,14 @@ def handle_contact_admin(user: User, messenger_id: str, user_input: str):
     """
     logging.debug("User requested to talk to admin.")
 
-    # Fetch the appropriate message based on the user's language
-    language = user.language  # This should be 'en', 'ms', or 'zh' based on user input
-
-    # Load the corresponding language file (assuming en.json, ms.json, zh.json are stored properly)
-    try:
-        with open(f'backend/routes/languages/{language}.json', 'r', encoding='utf-8') as f:
-            lang_data = json.load(f)
-    except FileNotFoundError:
-        logging.error(f"Language file for {language} not found, falling back to English.")
-        with open('backend/routes/languages/en.json', 'r', encoding='utf-8') as f:
-            lang_data = json.load(f)
-    
-    # Use the language data to construct the message
+    # Send admin contact details
     message = {
-        "text": lang_data.get("contact_admin_message", "You can contact our admin directly at:\n\n"
-                                                     "📞 WhatsApp: [Click here to chat](https://wa.me/60126181683)\n\n"
-                                                     "Let us know if you need any further assistance!")
+        "text": (
+            "You can contact our admin directly at:\n\n"
+            "📞 WhatsApp: [Click here to chat](https://wa.me/60126181683)\n\n"
+            "Let us know if you need any further assistance!"
+        )
     }
-
-    # Send the message to the user
     send_messenger_message(messenger_id, message)
     logging.debug("Admin contact details sent to user.")
 
@@ -56,9 +44,8 @@ def handle_contact_admin(user: User, messenger_id: str, user_input: str):
     user.state = STATES['WAITING_INPUT']
     db.session.commit()
 
-
 STATES = {
-    'LANGUAGE_SELECTION': 'LANGUAGE_SELECTION',  # Add this line
+    'GET_STARTED_YES': 'GET_STARTED_YES',  # New state for starting the process
     'CONTACT_ADMIN': 'CONTACT_ADMIN',      # New state for contacting admin
     'NAME_COLLECTION': 'NAME_COLLECTION',
     'PHONE_COLLECTION': 'PHONE_COLLECTION',
@@ -136,23 +123,14 @@ def is_valid_name(name: str) -> bool:
     """
     return bool(re.fullmatch(r"[A-Za-z\s]{2,50}", name))
 
-def is_valid_phone(phone: str, language: str) -> bool:
+def is_valid_phone(phone: str) -> bool:
     """
     Validates Malaysian phone numbers:
     - Starts with '01'
     - Contains only digits
     - Is 10 or 11 digits long
     """
-    if not re.fullmatch(r"01\d{8,9}", phone):
-        # Return different error messages based on the user's language
-        if language == 'ms':
-            return "Sila masukkan nombor telefon yang sah bermula dengan '01' dan mempunyai 10 atau 11 digit."
-        elif language == 'zh':
-            return "请输入有效的马来西亚电话号码，以'01'开头，并包含10或11位数字。"
-        else:
-            return "Please provide a valid Malaysian phone number starting with '01' and containing 10 or 11 digits."
-    return True
-
+    return bool(re.fullmatch(r"01\d{8,9}", phone))
 
 def is_affirmative(text: str) -> bool:
     """
@@ -198,7 +176,7 @@ def estimate_loan_details(original_amount: float, original_tenure: float, curren
 
     return guessed_rate, outstanding_guess, remain_tenure
 
-def get_current_bank_rate(loan_size: float, language: str) -> float:
+def get_current_bank_rate(loan_size: float) -> float:
     """
     Retrieves the current bank rate based on loan size from the BankRate table.
     Falls back to 3.8% if no matching rate is found.
@@ -206,13 +184,7 @@ def get_current_bank_rate(loan_size: float, language: str) -> float:
     try:
         # Check if loan_size is valid
         if loan_size is None or loan_size <= 0:
-            # Language-specific fallback error message
-            if language == 'ms':
-                logging.error("Saiz pinjaman adalah tidak sah atau tiada. Menggunakan kadar faedah default 3.8%.")
-            elif language == 'zh':
-                logging.error("贷款金额无效或未提供。使用默认的3.8%的利率。")
-            else:
-                logging.error("Loan size is None or invalid. Defaulting to 3.8% rate.")
+            logging.error("Loan size is None or invalid. Defaulting to 3.8% rate.")
             return 3.8  # Default rate
 
         # Query the database for matching rate
@@ -226,177 +198,102 @@ def get_current_bank_rate(loan_size: float, language: str) -> float:
         else:
             return 3.8  # Fallback rate
     except Exception as e:
-        # Error handling with language-specific logging
-        if language == 'ms':
-            logging.error(f"Masalah teknikal semasa mendapatkan kadar bank: {e}")
-        elif language == 'zh':
-            logging.error(f"获取银行利率时出错: {e}")
-        else:
-            logging.error(f"Error fetching bank rate: {e}")
+        logging.error(f"Error fetching bank rate: {e}")
         return 3.8  # Fallback rate
 
-def send_initial_message(messenger_id, language='en'):
-    # Fetch message using the key from the language file
-    welcome_message = get_message(language, "welcome_message")
-    quick_replies = [
-        {"content_type": "text", "title": "Bahasa Malaysia", "payload": "LANG_MS"},
-        {"content_type": "text", "title": "English", "payload": "LANG_EN"},
-        {"content_type": "text", "title": "Chinese", "payload": "LANG_ZH"},
-    ]
-
-    # Construct and send the message
+def send_initial_message(messenger_id):
     message = {
-        "text": welcome_message,
-        "quick_replies": quick_replies
+        "text": (
+            "👋 Welcome to Finzo AI Assistant!\n\n"
+            "• I’m here to help you explore refinancing options.\n"
+            "• We’ll work together to optimize your housing loans.\n"
+            "• My goal is to help you identify potential savings and improve financial efficiency.\n\n"
+            "Are you ready to get started?"
+        ),
+        "quick_replies": [
+            {
+                "content_type": "text",
+                "title": "Yes, let's start!",
+                "payload": "GET_STARTED_YES"
+            },
+            {
+                "content_type": "text",
+                "title": "I want to talk to admin",
+                "payload": "CONTACT_ADMIN"
+            }
+        ]
     }
-
     send_messenger_message(messenger_id, message)
     logging.debug("Initial welcome message sent.")
 
+def handle_get_started_yes(user: User, messenger_id: str, user_input: str):
+    """
+    Handles the 'Yes, let's start!' response and proceeds to collect the user's name.
+    """
+    logging.debug("User selected 'Yes, let's start!'.")
 
-    # Construct message with quick replies
+    # Move the user to the NAME_COLLECTION state
+    user.state = STATES['NAME_COLLECTION']
+    db.session.commit()
+
+    # Ask for the user's name
     message = {
-        "text": message_text,
-        "quick_replies": quick_replies
+        "text": "Great! Can we please get your name?"
     }
-
     send_messenger_message(messenger_id, message)
-    logging.debug("Initial welcome message sent.")
+    logging.debug("Prompted user to provide name.")
 
-
-
-def handle_language_selection(user: User, messenger_id: str, user_input: str):
+def generate_convincing_message(savings_data: dict) -> str:
     """
-    Handles the language selection and proceeds to collect the user's name.
-    """
-    logging.debug(f"User selected language: {user_input}.")
-
-    # Language mapping
-    language_map = {
-        'LANG_EN': 'en',
-        'LANG_MS': 'ms',
-        'LANG_ZH': 'zh'
-    }
-
-    # Update user's language preference
-    if user_input in language_map:
-        user.language = language_map[user_input]
-        db.session.commit()
-
-        # Move the user to the NAME_COLLECTION state
-        user.state = STATES['NAME_COLLECTION']
-        db.session.commit()
-
-        # Ask for the user's name based on the selected language
-        if user.language == 'ms':
-            message = {"text": "Hebat! Bolehkah kami mendapatkan nama anda?"}
-        elif user.language == 'zh':
-            message = {"text": "太好了！请问您的名字是什么？"}
-        else:
-            message = {"text": "Great! Can we please get your name?"}
-
-        send_messenger_message(messenger_id, message)
-        logging.debug("Prompted user to provide name based on selected language.")
-
-    else:
-        # If an invalid language option is chosen
-        message = {"text": "Please select a valid language by clicking one of the options."}
-        send_messenger_message(messenger_id, message)
-        logging.debug("Invalid language selection.")
-
-
-def generate_convincing_message(savings_data: dict, language: str) -> str:
-    """
-    Uses GPT-4 to generate a personalized convincing message based on savings calculations.
-    This function now supports multiple languages: English (en), Bahasa Malaysia (ms), Chinese (zh).
+    Uses GPT to generate a personalized convincing message based on savings calculations.
     """
     try:
-        # Select language-specific messages
-        if language == 'ms':
-            low_savings_msg = (
-                "Berdasarkan maklumat anda, anggaran penjimatan dari pembiayaan semula adalah kurang daripada RM10,000. "
-                "Memandangkan pembiayaan semula melibatkan bayaran guaman dan duti setem, ia mungkin tidak berbaloi pada masa ini. "
-                "Namun, kami sedia membantu sekiranya anda mempunyai sebarang pertanyaan atau memerlukan panduan lanjut. Sila hubungi kami di https://wa.me/60126181683."
-            )
-            zero_savings_msg = (
-                "Berdasarkan maklumat anda, nampaknya pinjaman anda sudah dioptimumkan dengan baik, dan pembiayaan semula mungkin tidak memberikan penjimatan yang signifikan. "
-                "Namun, kami di sini untuk membantu dengan sebarang pertanyaan atau keperluan pembiayaan semula pada masa hadapan. Perkhidmatan kami adalah percuma, dan anda boleh sentiasa menghubungi kami di https://wa.me/60126181683 jika memerlukan maklumat atau bantuan lanjut!"
-            )
-            savings_msg = (
-                f"Penjimatan Bulanan: RM{savings_data.get('monthly_savings', 0):,.2f}\n"
-                f"Penjimatan Tahunan: RM{savings_data.get('yearly_savings', 0):,.2f}\n"
-                f"Jumlah Penjimatan: RM{savings_data.get('total_savings', 0):,.2f} sepanjang {savings_data.get('tenure', 0)} tahun\n"
-                f"Kadar Faedah Semasa: {savings_data.get('current_rate', 0):.2f}%\n"
-                f"Kadar Faedah Baru: {savings_data.get('new_rate', 0):.2f}%\n"
-            )
-        elif language == 'zh':
-            low_savings_msg = (
-                "根据您的信息，预计通过再融资的节省低于RM10,000。 "
-                "考虑到再融资会涉及法律费用和印花税，现在可能不值得麻烦。 "
-                "但是，如果您有任何问题或需要进一步的指导，我们很乐意提供帮助。请随时通过 https://wa.me/60126181683 与我们联系。"
-            )
-            zero_savings_msg = (
-                "根据您的信息，看起来您的当前贷款已经优化得很好，再融资可能不会带来显著的节省。 "
-                "然而，我们随时准备为您提供任何问题的帮助或未来的再融资需求。我们的服务是免费的，如果您想了解更多信息或需要帮助，可以随时联系我们 https://wa.me/60126181683！"
-            )
-            savings_msg = (
-                f"每月节省: RM{savings_data.get('monthly_savings', 0):,.2f}\n"
-                f"每年节省: RM{savings_data.get('yearly_savings', 0):,.2f}\n"
-                f"总节省: RM{savings_data.get('total_savings', 0):,.2f} 经过 {savings_data.get('tenure', 0)} 年\n"
-                f"当前利率: {savings_data.get('current_rate', 0):.2f}%\n"
-                f"新利率: {savings_data.get('new_rate', 0):.2f}%\n"
-            )
-        else:  # Default to English
-            low_savings_msg = (
+        # Check if savings are below 10k
+        if savings_data['total_savings'] < 10000:
+            return (
                 "Based on your details, the estimated savings from refinancing are below RM10,000. "
                 "Considering that refinancing incurs legal fees and stamp duty, it may not be worth the hassle right now. "
                 "However, we’re happy to assist if you have any questions or need further guidance. Feel free to reach out at https://wa.me/60126181683."
             )
-            zero_savings_msg = (
-                "Based on your details, it looks like your current loan is already well-optimized, and refinancing may not result in significant savings. "
-                "However, we are here to assist you with any questions or future refinancing needs. Our service is free, and you can always reach out to us at https://wa.me/60126181683 if you'd like more information or need assistance!"
-            )
-            savings_msg = (
-                f"Monthly Savings: RM{savings_data.get('monthly_savings', 0):,.2f}\n"
-                f"Yearly Savings: RM{savings_data.get('yearly_savings', 0):,.2f}\n"
-                f"Total Savings: RM{savings_data.get('total_savings', 0):,.2f} over {savings_data.get('tenure', 0)} years\n"
-                f"Current Interest Rate: {savings_data.get('current_rate', 0):.2f}%\n"
-                f"New Interest Rate: {savings_data.get('new_rate', 0):.2f}%\n"
-            )
-
-        # Check if savings are below 10k
-        if savings_data['total_savings'] < 10000:
-            return low_savings_msg
 
         # Check if savings are zero or negative
         if savings_data['monthly_savings'] <= 0:
-            return zero_savings_msg
+            return (
+                "Based on your details, it looks like your current loan is already well-optimized, and refinancing may not result in significant savings. "
+                "However, we are here to assist you with any questions or future refinancing needs. Our service is free, and you can always reach out to us at https://wa.me/60126181683 if you'd like more information or need assistance!"
+            )
 
-        # If the savings are good, use GPT-4 to generate a more personalized message
         conversation = [
-            {
+                {
                 "role": "system",
-                "content": (
-                    "You are Finzo AI Assistant, an expert in refinancing solutions. Highlight potential savings from refinancing and explain that many homeowners overpay simply due to lack of information about better options. "
-                    "Emphasize that this service is completely free, with no hidden fees, and an agent is available to assist unless the user opts out. "
-                    "Encourage users to take control of their finances and avoid overpaying unnecessarily, while keeping a professional, friendly, and reassuring tone. "
-                    "message especially digit will have to clearly stated with commas for thousands and millions."
-                    "Reply with the admin WhatsApp contact link at wa.me/60126181683 whenever the user asks for admin, agent, company, or human contact."
-                )
-            },
-            {
-                "role": "user",
-                "content": savings_msg + (
-                    "Frame the message to emphasize how refinancing helps regain financial control and reduce costs. "
-                    "Mention that continuing with the current loan benefits the banks, and exploring refinancing options provides the user with better opportunities. "
-                    "Encourage questions and emphasize that an agent will assist with more details, maintaining a professional and informative tone."
-                )
-            }
-        ]
+                    "content": (
+                        "You are Finzo AI Assistant, an expert in refinancing solutions. Highlight potential savings from refinancing and explain that many homeowners overpay simply due to lack of information about better options. "
+                        "Emphasize that this service is completely free, with no hidden fees, and an agent is available to assist unless the user opts out. "
+                        "Encourage users to take control of their finances and avoid overpaying unnecessarily, while keeping a professional, friendly, and reassuring tone. "
+                        "Avoid greetings or closings like hello or best regards. Focus on presenting benefits clearly and creating urgency without being pushy."
+                        "message especially digit will have to clealy stated with , on thousand and millions."
+                        "Reply admin whatsapp contact link at wa.me/60126181683 whenever user ask for admin, agent, company, human contact"
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Highlight the savings potential for the user:\n"
+                        f"Monthly Savings: RM{savings_data.get('monthly_savings', 0):.2f}\n"
+                        f"Yearly Savings: RM{savings_data.get('yearly_savings', 0):.2f}\n"
+                        f"Total Savings: RM{savings_data.get('total_savings', 0):.2f} over {savings_data.get('tenure', 0)} years\n"
+                        f"Current Interest Rate: {savings_data.get('current_rate', 0):.2f}%\n"
+                        f"New Interest Rate: {savings_data.get('new_rate', 0):.2f}%\n"
+                        "Frame the message to emphasize how refinancing helps regain financial control and reduce costs. "
+                        "Mention that continuing with the current loan benefits the banks, and exploring refinancing options provides the user with better opportunities. "
+                        "Encourage questions and emphasize that an agent will assist with more details, maintaining a professional and informative tone."
+                    )
+                }
+            ]
 
-        # Use GPT-4 to generate a convincing message
+
         response = openai.ChatCompletion.create(
-            model="gpt-4",  # Using GPT-4 for convincing message
+            model="gpt-3.5-turbo",
             messages=conversation,
             temperature=0.7
         )
@@ -407,14 +304,13 @@ def generate_convincing_message(savings_data: dict, language: str) -> str:
         logging.error(f"Error generating convincing message: {e}")
         return (
             f"You may be overpaying on your home loan. Refinancing at {savings_data.get('new_rate', 0):.2f}% could save you "
-            f"RM{savings_data.get('monthly_savings', 0):,.2f} monthly and RM{savings_data.get('total_savings', 0):,.2f} over {savings_data.get('tenure', 0)} years. "
+            f"RM{savings_data.get('monthly_savings', 0):.2f} monthly and RM{savings_data.get('total_savings', 0):,.2f} over {savings_data.get('tenure', 0)} years. "
             "Our service is completely free, and our agents are here to assist—unless you say 'no,' we'll be in touch to help you explore your savings. Feel free to ask any follow-up questions!"
         )
 
-
 def generate_faq_response_with_gpt(user_input: str) -> str:
     """
-    Uses GPT-3.5 to generate a response for an unmatched FAQ.
+    Uses GPT to generate a response for an unmatched FAQ.
     """
     try:
         conversation = [
@@ -432,7 +328,7 @@ def generate_faq_response_with_gpt(user_input: str) -> str:
         ]
 
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Using GPT-3.5 for FAQ response
+            model="gpt-3.5-turbo",
             messages=conversation,
             temperature=0.7
         )
@@ -443,13 +339,38 @@ def generate_faq_response_with_gpt(user_input: str) -> str:
         logging.error(f"Error generating FAQ response with GPT: {e}")
         return "I'm sorry, I don't have an answer to that. You can ask anything regarding refinancing and housing loans."
 
+# Handler Functions
+def handle_language_selection(user: User, messenger_id: str, user_input: str):
+    language_map = {
+        'LANG_EN': 'en',
+        'LANG_MS': 'ms',
+        'LANG_ZH': 'zh'
+    }
+
+    if user_input in language_map:
+        user.language = language_map[user_input]
+        user.state = STATES['NAME_COLLECTION']
+        db.session.commit()
+
+        question = "Great! What's your name?"
+        message = {
+            "text": question
+        }
+        send_messenger_message(messenger_id, message)
+        logging.debug("Language selected and name collection initiated.")
+    else:
+        message = {
+            "text": "Please select a valid language by clicking one of the options."
+        }
+        send_messenger_message(messenger_id, message)
+        logging.debug("Invalid language selection.")
 
 def handle_name_collection(user: User, messenger_id: str, user_input: str):
     name = user_input.strip()
     if not is_valid_name(name):
-        question = get_message(user.language, "name_invalid")  # Fetching language-specific message
+        question = "Could you kindly share your name again?"
         message = {
-            "text": f"{get_message(user.language, 'please_provide_valid_name')} {question}"
+            "text": f"Please provide a valid name.\n\n_{question}_"
         }
         send_messenger_message(messenger_id, message)
         logging.debug("Invalid name provided.")
@@ -459,9 +380,9 @@ def handle_name_collection(user: User, messenger_id: str, user_input: str):
     user.state = STATES['PHONE_COLLECTION']
     db.session.commit()
 
-    question = get_message(user.language, "phone_number_question")  # Fetching language-specific message
+    question = "May I have your phone number to proceed further?"
     message = {
-        "text": f"{get_message(user.language, 'nice_to_meet_you')} {user.name}! {question}\n\n{get_message(user.language, 'phone_number_example')}"
+        "text": f"Nice to meet you, {user.name}! {question}\n\nExample: 0123456789 (exclude country code)"
     }
     send_messenger_message(messenger_id, message)
     logging.debug("Name collected and phone number collection initiated.")
@@ -470,7 +391,7 @@ def handle_phone_collection(user: User, messenger_id: str, user_input: str):
     phone = re.sub(r"[^\d+]", "", user_input)
     if not is_valid_phone(phone):
         message = {
-            "text": get_message(user.language, "invalid_phone_number")
+            "text": "Please provide a valid Malaysian phone number starting with '01' and containing 10 or 11 digits."
         }
         send_messenger_message(messenger_id, message)
         logging.debug("Invalid phone number provided.")
@@ -482,17 +403,18 @@ def handle_phone_collection(user: User, messenger_id: str, user_input: str):
 
     message = {
         "text": (
-            f"{get_message(user.language, 'do_you_know_balance')} {get_message(user.language, 'check_bank_app_before_proceeding')}"
+            "Do you know your outstanding balance, interest rate, and remaining tenure?\n\n"
+            "If not, we'll use estimations for the calculation. For the most accurate results, please check this information in your bank app before proceeding."
         ),
         "quick_replies": [
             {
                 "content_type": "text",
-                "title": get_message(user.language, "yes"),
+                "title": "Yes",
                 "payload": "KNOW_DETAILS_YES"
             },
             {
                 "content_type": "text",
-                "title": get_message(user.language, "no"),
+                "title": "No",
                 "payload": "KNOW_DETAILS_NO"
             }
         ]
@@ -504,33 +426,36 @@ def handle_path_selection(user: User, messenger_id: str, user_input: str):
     if user_input == "KNOW_DETAILS_YES":
         user.state = STATES['PATH_A_GATHER_BALANCE']
         db.session.commit()
-
-        question = get_message(user.language, "outstanding_loan_amount_question")  # Fetching language-specific message
+        question = (
+            "Could you share your outstanding loan amount?\n\n"
+            "Key in digits, for example: 500k or 500000"
+        )
         message = {"text": question}
         send_messenger_message(messenger_id, message)
         logging.debug("Path A selected: Gather outstanding balance.")
-
     elif user_input == "KNOW_DETAILS_NO":
         user.state = STATES['PATH_B_GATHER_ORIGINAL_AMOUNT']
         db.session.commit()
-
-        question = get_message(user.language, "original_loan_amount_question")  # Fetching language-specific message
+        question = (
+            "Could you let us know the original loan amount?\n\n"
+            "Key in digits, for example: 500k or 500000"
+        )
         message = {"text": question}
         send_messenger_message(messenger_id, message)
         logging.debug("Path B selected: Gather original loan amount.")
-
     else:
         # Invalid input handling
-        message = {"text": get_message(user.language, "invalid_path_selection")}
+        message = {"text": "Please select one of the options provided."}
         send_messenger_message(messenger_id, message)
         logging.debug("Invalid path selection input.")
+
 
 # Path A Handlers
 def handle_path_a_balance(user: User, messenger_id: str, user_input: str):
     try:
         balance = parse_number_with_suffix(user_input)
     except ValueError:
-        question = get_message(user.language, "outstanding_loan_amount_again")  # Fetching language-specific message
+        question = "Could you provide your outstanding loan amount again?"
         message = {"text": f"Sorry, I couldn't parse that.\n\n{question}"}
         send_messenger_message(messenger_id, message)
         logging.debug("Failed to parse outstanding balance.")
@@ -541,19 +466,18 @@ def handle_path_a_balance(user: User, messenger_id: str, user_input: str):
     user.state = STATES['PATH_A_GATHER_INTEREST']
     db.session.commit()
 
-    question = get_message(user.language, "current_interest_rate_question")  # Fetching language-specific message
+    question = "What is your current interest rate (in %)?"
     message = {"text": question}
     send_messenger_message(messenger_id, message)
     logging.debug("Outstanding balance collected and interest rate collection initiated.")
-
 
 def handle_path_a_interest(user: User, messenger_id: str, user_input: str):
     try:
         interest = float(user_input.replace("%", "").strip())
     except ValueError:
-        question = get_message(user.language, "current_interest_rate_question")  # Fetching language-specific message
+        question = "What is your current interest rate (in %)?"
         message = {
-            "text": f"Sorry, I couldn't parse that.\n\n{question}\n\n{get_message(user.language, 'example_interest_rate')}"
+            "text": f"Sorry, I couldn't parse that.\n\n{question}\n\nExample: 4.5 or 4.75"
         }
         send_messenger_message(messenger_id, message)
         logging.debug("Failed to parse interest rate.")
@@ -563,9 +487,9 @@ def handle_path_a_interest(user: User, messenger_id: str, user_input: str):
     user.state = STATES['PATH_A_GATHER_TENURE']
     db.session.commit()
 
-    question = get_message(user.language, "remaining_loan_tenure_question")  # Fetching language-specific message
+    question = "How many years remain on your loan tenure?"
     message = {
-        "text": f"{question}\n\n{get_message(user.language, 'example_years_remaining')}"
+        "text": f"{question}\n\nExample: 20 or 25"
     }
     send_messenger_message(messenger_id, message)
     logging.debug("Interest rate collected and remaining tenure collection initiated.")
@@ -574,9 +498,9 @@ def handle_path_a_tenure(user: User, messenger_id: str, user_input: str):
     try:
         tenure = float(re.sub(r"[^\d\.]", "", user_input))
     except ValueError:
-        question = get_message(user.language, "remaining_tenure_question")  # Fetching language-specific message
+        question = "Could you provide the remaining tenure (in years) again?"
         message = {
-            "text": f"Sorry, I couldn't parse that.\n\n{question}\n\n{get_message(user.language, 'example_years_remaining')}"
+            "text": f"Sorry, I couldn't parse that.\n\n{question}\n\nExample: 10 or 15"
         }
         send_messenger_message(messenger_id, message)
         logging.debug("Failed to parse remaining tenure.")
@@ -601,8 +525,7 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
     tenure = user.remaining_tenure
 
     if balance is None or interest is None or tenure is None:
-        message = get_message(user.language, "missing_data_error")  # Dynamic message fetching
-        send_messenger_message(messenger_id, {"text": message})
+        send_messenger_message(messenger_id, {"text": "I'm missing data. Type 'restart' or re-enter details."})
         logging.error("Missing data for Path A calculation.")
         return
 
@@ -623,21 +546,22 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
 
     db.session.commit()
 
-    # Send calculation summary in the selected language
+    # Send calculation summary
     summary = (
-        f"🏦 {get_message(user.language, 'current_loan')}:\n"
-        f"• {get_message(user.language, 'monthly_payment')}: RM{current_monthly:,.2f}\n"
-        f"• {get_message(user.language, 'interest_rate')}: {interest:.2f}%\n\n"
-        f"💰 {get_message(user.language, 'after_refinancing')}:\n"
-        f"• {get_message(user.language, 'new_monthly_payment')}: RM{new_monthly:,.2f}\n"
-        f"• {get_message(user.language, 'new_interest_rate')}: {new_rate:.2f}%\n\n"
-        f"🎯 {get_message(user.language, 'your_savings')}:\n"
-        f"• {get_message(user.language, 'monthly_savings')}: RM{monthly_savings:,.2f}\n"
-        f"• {get_message(user.language, 'yearly_savings')}: RM{yearly_savings:,.2f}\n"
-        f"• {get_message(user.language, 'total_savings')}: RM{total_savings:,.2f} {get_message(user.language, 'over_years')} {int(tenure)} {get_message(user.language, 'years')}\n\n"
-        f"{get_message(user.language, 'finzo_ai_message')}"
+        f"🏦 Current Loan:\n"
+        f"• Monthly Payment: RM{current_monthly:,.2f}\n"
+        f"• Interest Rate: {interest:.2f}%\n\n"
+        f"💰 After Refinancing:\n"
+        f"• New Monthly Payment: RM{new_monthly:,.2f}\n"
+        f"• New Interest Rate: {new_rate:.2f}%\n\n"
+        f"🎯 Your Savings:\n"
+        f"• Monthly: RM{monthly_savings:,.2f}\n"
+        f"• Yearly: RM{yearly_savings:,.2f}\n"
+        f"• Total: RM{total_savings:,.2f} over {int(tenure)} years\n\n"
+        f"Finzo AI is analyzing your refinance details to determine if it’s beneficial. Please hold on for a moment."
     )
 
+    # **Correction:** Remove the nested "message" key
     send_messenger_message(messenger_id, {"text": summary})
     logging.debug("Path A calculation summary sent.")
 
@@ -651,7 +575,7 @@ def handle_path_b_original_amount(user: User, messenger_id: str, user_input: str
         amt = parse_number_with_suffix(user_input)
     except ValueError:
         message = {
-            "text": get_message(user.language, "original_loan_amount_error")  # Dynamic message fetching
+            "text": "Could you please provide the original loan amount again?"
         }
         send_messenger_message(messenger_id, message)
         logging.debug("Failed to parse original loan amount.")
@@ -662,7 +586,7 @@ def handle_path_b_original_amount(user: User, messenger_id: str, user_input: str
     db.session.commit()
 
     message = {
-        "text": get_message(user.language, "original_loan_tenure_prompt")  # Dynamic message fetching
+        "text": "May I know the original loan tenure in years?"
     }
     send_messenger_message(messenger_id, message)
     logging.debug("Original loan amount collected and original tenure collection initiated.")
@@ -672,7 +596,7 @@ def handle_path_b_original_tenure(user: User, messenger_id: str, user_input: str
         tenure = parse_number_with_suffix(user_input)
     except ValueError:
         message = {
-            "text": get_message(user.language, "original_tenure_error")  # Dynamic message fetching
+            "text": "Could you please provide the original tenure in years again?"
         }
         send_messenger_message(messenger_id, message)
         logging.debug("Failed to parse original loan tenure.")
@@ -683,7 +607,7 @@ def handle_path_b_original_tenure(user: User, messenger_id: str, user_input: str
     db.session.commit()
 
     message = {
-        "text": get_message(user.language, "current_monthly_payment_prompt")  # Dynamic message fetching
+        "text": "What is your current monthly payment/installment?"
     }
     send_messenger_message(messenger_id, message)
     logging.debug("Original loan tenure collected and monthly payment collection initiated.")
@@ -693,7 +617,7 @@ def handle_path_b_monthly_payment(user: User, messenger_id: str, user_input: str
         monthly = parse_number_with_suffix(user_input)
     except ValueError:
         message = {
-            "text": get_message(user.language, "monthly_payment_error")  # Dynamic message fetching
+            "text": "Could you please provide the current monthly payment again?"
         }
         send_messenger_message(messenger_id, message)
         logging.debug("Failed to parse current monthly payment.")
@@ -704,7 +628,7 @@ def handle_path_b_monthly_payment(user: User, messenger_id: str, user_input: str
     db.session.commit()
 
     message = {
-        "text": get_message(user.language, "years_paid_prompt")  # Dynamic message fetching
+        "text": "How many years have you paid so far?"
     }
     send_messenger_message(messenger_id, message)
     logging.debug("Current monthly payment collected and years paid collection initiated.")
@@ -714,7 +638,7 @@ def handle_path_b_years_paid(user: User, messenger_id: str, user_input: str):
         yrs = parse_number_with_suffix(user_input)
     except ValueError:
         message = {
-            "text": get_message(user.language, "years_paid_error")  # Fetch dynamic message
+            "text": "Could you please let us know how many years you have paid so far?"
         }
         send_messenger_message(messenger_id, message)
         logging.debug("Failed to parse years paid.")
@@ -740,10 +664,7 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
 
     # Validate inputs
     if any(v is None for v in [orig_amt, orig_tenure, monthly_payment, yrs_paid]):
-        message = {
-            "text": get_message(user.language, "missing_data_error")  # Fetch dynamic message
-        }
-        send_messenger_message(messenger_id, message)
+        send_messenger_message(messenger_id, {"text": "Some data is missing. Please type 'restart' or re-enter the required details."})
         logging.error("Missing data for Path B calculation.")
         return
 
@@ -790,6 +711,7 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
         f"• Yearly: RM{yearly_savings:,.2f}\n"
         f"• Total: RM{total_savings:,.2f} over {int(remain_tenure)} years\n\n"
         f"Finzo AI is analyzing your refinance details to determine if it’s beneficial. Please hold on for a moment."
+
     )
 
     # **Correction:** Remove the nested "message" key
@@ -820,20 +742,31 @@ def handle_convince(user: User, messenger_id: str, user_input: str = ""):
 
     # Generate the convincing message
     convincing_msg = generate_convincing_message(savings_data)
-
-    # Send the convincing message
+    
+    # **Correction:** Remove the nested "message" key
     send_messenger_message(messenger_id, {"text": convincing_msg})
     logging.debug("Convincing message sent.")
 
-    # Prepare the Cash-Out Prompt with quick replies (use dynamic language)
-    cashout_message = get_message(user.language, "cashout_prompt")  # Fetch dynamic message
+    # Prepare the Cash-Out Prompt with quick replies
+    cashout_message = (
+        "Are you interested in exploring cash-out refinancing options?\n\n"
+        "Cash-out refinancing allows you to access extra funds by tapping into your home equity. "
+        "It’s a flexible way to finance important expenses while consolidating your existing mortgage.\n\n"
+        "You can use the additional funds for purposes such as:\n"
+        "• Home renovations or upgrades\n"
+        "• Education and tuition fees\n"
+        "• Investment opportunities\n"
+        "• Consolidating debts for better financial management\n\n"
+        "Note: According to Bank Negara Malaysia (BNM) guidelines, cash-out refinancing is limited "
+        "to a maximum repayment period of 10 years or up to 70 years of age, whichever comes first."
+    )
 
     quick_replies = [
-        {"content_type": "text", "title": get_message(user.language, "yes_more"), "payload": "CASHOUT_YES"},
-        {"content_type": "text", "title": get_message(user.language, "no_thanks"), "payload": "CASHOUT_NO"}
+        {"content_type": "text", "title": "Yes, tell me more", "payload": "CASHOUT_YES"},
+        {"content_type": "text", "title": "No, thanks", "payload": "CASHOUT_NO"}
     ]
 
-    # Send the cash-out prompt with quick replies
+    # **Correction:** Remove the nested "message" key
     send_messenger_message(messenger_id, {"text": cashout_message, "quick_replies": quick_replies})
     logging.debug("Cash-out prompt sent.")
 
@@ -851,16 +784,16 @@ def handle_cashout_offer(user: User, messenger_id: str, user_input: str):
     if user_input is None:
         # Send cash-out offer prompt
         message = {
-            "text": get_message(user.language, "cashout_offer_prompt"),
+            "text": "Would you like to proceed with a cash-out refinance offer?",
             "quick_replies": [
                 {
                     "content_type": "text",
-                    "title": get_message(user.language, "yes_more"),
+                    "title": "Yes, tell me more",
                     "payload": "CASHOUT_YES"
                 },
                 {
                     "content_type": "text",
-                    "title": get_message(user.language, "no_thanks"),
+                    "title": "No, thanks",
                     "payload": "CASHOUT_NO"
                 }
             ]
@@ -874,7 +807,10 @@ def handle_cashout_offer(user: User, messenger_id: str, user_input: str):
         # Transition to gather cash-out amount
         user.state = STATES['CASHOUT_GATHER_AMOUNT']
         db.session.commit()
-        question = get_message(user.language, "cashout_amount_question")
+        question = (
+            "Great! How much equity would you like to cash out from your property in Ringgit?\n\n "
+        "For example, RM50,000 or 50k."
+        )
         send_messenger_message(messenger_id, {"text": question})
         logging.debug("User accepted cash-out offer. Cash-out amount collection initiated.")
     elif user_input == "CASHOUT_NO":
@@ -885,36 +821,44 @@ def handle_cashout_offer(user: User, messenger_id: str, user_input: str):
 
         # Notify admin about declined cash-out offer
         admin_summary = (
-            f"📊 {get_message(user.language, 'user_declined_cashout')}\n"
-            f"Customer: {user.name or get_message(user.language, 'no_name')}\n"
-            f"Contact: {user.phone_number or get_message(user.language, 'no_phone')}\n\n"
-            f"📊 {get_message(user.language, 'loan_details')}:\n"
-            f"• {get_message(user.language, 'outstanding_balance')}: RM{user.outstanding_balance or 0:,.2f}\n"
-            f"• {get_message(user.language, 'interest_rate')}: {user.current_interest_rate or 0:.2f}%\n"
-            f"• {get_message(user.language, 'remaining_tenure')}: {user.remaining_tenure or 0:.1f} years\n\n"
-            f"{get_message(user.language, 'after_refinancing')}:\n"
-            f"• {get_message(user.language, 'new_interest_rate')}: {user.new_rate or 0:.2f}%\n"
-            f"• {get_message(user.language, 'monthly_savings')}: RM{user.monthly_savings or 0:.2f}\n"
-            f"• {get_message(user.language, 'yearly_savings')}: RM{user.yearly_savings or 0:.2f}\n"
-            f"• {get_message(user.language, 'total_savings')}: RM{user.total_savings or 0:.2f}\n"
-            f"• {get_message(user.language, 'tenure')}: {user.tenure or 0:.1f} years\n\n"
-            f"📊 {get_message(user.language, 'cash_out_calculation')}:\n"
-            f"• {get_message(user.language, 'main_loan')}: RM{user.outstanding_balance or 0:,.2f} @ {user.new_rate or 0:.2f}% for {int(user.remaining_tenure or 0)} yrs => RM{calculate_monthly_payment(user.outstanding_balance or 0, user.new_rate or 0, user.remaining_tenure or 0):,.2f}/month\n"
-            f"• {get_message(user.language, 'cash_out')}: RM{user.temp_cashout_amount or 0:,.2f} @ {user.new_rate or 0:.2f}% for 10 yrs => RM{calculate_monthly_payment(user.temp_cashout_amount or 0, user.new_rate or 0, 10):,.2f}/month\n\n"
-            f"💳 {get_message(user.language, 'total_monthly_payment')}: RM{(calculate_monthly_payment(user.outstanding_balance or 0, user.new_rate or 0, user.remaining_tenure or 0) + calculate_monthly_payment(user.temp_cashout_amount or 0, user.new_rate or 0, 10)) or 0:,.2f}\n\n"
-            f"Status: {'Accepted Cash-Out Offer' if (user.temp_cashout_amount or 0) > 0 else get_message(user.language, 'declined_cash_out_offer')}"
+            f"📊 User Declined Cash-Out Offer\n"
+            f"Customer: {user.name or 'N/A'}\n"
+            f"Contact: {user.phone_number or 'N/A'}\n\n"
+            f"📊 Loan Details:\n"
+            f"• Outstanding Balance: RM{user.outstanding_balance or 0:,.2f}\n"
+            f"• Interest Rate: {user.current_interest_rate or 0:.2f}%\n"
+            f"• Remaining Tenure: {user.remaining_tenure or 0:.1f} years\n\n"
+            f"After Refinancing:\n"
+            f"• New Interest Rate: {user.new_rate or 0:.2f}%\n"
+            f"• Monthly Savings: RM{user.monthly_savings or 0:.2f}\n"
+            f"• Yearly Savings: RM{user.yearly_savings or 0:.2f}\n"
+            f"• Total Savings: RM{user.total_savings or 0:.2f}\n"
+            f"• Tenure: {user.tenure or 0:.1f} years\n\n"
+            f"📊 Cash-Out Calculation:\n"
+            f"• Main Loan: RM{user.outstanding_balance or 0:,.2f} @ {user.new_rate or 0:.2f}% for {int(user.remaining_tenure or 0)} yrs => RM{calculate_monthly_payment(user.outstanding_balance or 0, user.new_rate or 0, user.remaining_tenure or 0):,.2f}/month\n"
+            f"• Cash-Out: RM{user.temp_cashout_amount or 0:,.2f} @ {user.new_rate or 0:.2f}% for 10 yrs => RM{calculate_monthly_payment(user.temp_cashout_amount or 0, user.new_rate or 0, 10):,.2f}/month\n\n"
+            f"💳 Total Monthly Payment: RM{(calculate_monthly_payment(user.outstanding_balance or 0, user.new_rate or 0, user.remaining_tenure or 0) + calculate_monthly_payment(user.temp_cashout_amount or 0, user.new_rate or 0, 10)) or 0:,.2f}\n\n"
+            f"Status: {'Accepted Cash-Out Offer' if (user.temp_cashout_amount or 0) > 0 else 'Declined Cash-Out Offer'}"
         )
-        notify_admin(user, get_message(user.language, "user_declined_cashout"), admin_summary)
+        notify_admin(user, "User Declined Cash-Out Offer", admin_summary)
         logging.debug("User declined cash-out offer and admin notified.")
 
         # FAQ Prompt
-        faq_prompt = get_message(user.language, "faq_prompt")
+        faq_prompt = (
+            "You are now talking to Finzo AI. You can ask anything regarding refinancing and housing loans.\n\n"
+            "Common questions you might have:\n"
+            "• What documents do I need for refinancing?\n"
+            "• How long does the refinancing process take?\n"
+            "• Are there any fees involved?\n"
+            "• What factors affect my loan approval?"
+        )
         send_messenger_message(messenger_id, {"text": faq_prompt})
         logging.debug("FAQ prompt sent after declining cash-out offer.")
     else:
         # Handle unexpected inputs
-        send_messenger_message(messenger_id, {"text": get_message(user.language, "unexpected_input")})
+        send_messenger_message(messenger_id, {"text": "Please select 'Yes, tell me more' or 'No, thanks'."})
         logging.debug("Unexpected input received for cash-out offer.")
+
 def handle_cashout_gather_amount(user: User, messenger_id: str, user_input: str):
     logging.debug("Entering handle_cashout_gather_amount function.")
 
@@ -932,7 +876,7 @@ def handle_cashout_gather_amount(user: User, messenger_id: str, user_input: str)
         logging.error(f"Error gathering cash-out amount: {e}")
         send_messenger_message(
             messenger_id,
-            {"text": get_message(user.language, "cashout_error_message")}
+            {"text": "I'm sorry, I couldn't process that amount. Please enter a valid cash-out amount in Ringgit (e.g., RM50,000 or 50k)."}
         )
         logging.debug("Error occurred while gathering cash-out amount. Informed user.")
 
@@ -958,13 +902,13 @@ def handle_cashout_calculate(user: User, messenger_id: str, user_input: str = No
 
     new_total_monthly = monthly1 + monthly2
 
-    # --- Message for USER --- (using dynamic language support)
+    # --- Message for USER ---
     user_summary = (
-        f"📊 {get_message(user.language, 'cashout_calculation')}:\n"
-        f"• {get_message(user.language, 'main_loan')}: RM{outstanding_balance:,.2f} @ {main_rate:.2f}% for {segment1_tenure} yrs => RM{monthly1:,.2f}/month\n"
-        f"• {get_message(user.language, 'cash_out')}: RM{cashout_amount:,.2f} @ {main_rate:.2f}% for 10 yrs => RM{monthly2:,.2f}/month\n\n"
-        f"💳 {get_message(user.language, 'total_monthly_payment')}: RM{new_total_monthly:,.2f}\n\n"
-        f"{get_message(user.language, 'note')} {get_message(user.language, 'estimated_repayment')}"
+        f"📊 Cash-Out Calculation:\n"
+        f"• Main Loan: RM{outstanding_balance:,.2f} @ {main_rate:.2f}% for {segment1_tenure} yrs => RM{monthly1:,.2f}/month\n"
+        f"• Cash-Out: RM{cashout_amount:,.2f} @ {main_rate:.2f}% for 10 yrs => RM{monthly2:,.2f}/month\n\n"
+        f"💳 Total Monthly Payment: RM{new_total_monthly:,.2f}\n\n"
+        f"Note: This is your updated estimated monthly repayment amount if the refinance and cash-out are approved and accepted."
     )
     # **Correction:** Remove the nested "message" key
     send_messenger_message(messenger_id, {"text": user_summary})
@@ -975,32 +919,38 @@ def handle_cashout_calculate(user: User, messenger_id: str, user_input: str = No
     db.session.commit()
 
     # FAQ Prompt
-    faq_prompt = get_message(user.language, "faq_prompt_after_calculation")
+    faq_prompt = (
+        "The calculation of your savings summary is now completed!\n\n"
+        "An agent will be assigned to assist you with the refinancing process at no additional cost. Should you prefer not to proceed, you may inform our agents at any time.\n\n"
+        "We are now in the *Inquiry Phase*, where you can interact with Finzo AI to ask any questions about refinancing or housing loans.\n\n"
+        "Finzo AI will do our best to provide helpful answers. However, please note that while we strive for accuracy, some answers may not be 100% precise.\n\n"
+        "For urgent matters, you can also contact our admin at https://wa.me/60126181683."
+    )
     send_messenger_message(messenger_id, {"text": faq_prompt})
     logging.debug("FAQ prompt sent after cash-out calculation.")
 
     # Send admin notification
     admin_summary = (
-        f"📊 {get_message(user.language, 'loan_and_cashout_details')}:\n"
-        f"• {get_message(user.language, 'customer')}: {user.name}\n"
-        f"• {get_message(user.language, 'contact')}: {user.phone_number}\n\n"
-        f"{get_message(user.language, 'current_loan')}:\n"
-        f"• {get_message(user.language, 'outstanding_balance')}: RM{user.outstanding_balance:,.2f}\n"
-        f"• {get_message(user.language, 'interest_rate')}: {user.current_interest_rate:.2f}%\n"
-        f"• {get_message(user.language, 'remaining_tenure')}: {user.remaining_tenure:.1f} years\n\n"
-        f"{get_message(user.language, 'after_refinancing')}:\n"
-        f"• {get_message(user.language, 'new_interest_rate')}: {user.new_rate:.2f}%\n"
-        f"• {get_message(user.language, 'monthly_savings')}: RM{user.monthly_savings:.2f}\n"
-        f"• {get_message(user.language, 'yearly_savings')}: RM{user.yearly_savings:.2f}\n"
-        f"• {get_message(user.language, 'total_savings')}: RM{user.total_savings:.2f}\n"
-        f"• {get_message(user.language, 'tenure')}: {user.tenure:.1f} years\n\n"
-        f"📊 {get_message(user.language, 'cash_out_calculation')}:\n"
-        f"• {get_message(user.language, 'main_loan')}: RM{outstanding_balance:,.2f} @ {main_rate:.2f}% for {segment1_tenure} yrs => RM{monthly1:,.2f}/month\n"
-        f"• {get_message(user.language, 'cash_out')}: RM{cashout_amount:,.2f} @ {main_rate:.2f}% for 10 yrs => RM{monthly2:,.2f}/month\n\n"
-        f"💳 {get_message(user.language, 'total_monthly_payment')}: RM{new_total_monthly:,.2f}\n\n"
-        f"Status: {'Accepted Cash-Out Offer' if cashout_amount > 0 else get_message(user.language, 'declined_cash_out_offer')}"
+        f"📊 Loan and Cash-Out Details:\n"
+        f"• Customer: {user.name}\n"
+        f"• Contact: {user.phone_number}\n\n"
+        f"Current Loan:\n"
+        f"• Outstanding Balance: RM{user.outstanding_balance:,.2f}\n"
+        f"• Interest Rate: {user.current_interest_rate:.2f}%\n"
+        f"• Remaining Tenure: {user.remaining_tenure:.1f} years\n\n"
+        f"After Refinancing:\n"
+        f"• New Interest Rate: {user.new_rate:.2f}%\n"
+        f"• Monthly Savings: RM{user.monthly_savings:.2f}\n"
+        f"• Yearly Savings: RM{user.yearly_savings:.2f}\n"
+        f"• Total Savings: RM{user.total_savings:.2f}\n"
+        f"• Tenure: {user.tenure:.1f} years\n\n"
+        f"📊 Cash-Out Calculation:\n"
+        f"• Main Loan: RM{outstanding_balance:,.2f} @ {main_rate:.2f}% for {segment1_tenure} yrs => RM{monthly1:,.2f}/month\n"
+        f"• Cash-Out: RM{cashout_amount:,.2f} @ {main_rate:.2f}% for 10 yrs => RM{monthly2:,.2f}/month\n\n"
+        f"💳 Total Monthly Payment: RM{new_total_monthly:,.2f}\n\n"
+        f"Status: {'Accepted Cash-Out Offer' if cashout_amount > 0 else 'Declined Cash-Out Offer'}"
     )
-    notify_admin(user, get_message(user.language, "user_completed_cashout"), admin_summary)
+    notify_admin(user, "User Completed Cash-Out Refinance Calculation", admin_summary)
     logging.debug("Admin notified about completed cash-out refinance calculation.")
 
 def handle_waiting_input(user: User, messenger_id: str, user_input: str):
@@ -1009,14 +959,14 @@ def handle_waiting_input(user: User, messenger_id: str, user_input: str):
     """
     logging.debug("Entering handle_waiting_input function.")
 
-    # Prepare context with safe formatting and dynamic language support
+    # Prepare context with safe formatting
     context = (
-        f"{get_message(user.language, 'previous_summary')}:\n"
-        f"{get_message(user.language, 'monthly_savings')}: RM{user.monthly_savings or 0:,.2f}\n"
-        f"{get_message(user.language, 'yearly_savings')}: RM{user.yearly_savings or 0:,.2f}\n"
-        f"{get_message(user.language, 'total_savings')}: RM{user.total_savings or 0:,.2f}\n"
-        f"{get_message(user.language, 'interest_rate')}: {user.current_interest_rate or 0:.2f}% -> {user.new_rate or 0:.2f}%\n"
-        f"{get_message(user.language, 'remaining_tenure')}: {user.remaining_tenure or user.tenure or 0} {get_message(user.language, 'years')}\n"
+        f"Previous Summary:\n"
+        f"Monthly Savings: RM{user.monthly_savings or 0:,.2f}\n"
+        f"Yearly Savings: RM{user.yearly_savings or 0:,.2f}\n"
+        f"Total Savings: RM{user.total_savings or 0:,.2f}\n"
+        f"Interest Rate: {user.current_interest_rate or 0:.2f}% -> {user.new_rate or 0:.2f}%\n"
+        f"Remaining Tenure: {user.remaining_tenure or user.tenure or 0} years\n"
     )
 
     try:
@@ -1024,7 +974,10 @@ def handle_waiting_input(user: User, messenger_id: str, user_input: str):
             {
                 "role": "system",
                 "content": (
-                    f"{get_message(user.language, 'system_message')}\n{context}"
+                    "You are Finzo AI Buddy, an expert in refinancing and loan advisory. "
+                    "Answer user questions based on their previous calculations. "
+                    "Use the following context to guide responses:\n"
+                    f"{context}"
                 )
             },
             {
@@ -1040,6 +993,7 @@ def handle_waiting_input(user: User, messenger_id: str, user_input: str):
         )
 
         reply = response.choices[0].message.content.strip()
+        # **Correction:** Remove the nested "message" key
         send_messenger_message(messenger_id, {"text": reply})
         logging.debug("User question processed and response sent.")
 
@@ -1047,7 +1001,7 @@ def handle_waiting_input(user: User, messenger_id: str, user_input: str):
         logging.error(f"Error processing user question: {e}")
         send_messenger_message(
             messenger_id,
-            {"text": get_message(user.language, 'error_message')}
+            {"text": "I'm sorry, I couldn't process your request. An agent will follow up shortly to assist you."}
         )
         logging.debug("Error occurred while processing user question. Informed user.")
 
@@ -1058,38 +1012,57 @@ def handle_waiting_input(user: User, messenger_id: str, user_input: str):
 
 def handle_faq(user: User, messenger_id: str, user_input: str):
     """
-    Handles FAQ queries and admin contact requests with GPT-4 for admin messages and GPT-3.5 for FAQs.
+    Handles FAQ queries with enhanced admin contact detection and dynamic responses.
     """
     logging.debug("Entering handle_faq function.")
 
-    # Check if user is requesting admin contact
+    # Debug logs for database values
+    logging.debug(f"Monthly Savings: {user.monthly_savings}")
+    logging.debug(f"Yearly Savings: {user.yearly_savings}")
+    logging.debug(f"Total Savings: {user.total_savings}")
+    logging.debug(f"Interest Rate: {user.current_interest_rate}")
+    logging.debug(f"New Rate: {user.new_rate}")
+    logging.debug(f"Remaining Tenure: {user.remaining_tenure}")
+
+    # Enhanced admin contact detection keywords and patterns
     admin_keywords = [
         'admin', 'agent', 'contact', 'human', 'person', 'representative',
         'staff', 'support', 'help desk', 'helpdesk', 'customer service',
         'speak to someone', 'talk to someone', 'real person', 'live chat'
     ]
 
-    if any(keyword in user_input.lower() for keyword in admin_keywords):
+    # Improved admin contact detection with pattern matching
+    user_input_lower = user_input.lower()
+    if any(keyword in user_input_lower for keyword in admin_keywords) or \
+       any(phrase in user_input_lower for phrase in [
+           'can i speak to', 'want to speak', 'need to speak',
+           'can i talk to', 'want to talk', 'need to talk',
+           'connect me', 'transfer me', 'get in touch'
+       ]):
         admin_response = {
-            "text": get_message(user.language, "admin_contact_message")
+            "text": (
+                "You can reach our customer service team directly through WhatsApp:\n\n"
+                "🔗 Click here to chat with an admin: https://wa.me/60126181683\n\n"
+                "Our team typically responds within 30 minutes during business hours "
+                "(Mon-Fri, 9am-6pm MYT)."
+            )
         }
         send_messenger_message(messenger_id, admin_response)
+        
+        # Update user state and notify admin
+        user.last_admin_request = datetime.utcnow()  # Add this field to User model
+        notify_admin(user, "User requested admin contact")
         logging.debug("User requested admin contact - WhatsApp link sent.")
         return
 
-    # If it's not admin request, proceed with FAQ handling via GPT-3.5
-    faq_response = generate_faq_response_with_gpt(user_input)
-    send_messenger_message(messenger_id, {"text": faq_response})
-    logging.debug("FAQ response sent to user.")
-
     # Load context with enhanced formatting
     context = (
-        f"{get_message(user.language, 'previous_summary')}:\n"
-        f"{get_message(user.language, 'monthly_savings')}: RM{user.monthly_savings or 0:,.2f}\n"
-        f"{get_message(user.language, 'yearly_savings')}: RM{user.yearly_savings or 0:,.2f}\n"
-        f"{get_message(user.language, 'total_savings')}: RM{user.total_savings or 0:,.2f}\n"
-        f"{get_message(user.language, 'interest_rate')}: {user.current_interest_rate or 0:.2f}% -> {user.new_rate or 0:.2f}%\n"
-        f"{get_message(user.language, 'remaining_tenure')}: {user.remaining_tenure or user.tenure or 0} {get_message(user.language, 'years')}\n"
+        f"Previous Summary:\n"
+        f"Monthly Savings: RM{user.monthly_savings or 0:,.2f}\n"
+        f"Yearly Savings: RM{user.yearly_savings or 0:,.2f}\n"
+        f"Total Savings: RM{user.total_savings or 0:,.2f}\n"
+        f"Interest Rate: {user.current_interest_rate or 0:.2f}% -> {user.new_rate or 0:.2f}%\n"
+        f"Remaining Tenure: {user.remaining_tenure or user.tenure or 0} years\n"
     )
 
     try:
@@ -1097,7 +1070,11 @@ def handle_faq(user: User, messenger_id: str, user_input: str):
             {
                 "role": "system",
                 "content": (
-                    f"{get_message(user.language, 'system_message1')}\n{context}"
+                    "You are Finzo AI Buddy, an expert in refinancing and loan advisory. "
+                    "If users request to speak with a human, admin, or agent, always provide "
+                    "the WhatsApp contact link: https://wa.me/60126181683. "
+                    "For other questions, answer based on their previous calculations. "
+                    "Context:\n" + context
                 )
             },
             {
@@ -1120,7 +1097,10 @@ def handle_faq(user: User, messenger_id: str, user_input: str):
     except Exception as e:
         logging.error(f"Error handling FAQ: {e}")
         error_message = {
-            "text": get_message(user.language, "error_message")
+            "text": (
+                "I apologize for the technical difficulty. Please contact our admin "
+                "directly at https://wa.me/60126181683 for immediate assistance."
+            )
         }
         send_messenger_message(messenger_id, error_message)
         logging.debug("Error occurred while handling FAQ. Directed user to admin.")
@@ -1130,7 +1110,7 @@ def handle_faq(user: User, messenger_id: str, user_input: str):
     db.session.commit()
 
     # Notify admin
-    notify_admin(user, f"{get_message(user.language, 'faq_query_received')}: {user_input}")
+    notify_admin(user, f"FAQ query received: {user_input}")
     logging.debug("Admin notified about FAQ query.")
 
 # Admin Notification Function
@@ -1146,19 +1126,19 @@ def notify_admin(user: User, event_name: str, summary: str = None):
     if summary:
         # If a summary is provided, include it in the admin notification
         comparison = (
-            f"📊 {get_message(user.language, 'event_name')}: {event_name}\n"
-            f"{get_message(user.language, 'customer')}: {user.name or 'N/A'}\n"
-            f"{get_message(user.language, 'contact')}: {user.phone_number or 'N/A'}\n\n"
+            f"📊 {event_name}\n"
+            f"Customer: {user.name or 'N/A'}\n"
+            f"Contact: {user.phone_number or 'N/A'}\n\n"
             f"{summary}"
         )
     else:
         # Basic notification without summary
         comparison = (
-            f"📊 {get_message(user.language, 'event_name')}: {event_name}\n"
-            f"{get_message(user.language, 'customer')}: {user.name}\n"
-            f"{get_message(user.language, 'contact')}: {user.phone_number}\n"
-            f"{get_message(user.language, 'state')}: {user.state}\n"
-            f"{get_message(user.language, 'no_loan_calculation')}"
+            f"📊 {event_name}\n"
+            f"Customer: {user.name}\n"
+            f"Contact: {user.phone_number}\n"
+            f"State: {user.state}\n"
+            "No loan calculation details available yet."
         )
 
     send_messenger_message(admin_id, {"text": comparison})
@@ -1170,7 +1150,7 @@ def handle_unhandled_state(user: User, messenger_id: str, user_input: str):
     Handles any unhandled states gracefully.
     """
     message = {
-        "text": get_message(user.language, 'unhandled_state_message')
+        "text": "I'm not sure how to handle that. Type 'restart' to start over."
     }
     send_messenger_message(messenger_id, message)
     logging.debug("Unhandled state encountered. Prompted user to restart.")
@@ -1179,51 +1159,56 @@ def handle_unhandled_state(user: User, messenger_id: str, user_input: str):
     user.state = STATES['END']
     db.session.commit()
 
-def get_message(language, message_key):
-    """
-    Fetches the appropriate message based on the language and message key.
-    """
-    try:
-        with open(f'backend/routes/languages/{language}.json', 'r', encoding='utf-8') as f:
-            lang_data = json.load(f)
-            
-        return lang_data.get(message_key, "Message not found.")
-    except FileNotFoundError:
-        logging.error(f"Language file for {language} not found. Defaulting to English.")
-        with open('backend/routes/languages/en.json', 'r', encoding='utf-8') as f:
-            lang_data = json.load(f)
-        return lang_data.get(message_key, "Message not found.")
-    except json.JSONDecodeError:
-        logging.error(f"Error decoding JSON for {language} language file.")
-        return "Error fetching message."
+# Messaging Functions
+def send_initial_message(messenger_id):
+    message = {
+        "text": (
+            "👋 Welcome to *Finzo AI Assistant*!\n\n"
+            "• I’m here to help you explore refinancing options.\n"
+            "• We’ll work together to optimize your housing loans.\n"
+            "• My goal is to help you identify potential savings* and *improve financial efficiency*.\n\n"
+            "Are you ready to get started?"
+        ),
+        "quick_replies": [
+            {
+                "content_type": "text",
+                "title": "Yes, let's start!",
+                "payload": "GET_STARTED_YES"
+            },
+            {
+                "content_type": "text",
+                "title": "Contact Admin",
+                "payload": "CONTACT_ADMIN"
+            }
+        ]
+    }
+    send_messenger_message(messenger_id, message)
+    logging.debug("Initial welcome message sent with default language set to English.")
 
 
-def send_messenger_message(recipient_id, message, user_language='en'):
+
+def send_messenger_message(recipient_id, message):
     """
-    Sends a message to the user via Facebook Messenger API with language support.
+    Sends a message to the user via Facebook Messenger API.
 
     Parameters:
     - recipient_id (str): The Facebook ID of the recipient.
     - message (dict): The message payload containing 'text' and optionally 'quick_replies'.
-    - user_language (str): The language of the user to fetch language-specific strings.
     """
     try:
         logging.debug(f"Recipient ID: {recipient_id}")
         url = f"https://graph.facebook.com/v16.0/me/messages?access_token={os.getenv('PAGE_ACCESS_TOKEN')}"
         headers = {"Content-Type": "application/json"}
 
-        # Handle dynamic message translation
+        # Validate message format
         if isinstance(message, str):
             # Simple text message
-            message = get_message(user_language, message)  # Translate text message
             data = {
                 "recipient": {"id": recipient_id},
                 "message": {"text": message}
             }
         elif isinstance(message, dict):
-            # Process quick replies or other message components
-            if 'text' in message:
-                message['text'] = get_message(user_language, message['text'])  # Translate text in the message
+            # Message with quick replies or attachments
             data = {
                 "recipient": {"id": recipient_id},
                 "message": message
@@ -1245,7 +1230,10 @@ def send_messenger_message(recipient_id, message, user_language='en'):
         logging.error(f"Message formatting error: {ve}")
 
 STATE_HANDLERS = {
-    STATES['LANGUAGE_SELECTION']: handle_language_selection,  # New handler for language selection
+    STATES['GET_STARTED_YES']: handle_get_started_yes,  # New handler for getting started
+    STATES['CONTACT_ADMIN']: handle_contact_admin,      # New handler for contacting admin
+
+    # Name and Phone Collection
     STATES['NAME_COLLECTION']: handle_name_collection,
     STATES['PHONE_COLLECTION']: handle_phone_collection,
     STATES['PATH_SELECTION']: handle_path_selection,
@@ -1310,13 +1298,13 @@ def process_message():
             # Check if user exists in the database
             user = User.query.filter_by(messenger_id=sender_id).first()
             if not user:
-                # Create new user with default state (language selection)
+                # Create new user with default state
                 user = User(
                     messenger_id=sender_id,
                     name="Unknown",
                     phone_number="Unknown",
                     language='en',  # Default to English
-                    state=STATES['LANGUAGE_SELECTION']  # Start with language selection
+                    state=STATES['GET_STARTED_YES']  # Start with name collection
                 )
                 db.session.add(user)
                 db.session.commit()
@@ -1341,13 +1329,22 @@ def process_message():
                 logging.debug("User initiated restart. State reset and initial message sent.")
                 continue  # Move to the next event
 
+            # Handle other specific payloads like "CONTACT_ADMIN" or "GET_STARTED_YES"
+            if user_input == "CONTACT_ADMIN":
+                handle_contact_admin(user, sender_id, user_input)
+                continue
+
+            if user_input == "GET_STARTED_YES":
+                handle_get_started_yes(user, sender_id, user_input)
+                continue
+
             # Main Logic Flow
             if not user.state:
-                user.state = STATES['LANGUAGE_SELECTION']  # Language selection is the first state
+                user.state = STATES['GET_STARTED_YES']
                 db.session.commit()
-                logging.debug("User state was None. Set to LANGUAGE_SELECTION.")
+                logging.debug("User state was None. Set to GET_STARTED_YES.")
             
-            # Call the appropriate state handler based on the user's current state
+            # Call the appropriate state handler
             state_handler = STATE_HANDLERS.get(user.state, handle_unhandled_state)
             state_handler(user, sender_id, user_input)
 
@@ -1360,6 +1357,7 @@ def process_message():
     except Exception as e:
         logging.error(f"Error in process_message: {e}")
         return jsonify({"status": "error", "message": "Internal server error"}), 500
+    
 def check_user_idle(user):
     # Assume user.last_interaction is a datetime field in the User model
     if user.last_interaction:
@@ -1369,37 +1367,24 @@ def check_user_idle(user):
             return True
     return False
 
-def send_welcome_back_message(messenger_id, user_language):
-    """
-    Sends a welcome back message in the user's preferred language.
-    """
-    messages = {
-        'en': "Hi, welcome back! 👋\n\nIf you need to calculate again, please type 'restart'.",
-        'ms': "Hai, selamat datang kembali! 👋\n\nJika anda perlu kira semula, sila taip 'restart'.",
-        'zh': "你好，欢迎回来！👋\n\n如果你需要重新计算，请输入'restart'。"
-    }
-
-    # Default to English if the language is not found
-    message_text = messages.get(user_language, messages['en'])
-
+def send_welcome_back_message(messenger_id):
     message = {
-        "text": message_text
+        "text": (
+            "Hi, welcome back! 👋\n\n"
+            "If you need to calculate again, please type 'restart'."
+        )
     }
     send_messenger_message(messenger_id, message)
-    logging.debug(f"Sent 'Welcome back' message to user in {user_language}.")
+    logging.debug("Sent 'Welcome back' message to user.")
 
 def reset_user(user: User):
     """
-    Resets the user's information to start over with the current language.
-    If no language is set, it defaults to English.
+    Resets the user's information to start over with English as the default language.
     """
     user.name = "Unknown"
     user.phone_number = "Unknown"
-    
-    # Retain the user's language, default to 'en' if not set
-    user.language = user.language if user.language else 'en'
-    
-    user.state = STATES['LANGUAGE_SELECTION']  # Default to the first step
+    user.language = 'en'  # Default language set to English
+    user.state = STATES['GET_STARTED_YES']  # Default to the first step
     # Reset other relevant fields
     user.outstanding_balance = None
     user.current_interest_rate = None
@@ -1414,6 +1399,6 @@ def reset_user(user: User):
     user.total_savings = None
     user.tenure = None
     user.new_rate = None
-    
     db.session.commit()
-    logging.debug(f"User data reset to initial state with language set to {user.language}.")
+    logging.debug("User data reset to initial state with default language set to English.")
+
