@@ -378,7 +378,7 @@ def handle_name_collection(user: User, messenger_id: str, user_input: str):
 
     question = "May I have your phone number to proceed further?"
     message = {
-        "text": f"Nice to meet you, {user.name}! {question}\n\n_Example: 0123456789 (exclude country code)_"
+        "text": f"Nice to meet you, {user.name}! {question}\n\nExample: 0123456789 (exclude country code)"
     }
     send_messenger_message(messenger_id, message)
     logging.debug("Name collected and phone number collection initiated.")
@@ -400,7 +400,7 @@ def handle_phone_collection(user: User, messenger_id: str, user_input: str):
     message = {
         "text": (
             "Do you know your outstanding balance, interest rate, and remaining tenure?\n\n"
-            "_For more accurate calculations, we suggest checking this info in your bank app before proceeding._"
+            "For calculations accuracy, we suggest checking this info in your bank app before proceeding."
         ),
         "quick_replies": [
             {
@@ -473,7 +473,7 @@ def handle_path_a_interest(user: User, messenger_id: str, user_input: str):
     except ValueError:
         question = "What is your current interest rate (in %)?"
         message = {
-            "text": f"Sorry, I couldn't parse that.\n\n{question}\n\n_Example: 4.5 or 4.75_"
+            "text": f"Sorry, I couldn't parse that.\n\n{question}\n\nExample: 4.5 or 4.75"
         }
         send_messenger_message(messenger_id, message)
         logging.debug("Failed to parse interest rate.")
@@ -485,7 +485,7 @@ def handle_path_a_interest(user: User, messenger_id: str, user_input: str):
 
     question = "How many years remain on your loan tenure?"
     message = {
-        "text": f"{question}\n\n_Example: 20 or 25_"
+        "text": f"{question}\n\nExample: 20 or 25"
     }
     send_messenger_message(messenger_id, message)
     logging.debug("Interest rate collected and remaining tenure collection initiated.")
@@ -496,7 +496,7 @@ def handle_path_a_tenure(user: User, messenger_id: str, user_input: str):
     except ValueError:
         question = "Could you provide the remaining tenure (in years) again?"
         message = {
-            "text": f"Sorry, I couldn't parse that.\n\n{question}\n\n_Example: 10 or 15_"
+            "text": f"Sorry, I couldn't parse that.\n\n{question}\n\nExample: 10 or 15"
         }
         send_messenger_message(messenger_id, message)
         logging.debug("Failed to parse remaining tenure.")
@@ -1128,9 +1128,9 @@ def send_initial_message(messenger_id):
     message = {
         "text": (
             "👋 Welcome to *Finzo AI Assistant*!\n\n"
-            "• I’m here to help you explore *refinancing options*.\n"
-            "• We’ll work together to *optimize your housing loans*.\n"
-            "• My goal is to help you *identify potential savings* and *improve financial efficiency*.\n\n"
+            "• I’m here to help you explore refinancing options.\n"
+            "• We’ll work together to optimize your housing loans.\n"
+            "• My goal is to help you identify potential savings* and *improve financial efficiency*.\n\n"
             "Are you ready to get started?"
         ),
         "quick_replies": [
