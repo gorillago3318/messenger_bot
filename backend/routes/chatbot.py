@@ -10,6 +10,8 @@ from flask import Blueprint, request, jsonify
 from backend.extensions import db
 from backend.models import User, Lead, BankRate
 from datetime import datetime
+from datetime import timedelta
+
 
 # Initialize Blueprint
 chatbot_bp = Blueprint('chatbot', __name__)
@@ -1322,6 +1324,16 @@ def process_message():
     except Exception as e:
         logging.error(f"Error in process_message: {e}")
         return jsonify({"status": "error", "message": "Internal server error"}), 500
+
+
+def check_user_idle(user):
+    # Assume user.last_interaction is a datetime field in the User model
+    if user.last_interaction:
+        now = datetime.utcnow()
+        time_difference = now - user.last_interaction
+        if time_difference > timedelta(days=1):  # If the user is idle for more than 24 hours
+            return True
+    return False
 
 def send_welcome_back_message(messenger_id):
     message = {
