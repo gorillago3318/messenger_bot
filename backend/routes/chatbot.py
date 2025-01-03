@@ -271,6 +271,8 @@ def generate_convincing_message(savings_data: dict) -> str:
                         "Emphasize that this service is completely free, with no hidden fees, and an agent is available to assist unless the user opts out. "
                         "Encourage users to take control of their finances and avoid overpaying unnecessarily, while keeping a professional, friendly, and reassuring tone. "
                         "Avoid greetings or closings like hello or best regards. Focus on presenting benefits clearly and creating urgency without being pushy."
+                        "message especially digit will have to clealy stated with , on thousand and millions."
+                        "Reply admin whatsapp contact link at wa.me/60126181683 whenever user ask for admin, agent, company, human contact"
                     )
                 },
                 {
@@ -285,7 +287,6 @@ def generate_convincing_message(savings_data: dict) -> str:
                         "Frame the message to emphasize how refinancing helps regain financial control and reduce costs. "
                         "Mention that continuing with the current loan benefits the banks, and exploring refinancing options provides the user with better opportunities. "
                         "Encourage questions and emphasize that an agent will assist with more details, maintaining a professional and informative tone."
-                        'Message especially amount should be structured clearly by adding , to any thousands and million.'
                     )
                 }
             ]
