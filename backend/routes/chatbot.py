@@ -808,6 +808,26 @@ def handle_cashout_offer(user: User, messenger_id: str, user_input: str):
         db.session.commit()
         logging.debug("User declined cash-out offer. Updated state to WAITING_INPUT.")
 
+        # Notify admin about declined cash-out offer
+        admin_summary = (
+            f"User Decline Cash-Out Offer\n"
+            f"User Name: {user.name or 'N/A'}\n"
+            f"Phone Number: {user.phone_number or 'N/A'}\n\n"
+            f"Loan Details\n"
+            f"Loan Outstanding: RM{user.outstanding_balance or 0:,.2f}\n"
+            f"Interest Rate: {user.current_interest_rate or 0:.2f}%\n"
+            f"Remaining Tenure: {user.remaining_tenure or 0:.1f} years\n"
+            f"Current Repayment: RM{calculate_monthly_payment(user.outstanding_balance or 0, user.current_interest_rate or 0, user.remaining_tenure or 0):,.2f}\n\n"
+            f"After Refinancing\n"
+            f"New Interest Rate: {user.new_rate or 0:.2f}%\n"
+            f"New Repayment: RM{calculate_monthly_payment(user.outstanding_balance or 0, user.new_rate or 0, user.remaining_tenure or 0):,.2f}\n"
+            f"Monthly Saving: RM{user.monthly_savings or 0:,.2f}\n"
+            f"Yearly Savings: RM{user.yearly_savings or 0:,.2f}\n"
+            f"Total Savings: RM{user.total_savings or 0:,.2f}\n"
+        )
+        notify_admin(user, "User Declined Cash-Out Offer", admin_summary)
+        logging.debug("Admin notified about declined cash-out offer.")
+
         # FAQ Prompt
         faq_prompt = (
             "You are now talking to Finzo AI. You can ask anything regarding refinancing and housing loans.\n\n"
@@ -824,13 +844,13 @@ def handle_cashout_gather_amount(user: User, messenger_id: str, user_input: str)
     logging.debug("Entering handle_cashout_gather_amount function.")
 
     try:
-        # Corrected function call
+        # Parse and save cash-out amount
         cashout_amount = parse_number_with_suffix(user_input)
         user.temp_cashout_amount = cashout_amount
         db.session.commit()
         logging.debug(f"Cash-out amount {cashout_amount} set for user.")
 
-        # Proceed to calculate the new loan details
+        # Proceed to calculate final repayment and notify admin
         handle_cashout_calculate(user, messenger_id)
 
     except Exception as e:
@@ -839,7 +859,6 @@ def handle_cashout_gather_amount(user: User, messenger_id: str, user_input: str)
             messenger_id,
             {"text": "I'm sorry, I couldn't process that amount. Please enter a valid cash-out amount in Ringgit (e.g., RM50,000 or 50k)."}
         )
-        logging.debug("Error occurred while gathering cash-out amount. Informed user.")
 
 def handle_cashout_calculate(user: User, messenger_id: str, user_input: str = None):
     """
@@ -854,7 +873,7 @@ def handle_cashout_calculate(user: User, messenger_id: str, user_input: str = No
 
     # Calculate loan details
     total_loan = outstanding_balance + cashout_amount
-    main_rate = get_current_bank_rate(total_loan)  # Assuming this function exists
+    main_rate = get_current_bank_rate(total_loan)
 
     # Calculate installments
     segment1_tenure = min(remaining_tenure, 35)
@@ -871,48 +890,35 @@ def handle_cashout_calculate(user: User, messenger_id: str, user_input: str = No
         f"💳 Total Monthly Payment: RM{new_total_monthly:,.2f}\n\n"
         f"Note: This is your updated estimated monthly repayment amount if the refinance and cash-out are approved and accepted."
     )
-    # **Correction:** Remove the nested "message" key
     send_messenger_message(messenger_id, {"text": user_summary})
     logging.debug("Cash-out calculation summary sent to user.")
 
-    # Transition to WAITING_INPUT instead of FAQ
+    # Transition to WAITING_INPUT
     user.state = STATES['WAITING_INPUT']
     db.session.commit()
 
-    # FAQ Prompt
-    faq_prompt = (
-        "The calculation of your savings summary is now completed!\n\n"
-        "An agent will be assigned to assist you with the refinancing process at no additional cost. Should you prefer not to proceed, you may inform our agents at any time.\n\n"
-        "We are now in the *Inquiry Phase*, where you can interact with Finzo AI to ask any questions about refinancing or housing loans.\n\n"
-        "Finzo AI will do our best to provide helpful answers. However, please note that while we strive for accuracy, some answers may not be 100% precise.\n\n"
-        "For urgent matters, you can also contact our admin at https://wa.me/60126181683."
-    )
-    send_messenger_message(messenger_id, {"text": faq_prompt})
-    logging.debug("FAQ prompt sent after cash-out calculation.")
-
-    # Send admin notification
+    # Notify admin about accepted cash-out offer
     admin_summary = (
-        f"📊 Loan and Cash-Out Details:\n"
-        f"• Customer: {user.name}\n"
-        f"• Contact: {user.phone_number}\n\n"
-        f"Current Loan:\n"
-        f"• Outstanding Balance: RM{user.outstanding_balance:,.2f}\n"
-        f"• Interest Rate: {user.current_interest_rate:.2f}%\n"
-        f"• Remaining Tenure: {user.remaining_tenure:.1f} years\n\n"
-        f"After Refinancing:\n"
-        f"• New Interest Rate: {user.new_rate:.2f}%\n"
-        f"• Monthly Savings: RM{user.monthly_savings:.2f}\n"
-        f"• Yearly Savings: RM{user.yearly_savings:.2f}\n"
-        f"• Total Savings: RM{user.total_savings:.2f}\n"
-        f"• Tenure: {user.tenure:.1f} years\n\n"
-        f"📊 Cash-Out Calculation:\n"
-        f"• Main Loan: RM{outstanding_balance:,.2f} @ {main_rate:.2f}% for {segment1_tenure} yrs => RM{monthly1:,.2f}/month\n"
-        f"• Cash-Out: RM{cashout_amount:,.2f} @ {main_rate:.2f}% for 10 yrs => RM{monthly2:,.2f}/month\n\n"
-        f"💳 Total Monthly Payment: RM{new_total_monthly:,.2f}\n\n"
-        f"Status: {'Accepted Cash-Out Offer' if cashout_amount > 0 else 'Declined Cash-Out Offer'}"
+        f"User Accepted Cash Out Offer\n"
+        f"User Name: {user.name or 'N/A'}\n"
+        f"Phone Number: {user.phone_number or 'N/A'}\n\n"
+        f"Loan Details\n"
+        f"Loan Outstanding: RM{outstanding_balance:,.2f}\n"
+        f"Interest Rate: {user.current_interest_rate or 0:.2f}%\n"
+        f"Remaining Tenure: {remaining_tenure:.1f} years\n"
+        f"Current Repayment: RM{calculate_monthly_payment(outstanding_balance, user.current_interest_rate or 0, remaining_tenure):,.2f}\n\n"
+        f"After Refinancing\n"
+        f"New Interest Rate: {main_rate:.2f}%\n"
+        f"New Repayment: RM{monthly1:,.2f} (housing loan only)\n"
+        f"Monthly Saving: RM{user.monthly_savings or 0:,.2f}\n"
+        f"Yearly Savings: RM{user.yearly_savings or 0:,.2f}\n"
+        f"Total Savings: RM{user.total_savings or 0:,.2f}\n\n"
+        f"Cash Out Amount: RM{cashout_amount:,.2f}\n"
+        f"New Repayment: RM{new_total_monthly:,.2f} (Cashout + housing loan)\n"
     )
     notify_admin(user, "User Completed Cash-Out Refinance Calculation", admin_summary)
     logging.debug("Admin notified about completed cash-out refinance calculation.")
+
 
 def handle_waiting_input(user: User, messenger_id: str, user_input: str):
     """
