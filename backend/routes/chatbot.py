@@ -29,15 +29,38 @@ def handle_contact_admin(user: User, messenger_id: str, user_input: str):
     """
     logging.debug("User requested to talk to admin.")
 
-    # Send admin contact details
-    message = {
-        "text": (
+    # Use GPT-4 to process admin requests
+    try:
+        conversation = [
+            {
+                "role": "system",
+                "content": (
+                    "You are Finzo AI Assistant. If a user asks for an admin, agent, or human, provide the contact link: https://wa.me/60126181683. "
+                    "Maintain a professional, friendly tone and encourage reaching out if needed."
+                )
+            },
+            {
+                "role": "user",
+                "content": user_input
+            }
+        ]
+
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=conversation,
+            temperature=0.7
+        )
+
+        admin_message = response.choices[0].message.content.strip()
+    except Exception as e:
+        logging.error(f"Error generating admin message with GPT-4: {e}")
+        admin_message = (
             "You can contact our admin directly at:\n\n"
-            "📞 WhatsApp: [Click here to chat](https://wa.me/60126181683)\n\n"
+            "\ud83d\udcde WhatsApp: [Click here to chat](https://wa.me/60126181683)\n\n"
             "Let us know if you need any further assistance!"
         )
-    }
-    send_messenger_message(messenger_id, message)
+
+    send_messenger_message(messenger_id, {"text": admin_message})
     logging.debug("Admin contact details sent to user.")
 
     # Update state to WAITING_INPUT for follow-up inquiries
@@ -45,37 +68,27 @@ def handle_contact_admin(user: User, messenger_id: str, user_input: str):
     db.session.commit()
 
 STATES = {
-    'GET_STARTED_YES': 'GET_STARTED_YES',  # New state for starting the process
-    'CONTACT_ADMIN': 'CONTACT_ADMIN',      # New state for contacting admin
+    'GET_STARTED_YES': 'GET_STARTED_YES',
+    'CONTACT_ADMIN': 'CONTACT_ADMIN',
     'NAME_COLLECTION': 'NAME_COLLECTION',
     'PHONE_COLLECTION': 'PHONE_COLLECTION',
     'PATH_SELECTION': 'PATH_SELECTION',
-
-    # Path A
     'PATH_A_GATHER_BALANCE': 'PATH_A_GATHER_BALANCE',
     'PATH_A_GATHER_INTEREST': 'PATH_A_GATHER_INTEREST',
     'PATH_A_GATHER_TENURE': 'PATH_A_GATHER_TENURE',
     'PATH_A_CALCULATE': 'PATH_A_CALCULATE',
-
-    # Path B
     'PATH_B_GATHER_ORIGINAL_AMOUNT': 'PATH_B_GATHER_ORIGINAL_AMOUNT',
     'PATH_B_GATHER_ORIGINAL_TENURE': 'PATH_B_GATHER_ORIGINAL_TENURE',
     'PATH_B_GATHER_MONTHLY_PAYMENT': 'PATH_B_GATHER_MONTHLY_PAYMENT',
     'PATH_B_GATHER_YEARS_PAID': 'PATH_B_GATHER_YEARS_PAID',
     'PATH_B_CALCULATE': 'PATH_B_CALCULATE',
-
-    # Post-Calculation
     'CASHOUT_OFFER': 'CASHOUT_OFFER',
     'CASHOUT_GATHER_AMOUNT': 'CASHOUT_GATHER_AMOUNT',
     'CASHOUT_CALCULATE': 'CASHOUT_CALCULATE',
-
-    # Additional States
     'FAQ': 'FAQ',
     'END': 'END',
     'WAITING_INPUT': 'WAITING_INPUT',
     'RESTART': 'RESTART',
-
-    # Error Handling
     'ERROR_STATE': 'ERROR_STATE'
 }
 
@@ -245,10 +258,9 @@ def handle_get_started_yes(user: User, messenger_id: str, user_input: str):
 
 def generate_convincing_message(savings_data: dict) -> str:
     """
-    Uses GPT to generate a personalized convincing message based on savings calculations.
+    Uses GPT-4 to generate a personalized convincing message based on savings calculations.
     """
     try:
-        # Check if savings are below 10k
         if savings_data['total_savings'] < 10000:
             return (
                 "Based on your details, the estimated savings from refinancing are below RM10,000. "
@@ -256,7 +268,6 @@ def generate_convincing_message(savings_data: dict) -> str:
                 "However, we’re happy to assist if you have any questions or need further guidance. Feel free to reach out at https://wa.me/60126181683."
             )
 
-        # Check if savings are zero or negative
         if savings_data['monthly_savings'] <= 0:
             return (
                 "Based on your details, it looks like your current loan is already well-optimized, and refinancing may not result in significant savings. "
@@ -264,36 +275,30 @@ def generate_convincing_message(savings_data: dict) -> str:
             )
 
         conversation = [
-                {
+            {
                 "role": "system",
-                    "content": (
-                        "You are Finzo AI Assistant, an expert in refinancing solutions. Highlight potential savings from refinancing and explain that many homeowners overpay simply due to lack of information about better options. "
-                        "Emphasize that this service is completely free, with no hidden fees, and an agent is available to assist unless the user opts out. "
-                        "Encourage users to take control of their finances and avoid overpaying unnecessarily, while keeping a professional, friendly, and reassuring tone. "
-                        "Avoid greetings or closings like hello or best regards. Focus on presenting benefits clearly and creating urgency without being pushy."
-                        "message especially digit will have to clealy stated with , on thousand and millions."
-                        "Reply admin whatsapp contact link at wa.me/60126181683 whenever user ask for admin, agent, company, human contact"
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Highlight the savings potential for the user:\n"
-                        f"Monthly Savings: RM{savings_data.get('monthly_savings', 0):.2f}\n"
-                        f"Yearly Savings: RM{savings_data.get('yearly_savings', 0):.2f}\n"
-                        f"Total Savings: RM{savings_data.get('total_savings', 0):.2f} over {savings_data.get('tenure', 0)} years\n"
-                        f"Current Interest Rate: {savings_data.get('current_rate', 0):.2f}%\n"
-                        f"New Interest Rate: {savings_data.get('new_rate', 0):.2f}%\n"
-                        "Frame the message to emphasize how refinancing helps regain financial control and reduce costs. "
-                        "Mention that continuing with the current loan benefits the banks, and exploring refinancing options provides the user with better opportunities. "
-                        "Encourage questions and emphasize that an agent will assist with more details, maintaining a professional and informative tone."
-                    )
-                }
-            ]
-
+                "content": (
+                    "You are Finzo AI Assistant, an expert in refinancing solutions. Highlight potential savings from refinancing and explain that many homeowners overpay simply due to lack of information about better options. "
+                    "Emphasize that this service is completely free, with no hidden fees, and an agent is available to assist unless the user opts out. "
+                    "Encourage users to take control of their finances and avoid overpaying unnecessarily, while keeping a professional, friendly, and reassuring tone. "
+                    "Message especially digits must be clearly stated with commas for thousands and millions."
+                )
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Highlight the savings potential for the user:\n"
+                    f"Monthly Savings: RM{savings_data.get('monthly_savings', 0):,.2f}\n"
+                    f"Yearly Savings: RM{savings_data.get('yearly_savings', 0):,.2f}\n"
+                    f"Total Savings: RM{savings_data.get('total_savings', 0):,.2f} over {savings_data.get('tenure', 0)} years\n"
+                    f"Current Interest Rate: {savings_data.get('current_rate', 0):.2f}%\n"
+                    f"New Interest Rate: {savings_data.get('new_rate', 0):.2f}%"
+                )
+            }
+        ]
 
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",
             messages=conversation,
             temperature=0.7
         )
@@ -304,9 +309,10 @@ def generate_convincing_message(savings_data: dict) -> str:
         logging.error(f"Error generating convincing message: {e}")
         return (
             f"You may be overpaying on your home loan. Refinancing at {savings_data.get('new_rate', 0):.2f}% could save you "
-            f"RM{savings_data.get('monthly_savings', 0):.2f} monthly and RM{savings_data.get('total_savings', 0):,.2f} over {savings_data.get('tenure', 0)} years. "
+            f"RM{savings_data.get('monthly_savings', 0):,.2f} monthly and RM{savings_data.get('total_savings', 0):,.2f} over {savings_data.get('tenure', 0)} years. "
             "Our service is completely free, and our agents are here to assist—unless you say 'no,' we'll be in touch to help you explore your savings. Feel free to ask any follow-up questions!"
         )
+
 
 def generate_faq_response_with_gpt(user_input: str) -> str:
     """
