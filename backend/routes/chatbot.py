@@ -272,20 +272,20 @@ def generate_convincing_message(savings_data: dict) -> str:
                 "content": (
                     "You are Finzo AI Assistant, a friendly and professional consultant specializing in refinancing solutions. "
                     "Focus first on presenting the user's potential savings clearly and confidently. Then, explain why refinancing is an opportunity many homeowners overlook. "
-                    "Highlight that banks benefit from borrowers continuing to pay higher interest rates, but refinancing empowers users to save more and invest in their future, a family holiday or even an upgrade in lifestyle. "
+                    "Highlight that banks benefit from borrowers continuing to pay higher interest rates, but refinancing empowers users to save more and invest in their future, a holiday getaway or even upgrade of lifestyle. "
                     "Keep the tone approachable, helpful, and reassuring, positioning yourself as a knowledgeable partner in financial improvement. Avoid greetings and closings."
                 )
             },
             {
                 "role": "user",
                 "content": (
-                    f"The user could save:
-                    Monthly: RM{savings_data.get('monthly_savings', 0):,.2f}
-                    Yearly: RM{savings_data.get('yearly_savings', 0):,.2f}
-                    Total: RM{savings_data.get('total_savings', 0):,.2f} over {savings_data.get('tenure', 0)} years
-                    Current Rate: {savings_data.get('current_rate', 0):.2f}%
-                    New Rate: {savings_data.get('new_rate', 0):.2f}%\n
-                    Explain how refinancing helps control finances and reduces overpayment."
+                    f"The user could save:\n"
+                    f"Monthly: RM{savings_data.get('monthly_savings', 0):,.2f}\n"
+                    f"Yearly: RM{savings_data.get('yearly_savings', 0):,.2f}\n"
+                    f"Total: RM{savings_data.get('total_savings', 0):,.2f} over {savings_data.get('tenure', 0)} years\n"
+                    f"Current Rate: {savings_data.get('current_rate', 0):.2f}%\n"
+                    f"New Rate: {savings_data.get('new_rate', 0):.2f}%\n"
+                    "Explain how refinancing helps control finances and reduces overpayment."
                 )
             }
         ]
