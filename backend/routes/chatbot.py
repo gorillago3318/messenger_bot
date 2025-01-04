@@ -727,6 +727,16 @@ def handle_convince(user: User, messenger_id: str, user_input: str = ""):
     """
     logging.debug("Entering handle_convince function.")
 
+    # Prevent duplicate prompts if already in CASHOUT_OFFER state
+    if user.state == STATES['CASHOUT_OFFER']:
+        logging.debug("Cash-out prompt already sent. Skipping duplicate prompt.")
+        return
+
+    # Update user state to CASHOUT_OFFER BEFORE generating messages
+    user.state = STATES['CASHOUT_OFFER']
+    db.session.commit()
+    logging.debug(f"User state updated to {user.state}")
+
     # Prepare savings data with default values to prevent NoneType errors
     savings_data = {
         'monthly_savings': user.monthly_savings or 0,
@@ -741,8 +751,6 @@ def handle_convince(user: User, messenger_id: str, user_input: str = ""):
 
     # Generate the convincing message
     convincing_msg = generate_convincing_message(savings_data)
-    
-    # **Correction:** Remove the nested "message" key
     send_messenger_message(messenger_id, {"text": convincing_msg})
     logging.debug("Convincing message sent.")
 
@@ -765,14 +773,8 @@ def handle_convince(user: User, messenger_id: str, user_input: str = ""):
         {"content_type": "text", "title": "No, thanks", "payload": "CASHOUT_NO"}
     ]
 
-    # **Correction:** Remove the nested "message" key
     send_messenger_message(messenger_id, {"text": cashout_message, "quick_replies": quick_replies})
     logging.debug("Cash-out prompt sent.")
-
-    # Update user state to CASHOUT_OFFER
-    user.state = STATES['CASHOUT_OFFER']
-    db.session.commit()
-    logging.debug(f"User state updated to {user.state}")
 
 def handle_cashout_offer(user: User, messenger_id: str, user_input: str):
     """
@@ -780,67 +782,31 @@ def handle_cashout_offer(user: User, messenger_id: str, user_input: str):
     """
     logging.debug("Entering handle_cashout_offer function.")
 
-    if user_input is None:
-        # Send cash-out offer prompt
+    # Validate input
+    if user_input not in ["CASHOUT_YES", "CASHOUT_NO"]:
         message = {
-            "text": "Would you like to proceed with a cash-out refinance offer?",
-            "quick_replies": [
-                {
-                    "content_type": "text",
-                    "title": "Yes, tell me more",
-                    "payload": "CASHOUT_YES"
-                },
-                {
-                    "content_type": "text",
-                    "title": "No, thanks",
-                    "payload": "CASHOUT_NO"
-                }
-            ]
+            "text": "Please select 'Yes, tell me more' or 'No, thanks'."
         }
         send_messenger_message(messenger_id, message)
-        logging.debug("Cash-out offer prompt sent to user.")
+        logging.debug("Invalid input for cash-out offer. Re-prompted user.")
         return
 
     # Handle user response
     if user_input == "CASHOUT_YES":
-        # Transition to gather cash-out amount
         user.state = STATES['CASHOUT_GATHER_AMOUNT']
         db.session.commit()
         question = (
             "Great! How much equity would you like to cash out from your property in Ringgit?\n\n "
-        "For example, RM50,000 or 50k."
+            "For example, RM50,000 or 50k."
         )
         send_messenger_message(messenger_id, {"text": question})
         logging.debug("User accepted cash-out offer. Cash-out amount collection initiated.")
+
     elif user_input == "CASHOUT_NO":
-        # Transition to WAITING_INPUT without cash-out
         user.temp_cashout_amount = 0  # No cash-out
         user.state = STATES['WAITING_INPUT']
         db.session.commit()
-
-        # Notify admin about declined cash-out offer
-        admin_summary = (
-            f"📊 User Declined Cash-Out Offer\n"
-            f"Customer: {user.name or 'N/A'}\n"
-            f"Contact: {user.phone_number or 'N/A'}\n\n"
-            f"📊 Loan Details:\n"
-            f"• Outstanding Balance: RM{user.outstanding_balance or 0:,.2f}\n"
-            f"• Interest Rate: {user.current_interest_rate or 0:.2f}%\n"
-            f"• Remaining Tenure: {user.remaining_tenure or 0:.1f} years\n\n"
-            f"After Refinancing:\n"
-            f"• New Interest Rate: {user.new_rate or 0:.2f}%\n"
-            f"• Monthly Savings: RM{user.monthly_savings or 0:.2f}\n"
-            f"• Yearly Savings: RM{user.yearly_savings or 0:.2f}\n"
-            f"• Total Savings: RM{user.total_savings or 0:.2f}\n"
-            f"• Tenure: {user.tenure or 0:.1f} years\n\n"
-            f"📊 Cash-Out Calculation:\n"
-            f"• Main Loan: RM{user.outstanding_balance or 0:,.2f} @ {user.new_rate or 0:.2f}% for {int(user.remaining_tenure or 0)} yrs => RM{calculate_monthly_payment(user.outstanding_balance or 0, user.new_rate or 0, user.remaining_tenure or 0):,.2f}/month\n"
-            f"• Cash-Out: RM{user.temp_cashout_amount or 0:,.2f} @ {user.new_rate or 0:.2f}% for 10 yrs => RM{calculate_monthly_payment(user.temp_cashout_amount or 0, user.new_rate or 0, 10):,.2f}/month\n\n"
-            f"💳 Total Monthly Payment: RM{(calculate_monthly_payment(user.outstanding_balance or 0, user.new_rate or 0, user.remaining_tenure or 0) + calculate_monthly_payment(user.temp_cashout_amount or 0, user.new_rate or 0, 10)) or 0:,.2f}\n\n"
-            f"Status: {'Accepted Cash-Out Offer' if (user.temp_cashout_amount or 0) > 0 else 'Declined Cash-Out Offer'}"
-        )
-        notify_admin(user, "User Declined Cash-Out Offer", admin_summary)
-        logging.debug("User declined cash-out offer and admin notified.")
+        logging.debug("User declined cash-out offer. Updated state to WAITING_INPUT.")
 
         # FAQ Prompt
         faq_prompt = (
@@ -853,10 +819,6 @@ def handle_cashout_offer(user: User, messenger_id: str, user_input: str):
         )
         send_messenger_message(messenger_id, {"text": faq_prompt})
         logging.debug("FAQ prompt sent after declining cash-out offer.")
-    else:
-        # Handle unexpected inputs
-        send_messenger_message(messenger_id, {"text": "Please select 'Yes, tell me more' or 'No, thanks'."})
-        logging.debug("Unexpected input received for cash-out offer.")
 
 def handle_cashout_gather_amount(user: User, messenger_id: str, user_input: str):
     logging.debug("Entering handle_cashout_gather_amount function.")
