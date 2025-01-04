@@ -259,38 +259,33 @@ def generate_convincing_message(savings_data: dict) -> str:
     Uses GPT-4 to generate a personalized convincing message based on savings calculations.
     """
     try:
-        if savings_data['total_savings'] < 10000:
-            return (
-                "Based on your details, the estimated savings from refinancing are below RM10,000. "
-                "Considering that refinancing incurs legal fees and stamp duty, it may not be worth the hassle right now. "
-                "However, we’re happy to assist if you have any questions or need further guidance. Feel free to reach out at https://wa.me/60126181683."
-            )
+        # Highlight the most important aspect first - Savings Analysis
+        savings_message = (
+            f"Based on the details you've provided, refinancing could save you approximately RM{savings_data.get('monthly_savings', 0):,.2f} per month. "
+            f"That's RM{savings_data.get('yearly_savings', 0):,.2f} annually and a total of RM{savings_data.get('total_savings', 0):,.2f} over {savings_data.get('tenure', 0)} years.\n"
+        )
 
-        if savings_data['monthly_savings'] <= 0:
-            return (
-                "Based on your details, it looks like your current loan is already well-optimized, and refinancing may not result in significant savings. "
-                "However, we are here to assist you with any questions or future refinancing needs. Our service is free, and you can always reach out to us at https://wa.me/60126181683 if you'd like more information or need assistance!"
-            )
-
+        # Additional Professional Advice
         conversation = [
             {
                 "role": "system",
                 "content": (
-                    "You are Finzo AI Assistant, an expert in refinancing solutions. Highlight that banks benefit when homeowners continue paying high interest rates. "
-                    "Explain that most Malaysians unknowingly overpay by not refinancing when interest rates drop. "
-                    "Emphasize that this service is free, and refinancing can help avoid overpaying for years. "
-                    "Keep the tone professional, direct, and analytical without greetings or closings."
+                    "You are Finzo AI Assistant, a friendly and professional consultant specializing in refinancing solutions. "
+                    "Focus first on presenting the user's potential savings clearly and confidently. Then, explain why refinancing is an opportunity many homeowners overlook. "
+                    "Highlight that banks benefit from borrowers continuing to pay higher interest rates, but refinancing empowers users to save more and invest in their future, a family holiday or even an upgrade in lifestyle. "
+                    "Keep the tone approachable, helpful, and reassuring, positioning yourself as a knowledgeable partner in financial improvement. Avoid greetings and closings."
                 )
             },
             {
                 "role": "user",
                 "content": (
-                    f"Highlight the savings potential for the user:\n"
-                    f"Monthly Savings: RM{savings_data.get('monthly_savings', 0):,.2f}\n"
-                    f"Yearly Savings: RM{savings_data.get('yearly_savings', 0):,.2f}\n"
-                    f"Total Savings: RM{savings_data.get('total_savings', 0):,.2f} over {savings_data.get('tenure', 0)} years\n"
-                    f"Current Interest Rate: {savings_data.get('current_rate', 0):.2f}%\n"
-                    f"New Interest Rate: {savings_data.get('new_rate', 0):.2f}%"
+                    f"The user could save:
+                    Monthly: RM{savings_data.get('monthly_savings', 0):,.2f}
+                    Yearly: RM{savings_data.get('yearly_savings', 0):,.2f}
+                    Total: RM{savings_data.get('total_savings', 0):,.2f} over {savings_data.get('tenure', 0)} years
+                    Current Rate: {savings_data.get('current_rate', 0):.2f}%
+                    New Rate: {savings_data.get('new_rate', 0):.2f}%\n
+                    Explain how refinancing helps control finances and reduces overpayment."
                 )
             }
         ]
@@ -301,14 +296,14 @@ def generate_convincing_message(savings_data: dict) -> str:
             temperature=0.7
         )
 
-        return response.choices[0].message.content.strip()
+        return savings_message + response.choices[0].message.content.strip()
 
     except Exception as e:
         logging.error(f"Error generating convincing message: {e}")
         return (
-            f"You may be overpaying on your home loan. Refinancing at {savings_data.get('new_rate', 0):.2f}% could save you "
-            f"RM{savings_data.get('monthly_savings', 0):,.2f} monthly and RM{savings_data.get('total_savings', 0):,.2f} over {savings_data.get('tenure', 0)} years. "
-            "Our service is completely free, and our agents are here to assist—unless you say 'no,' we'll be in touch to help you explore your savings. Feel free to ask any follow-up questions!"
+            f"Refinancing could save you approximately RM{savings_data.get('monthly_savings', 0):,.2f} per month, "
+            f"RM{savings_data.get('yearly_savings', 0):,.2f} annually, and RM{savings_data.get('total_savings', 0):,.2f} over {savings_data.get('tenure', 0)} years. "
+            "Feel free to reach out if you need more information or assistance at https://wa.me/60126181683."
         )
 
 
