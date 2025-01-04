@@ -919,6 +919,17 @@ def handle_cashout_calculate(user: User, messenger_id: str, user_input: str = No
     notify_admin(user, "User Completed Cash-Out Refinance Calculation", admin_summary)
     logging.debug("Admin notified about completed cash-out refinance calculation.")
 
+    # FAQ Prompt
+    faq_prompt = (
+        "You are now talking to Finzo AI. You can ask anything regarding refinancing and housing loans.\n\n"
+        "Common questions you might have:\n"
+        "• What documents do I need for refinancing?\n"
+        "• How long does the refinancing process take?\n"
+        "• Are there any fees involved?\n"
+        "• What factors affect my loan approval?"
+    )
+    send_messenger_message(messenger_id, {"text": faq_prompt})
+    logging.debug("FAQ prompt sent after cash-out calculation.")
 
 def handle_waiting_input(user: User, messenger_id: str, user_input: str):
     """
