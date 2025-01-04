@@ -92,8 +92,6 @@ STATES = {
     'ERROR_STATE': 'ERROR_STATE'
 }
 
-
-# Language mapping
 LANGUAGES = {'LANG_EN': 'en', 'LANG_MS': 'ms', 'LANG_ZH': 'zh'}
 
 # Load presets.json for FAQs
@@ -278,10 +276,10 @@ def generate_convincing_message(savings_data: dict) -> str:
             {
                 "role": "system",
                 "content": (
-                    "You are Finzo AI Assistant, an expert in refinancing solutions. Highlight potential savings from refinancing and explain that many homeowners overpay simply due to lack of information about better options. "
-                    "Emphasize that this service is completely free, with no hidden fees, and an agent is available to assist unless the user opts out. "
-                    "Encourage users to take control of their finances and avoid overpaying unnecessarily, while keeping a professional, friendly, and reassuring tone. "
-                    "Message especially digits must be clearly stated with commas for thousands and millions."
+                    "You are Finzo AI Assistant, an expert in refinancing solutions. Highlight that banks benefit when homeowners continue paying high interest rates. "
+                    "Explain that most Malaysians unknowingly overpay by not refinancing when interest rates drop. "
+                    "Emphasize that this service is free, and refinancing can help avoid overpaying for years. "
+                    "Keep the tone professional, direct, and analytical without greetings or closings."
                 )
             },
             {
@@ -1045,42 +1043,16 @@ def handle_faq(user: User, messenger_id: str, user_input: str):
            'can i talk to', 'want to talk', 'need to talk',
            'connect me', 'transfer me', 'get in touch'
        ]):
-        admin_response = {
-            "text": (
-                "You can reach our customer service team directly through WhatsApp:\n\n"
-                "🔗 Click here to chat with an admin: https://wa.me/60126181683\n\n"
-                "Our team typically responds within 30 minutes during business hours "
-                "(Mon-Fri, 9am-6pm MYT)."
-            )
-        }
-        send_messenger_message(messenger_id, admin_response)
-        
-        # Update user state and notify admin
-        user.last_admin_request = datetime.utcnow()  # Add this field to User model
-        notify_admin(user, "User requested admin contact")
-        logging.debug("User requested admin contact - WhatsApp link sent.")
+        handle_contact_admin(user, messenger_id, user_input)
         return
 
-    # Load context with enhanced formatting
-    context = (
-        f"Previous Summary:\n"
-        f"Monthly Savings: RM{user.monthly_savings or 0:,.2f}\n"
-        f"Yearly Savings: RM{user.yearly_savings or 0:,.2f}\n"
-        f"Total Savings: RM{user.total_savings or 0:,.2f}\n"
-        f"Interest Rate: {user.current_interest_rate or 0:.2f}% -> {user.new_rate or 0:.2f}%\n"
-        f"Remaining Tenure: {user.remaining_tenure or user.tenure or 0} years\n"
-    )
-
+    # Use GPT-3.5-turbo for general FAQ responses
     try:
         conversation = [
             {
                 "role": "system",
                 "content": (
-                    "You are Finzo AI Buddy, an expert in refinancing and loan advisory. "
-                    "If users request to speak with a human, admin, or agent, always provide "
-                    "the WhatsApp contact link: https://wa.me/60126181683. "
-                    "For other questions, answer based on their previous calculations. "
-                    "Context:\n" + context
+                    "You are Finzo AI Buddy, an expert in refinancing and loan advisory. Answer the user's question accurately and concisely."
                 )
             },
             {
@@ -1092,24 +1064,17 @@ def handle_faq(user: User, messenger_id: str, user_input: str):
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=conversation,
-            temperature=0.7,
-            max_tokens=300
+            temperature=0.7
         )
 
-        reply = response.choices[0].message.content.strip()
-        send_messenger_message(messenger_id, {"text": reply})
-        logging.debug("FAQ response generated and sent to user.")
-
+        faq_response = response.choices[0].message.content.strip()
     except Exception as e:
-        logging.error(f"Error handling FAQ: {e}")
-        error_message = {
-            "text": (
-                "I apologize for the technical difficulty. Please contact our admin "
-                "directly at https://wa.me/60126181683 for immediate assistance."
-            )
-        }
-        send_messenger_message(messenger_id, error_message)
-        logging.debug("Error occurred while handling FAQ. Directed user to admin.")
+        logging.error(f"Error generating FAQ response with GPT-3.5-turbo: {e}")
+        faq_response = "I'm sorry, I couldn't process your request. Please try again later or contact admin at https://wa.me/60126181683."
+
+    send_messenger_message(messenger_id, {"text": faq_response})
+    logging.debug("FAQ response sent.")
+
 
     # Update session state
     user.state = STATES['WAITING_INPUT']
