@@ -1135,6 +1135,18 @@ def process_message():
     except Exception as e:
         logging.error(f"Error in process_message: {e}")
         return jsonify({"status": "error", "message": "Internal server error"}), 500
+
+def send_long_message(messenger_id, text):
+    """
+    Splits long messages into chunks and sends them sequentially.
+    Facebook Messenger API supports only up to 2000 characters per message.
+    """
+    MAX_LENGTH = 2000  # Facebook's message limit
+    chunks = [text[i:i+MAX_LENGTH] for i in range(0, len(text), MAX_LENGTH)]
+
+    for chunk in chunks:
+        send_messenger_message(messenger_id, {"text": chunk})
+        time.sleep(1)  # Small delay to avoid hitting rate limits
     
 def check_user_idle(user):
     # Assume user.last_interaction is a datetime field in the User model
