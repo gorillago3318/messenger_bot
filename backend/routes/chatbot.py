@@ -82,9 +82,6 @@ STATES = {
     'PATH_B_GATHER_MONTHLY_PAYMENT': 'PATH_B_GATHER_MONTHLY_PAYMENT',
     'PATH_B_GATHER_YEARS_PAID': 'PATH_B_GATHER_YEARS_PAID',
     'PATH_B_CALCULATE': 'PATH_B_CALCULATE',
-    'CASHOUT_OFFER': 'CASHOUT_OFFER',
-    'CASHOUT_GATHER_AMOUNT': 'CASHOUT_GATHER_AMOUNT',
-    'CASHOUT_CALCULATE': 'CASHOUT_CALCULATE',
     'FAQ': 'FAQ',
     'END': 'END',
     'WAITING_INPUT': 'WAITING_INPUT',
@@ -305,7 +302,6 @@ def generate_convincing_message(savings_data: dict) -> str:
             f"RM{savings_data.get('yearly_savings', 0):,.2f} annually, and RM{savings_data.get('total_savings', 0):,.2f} over {savings_data.get('tenure', 0)} years. "
             "Feel free to reach out if you need more information or assistance at https://wa.me/60126181683."
         )
-
 
 def generate_faq_response_with_gpt(user_input: str) -> str:
     """
@@ -721,219 +717,11 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
     handle_convince(user, messenger_id)
     logging.debug("handle_convince manually invoked after Path B calculation.")
 
-def handle_convince(user: User, messenger_id: str, user_input: str = ""):
-    """
-    Sends the convincing message and cash-out prompt to the user.
-    """
-    logging.debug("Entering handle_convince function.")
-
-    # Prevent duplicate prompts if already in CASHOUT_OFFER state
-    if user.state == STATES['CASHOUT_OFFER']:
-        logging.debug("Cash-out prompt already sent. Skipping duplicate prompt.")
-        return
-
-    # Update user state to CASHOUT_OFFER BEFORE generating messages
-    user.state = STATES['CASHOUT_OFFER']
-    db.session.commit()
-    logging.debug(f"User state updated to {user.state}")
-
-    # Prepare savings data with default values to prevent NoneType errors
-    savings_data = {
-        'monthly_savings': user.monthly_savings or 0,
-        'yearly_savings': user.yearly_savings or 0,
-        'total_savings': user.total_savings or 0,
-        'tenure': user.remaining_tenure or user.tenure or 0,
-        'current_rate': user.current_interest_rate or 0,
-        'new_rate': user.new_rate or 0
-    }
-
-    logging.debug(f"Savings Data: {savings_data}")
-
-    # Generate the convincing message
-    convincing_msg = generate_convincing_message(savings_data)
-    send_messenger_message(messenger_id, {"text": convincing_msg})
-    logging.debug("Convincing message sent.")
-
-    # Prepare the Cash-Out Prompt with quick replies
-    cashout_message = (
-        "Are you interested in exploring cash-out refinancing options?\n\n"
-        "Cash-out refinancing allows you to access extra funds by tapping into your home equity. "
-        "It’s a flexible way to finance important expenses while consolidating your existing mortgage.\n\n"
-        "You can use the additional funds for purposes such as:\n"
-        "• Home renovations or upgrades\n"
-        "• Education and tuition fees\n"
-        "• Investment opportunities\n"
-        "• Consolidating debts for better financial management\n\n"
-        "Note: According to Bank Negara Malaysia (BNM) guidelines, cash-out refinancing is limited "
-        "to a maximum repayment period of 10 years or up to 70 years of age, whichever comes first."
-    )
-
-    quick_replies = [
-        {"content_type": "text", "title": "Yes, tell me more", "payload": "CASHOUT_YES"},
-        {"content_type": "text", "title": "No, thanks", "payload": "CASHOUT_NO"}
-    ]
-
-    send_messenger_message(messenger_id, {"text": cashout_message, "quick_replies": quick_replies})
-    logging.debug("Cash-out prompt sent.")
-
-def handle_cashout_offer(user: User, messenger_id: str, user_input: str):
-    """
-    Handles the user's response to the cash-out offer.
-    """
-    logging.debug("Entering handle_cashout_offer function.")
-
-    # Validate input
-    if user_input not in ["CASHOUT_YES", "CASHOUT_NO"]:
-        message = {
-            "text": "Please select 'Yes, tell me more' or 'No, thanks'."
-        }
-        send_messenger_message(messenger_id, message)
-        logging.debug("Invalid input for cash-out offer. Re-prompted user.")
-        return
-
-    # Handle user response
-    if user_input == "CASHOUT_YES":
-        user.state = STATES['CASHOUT_GATHER_AMOUNT']
-        db.session.commit()
-        question = (
-            "Great! How much equity would you like to cash out from your property in Ringgit?\n\n "
-            "For example, RM50,000 or 50k."
-        )
-        send_messenger_message(messenger_id, {"text": question})
-        logging.debug("User accepted cash-out offer. Cash-out amount collection initiated.")
-
-    elif user_input == "CASHOUT_NO":
-        user.temp_cashout_amount = 0  # No cash-out
-        user.state = STATES['WAITING_INPUT']
-        db.session.commit()
-        logging.debug("User declined cash-out offer. Updated state to WAITING_INPUT.")
-
-        # Notify admin about declined cash-out offer
-        admin_summary = (
-            f"User Decline Cash-Out Offer\n"
-            f"User Name: {user.name or 'N/A'}\n"
-            f"Phone Number: {user.phone_number or 'N/A'}\n\n"
-            f"Loan Details\n"
-            f"Loan Outstanding: RM{user.outstanding_balance or 0:,.2f}\n"
-            f"Interest Rate: {user.current_interest_rate or 0:.2f}%\n"
-            f"Remaining Tenure: {user.remaining_tenure or 0:.1f} years\n"
-            f"Current Repayment: RM{calculate_monthly_payment(user.outstanding_balance or 0, user.current_interest_rate or 0, user.remaining_tenure or 0):,.2f}\n\n"
-            f"After Refinancing\n"
-            f"New Interest Rate: {user.new_rate or 0:.2f}%\n"
-            f"New Repayment: RM{calculate_monthly_payment(user.outstanding_balance or 0, user.new_rate or 0, user.remaining_tenure or 0):,.2f}\n"
-            f"Monthly Saving: RM{user.monthly_savings or 0:,.2f}\n"
-            f"Yearly Savings: RM{user.yearly_savings or 0:,.2f}\n"
-            f"Total Savings: RM{user.total_savings or 0:,.2f}\n"
-        )
-        notify_admin(user, "User Declined Cash-Out Offer", admin_summary)
-        logging.debug("Admin notified about declined cash-out offer.")
-
-        # FAQ Prompt
-        faq_prompt = (
-            "You are now talking to Finzo AI. You can ask anything regarding refinancing and housing loans.\n\n"
-            "Common questions you might have:\n"
-            "• What documents do I need for refinancing?\n"
-            "• How long does the refinancing process take?\n"
-            "• Are there any fees involved?\n"
-            "• What factors affect my loan approval?"
-        )
-        send_messenger_message(messenger_id, {"text": faq_prompt})
-        logging.debug("FAQ prompt sent after declining cash-out offer.")
-
-def handle_cashout_gather_amount(user: User, messenger_id: str, user_input: str):
-    logging.debug("Entering handle_cashout_gather_amount function.")
-
-    try:
-        # Parse and save cash-out amount
-        cashout_amount = parse_number_with_suffix(user_input)
-        user.temp_cashout_amount = cashout_amount
-        db.session.commit()
-        logging.debug(f"Cash-out amount {cashout_amount} set for user.")
-
-        # Proceed to calculate final repayment and notify admin
-        handle_cashout_calculate(user, messenger_id)
-
-    except Exception as e:
-        logging.error(f"Error gathering cash-out amount: {e}")
-        send_messenger_message(
-            messenger_id,
-            {"text": "I'm sorry, I couldn't process that amount. Please enter a valid cash-out amount in Ringgit (e.g., RM50,000 or 50k)."}
-        )
-
-def handle_cashout_calculate(user: User, messenger_id: str, user_input: str = None):
-    """
-    Calculates cash-out refinancing details and sends results to the user and admin.
-    """
-    logging.debug("Entering handle_cashout_calculate function.")
-
-    # Get user inputs
-    outstanding_balance = user.outstanding_balance or 0.0
-    remaining_tenure = user.remaining_tenure or 30
-    cashout_amount = user.temp_cashout_amount or 0.0
-
-    # Calculate loan details
-    total_loan = outstanding_balance + cashout_amount
-    main_rate = get_current_bank_rate(total_loan)
-
-    # Calculate installments
-    segment1_tenure = min(remaining_tenure, 35)
-    monthly1 = calculate_monthly_payment(outstanding_balance, main_rate, segment1_tenure)
-    monthly2 = calculate_monthly_payment(cashout_amount, main_rate, 10)
-
-    new_total_monthly = monthly1 + monthly2
-
-    # --- Message for USER ---
-    user_summary = (
-        f"📊 Cash-Out Calculation:\n"
-        f"• Main Loan: RM{outstanding_balance:,.2f} @ {main_rate:.2f}% for {segment1_tenure} yrs => RM{monthly1:,.2f}/month\n"
-        f"• Cash-Out: RM{cashout_amount:,.2f} @ {main_rate:.2f}% for 10 yrs => RM{monthly2:,.2f}/month\n\n"
-        f"💳 Total Monthly Payment: RM{new_total_monthly:,.2f}\n\n"
-        f"Note: This is your updated estimated monthly repayment amount if the refinance and cash-out are approved and accepted."
-    )
-    send_messenger_message(messenger_id, {"text": user_summary})
-    logging.debug("Cash-out calculation summary sent to user.")
-
-    # Transition to WAITING_INPUT
-    user.state = STATES['WAITING_INPUT']
-    db.session.commit()
-
-    # Notify admin about accepted cash-out offer
-    admin_summary = (
-        f"User Accepted Cash Out Offer\n"
-        f"User Name: {user.name or 'N/A'}\n"
-        f"Phone Number: {user.phone_number or 'N/A'}\n\n"
-        f"Loan Details\n"
-        f"Loan Outstanding: RM{outstanding_balance:,.2f}\n"
-        f"Interest Rate: {user.current_interest_rate or 0:.2f}%\n"
-        f"Remaining Tenure: {remaining_tenure:.1f} years\n"
-        f"Current Repayment: RM{calculate_monthly_payment(outstanding_balance, user.current_interest_rate or 0, remaining_tenure):,.2f}\n\n"
-        f"After Refinancing\n"
-        f"New Interest Rate: {main_rate:.2f}%\n"
-        f"New Repayment: RM{monthly1:,.2f} (housing loan only)\n"
-        f"Monthly Saving: RM{user.monthly_savings or 0:,.2f}\n"
-        f"Yearly Savings: RM{user.yearly_savings or 0:,.2f}\n"
-        f"Total Savings: RM{user.total_savings or 0:,.2f}\n\n"
-        f"Cash Out Amount: RM{cashout_amount:,.2f}\n"
-        f"New Repayment: RM{new_total_monthly:,.2f} (Cashout + housing loan)\n"
-    )
-    notify_admin(user, "User Completed Cash-Out Refinance Calculation", admin_summary)
-    logging.debug("Admin notified about completed cash-out refinance calculation.")
-
-    # FAQ Prompt
-    faq_prompt = (
-        "You are now talking to Finzo AI. You can ask anything regarding refinancing and housing loans.\n\n"
-        "Common questions you might have:\n"
-        "• What documents do I need for refinancing?\n"
-        "• How long does the refinancing process take?\n"
-        "• Are there any fees involved?\n"
-        "• What factors affect my loan approval?"
-    )
-    send_messenger_message(messenger_id, {"text": faq_prompt})
-    logging.debug("FAQ prompt sent after cash-out calculation.")
 
 def handle_waiting_input(user: User, messenger_id: str, user_input: str):
     """
-    Handles general user queries after cash-out calculation using GPT-3.5-turbo.
+    Handles general user queries after savings calculation.
+
     """
     logging.debug("Entering handle_waiting_input function.")
 
@@ -1060,24 +848,19 @@ def handle_faq(user: User, messenger_id: str, user_input: str):
 
 # Admin Notification Function
 def notify_admin(user: User, event_name: str, summary: str = None):
-    """
-    Sends an admin notification with loan comparison details.
-    """
     admin_id = os.getenv("ADMIN_MESSENGER_ID")
     if not admin_id or not admin_id.isdigit():
-        logging.warning(f"No valid ADMIN_MESSENGER_ID set. Skipping notify_admin.")
+        logging.warning("No valid ADMIN_MESSENGER_ID set. Skipping notify_admin.")
         return
 
     if summary:
-        # If a summary is provided, include it in the admin notification
         comparison = (
             f"📊 {event_name}\n"
             f"Customer: {user.name or 'N/A'}\n"
             f"Contact: {user.phone_number or 'N/A'}\n\n"
-            f"{summary}"
+            f"{summary}"  # Ensure summary excludes cash-out details
         )
     else:
-        # Basic notification without summary
         comparison = (
             f"📊 {event_name}\n"
             f"Customer: {user.name}\n"
@@ -1088,6 +871,9 @@ def notify_admin(user: User, event_name: str, summary: str = None):
 
     send_messenger_message(admin_id, {"text": comparison})
     logging.debug("Admin notification sent.")
+
+
+# Convincing Message Function
 
 # Unhandled State Handler
 def handle_unhandled_state(user: User, messenger_id: str, user_input: str):
@@ -1174,34 +960,22 @@ def send_messenger_message(recipient_id, message):
     except ValueError as ve:
         logging.error(f"Message formatting error: {ve}")
 
+# Update State Handlers
 STATE_HANDLERS = {
-    STATES['GET_STARTED_YES']: handle_get_started_yes,  # New handler for getting started
-    STATES['CONTACT_ADMIN']: handle_contact_admin,      # New handler for contacting admin
-
-    # Name and Phone Collection
+    STATES['GET_STARTED_YES']: handle_get_started_yes,
+    STATES['CONTACT_ADMIN']: handle_contact_admin,
     STATES['NAME_COLLECTION']: handle_name_collection,
     STATES['PHONE_COLLECTION']: handle_phone_collection,
     STATES['PATH_SELECTION']: handle_path_selection,
-
-    # Path A
     STATES['PATH_A_GATHER_BALANCE']: handle_path_a_balance,
     STATES['PATH_A_GATHER_INTEREST']: handle_path_a_interest,
     STATES['PATH_A_GATHER_TENURE']: handle_path_a_tenure,
     STATES['PATH_A_CALCULATE']: handle_path_a_calculate,
-
-    # Path B
     STATES['PATH_B_GATHER_ORIGINAL_AMOUNT']: handle_path_b_original_amount,
     STATES['PATH_B_GATHER_ORIGINAL_TENURE']: handle_path_b_original_tenure,
     STATES['PATH_B_GATHER_MONTHLY_PAYMENT']: handle_path_b_monthly_payment,
     STATES['PATH_B_GATHER_YEARS_PAID']: handle_path_b_years_paid,
     STATES['PATH_B_CALCULATE']: handle_path_b_calculate,
-
-    # After calculations
-    STATES['CASHOUT_OFFER']: handle_cashout_offer,
-    STATES['CASHOUT_GATHER_AMOUNT']: handle_cashout_gather_amount,
-    STATES['CASHOUT_CALCULATE']: handle_cashout_calculate,
-
-    # Additional States
     STATES['WAITING_INPUT']: handle_waiting_input,
     STATES['FAQ']: handle_faq,
     STATES['END']: handle_unhandled_state
@@ -1338,7 +1112,6 @@ def reset_user(user: User):
     user.original_tenure = None
     user.current_monthly_payment = None
     user.years_paid = None
-    user.temp_cashout_amount = None
     user.monthly_savings = None
     user.yearly_savings = None
     user.total_savings = None
