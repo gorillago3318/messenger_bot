@@ -557,16 +557,8 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
         f"• Monthly: RM{monthly_savings:,.2f}\n"
         f"• Yearly: RM{yearly_savings:,.2f}\n"
         f"• Total: RM{total_savings:,.2f} over {int(tenure)} years\n\n"
-        f"Finzo AI is analyzing your refinance details to determine if it’s beneficial. Please hold on for a moment."
     )
-
-    # Send summary to user with splitting for long messages
-    send_long_message(messenger_id, summary)
-    logging.debug("Path A calculation summary sent.")
-
-    # Notify admin
-    notify_admin(user, "Loan Analysis Summary", summary)
-    logging.debug("Admin notification sent.")
+    logging.debug("Path A calculation summary prepared.")
 
     # Generate GPT convincing message
     savings_data = {
@@ -578,8 +570,18 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
         'new_rate': new_rate
     }
     convincing_msg = generate_convincing_message(savings_data)
-    send_long_message(messenger_id, convincing_msg)
-    logging.debug("GPT convincing message sent.")
+    logging.debug("GPT convincing message generated.")
+
+    # Combine summary and convincing messages
+    combined_message = f"{summary}\n\n{convincing_msg}"
+
+    # Send combined message in chunks
+    send_long_message(messenger_id, combined_message)
+    logging.debug("Combined summary and convincing message sent.")
+
+    # Notify admin
+    notify_admin(user, "Loan Analysis Summary", summary)
+    logging.debug("Admin notification sent.")
 
     # Inquiry mode prompt
     time.sleep(3)
@@ -732,16 +734,8 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
         f"• Monthly: RM{monthly_savings:,.2f}\n"
         f"• Yearly: RM{yearly_savings:,.2f}\n"
         f"• Total: RM{total_savings:,.2f} over {int(remain_tenure)} years\n\n"
-        f"Finzo AI is analyzing your refinance details to determine if it’s beneficial. Please hold on for a moment."
     )
-
-    # Send summary to user with message splitting
-    send_long_message(messenger_id, summary)
-    logging.debug("Path B calculation summary sent.")
-
-    # Notify admin with the same summary
-    notify_admin(user, "Loan Analysis Summary", summary)
-    logging.debug("Admin notification sent.")
+    logging.debug("Path B calculation summary prepared.")
 
     # Generate GPT convincing message
     savings_data = {
@@ -753,10 +747,20 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
         'new_rate': new_rate
     }
     convincing_msg = generate_convincing_message(savings_data)
-    send_long_message(messenger_id, convincing_msg)
-    logging.debug("GPT convincing message sent.")
+    logging.debug("GPT convincing message generated.")
 
-    # Inquiry mode prompt after 3 seconds
+    # Combine summary and convincing messages
+    combined_message = f"{summary}\n\n{convincing_msg}"
+
+    # Send combined message in chunks
+    send_long_message(messenger_id, combined_message)
+    logging.debug("Combined summary and convincing message sent.")
+
+    # Notify admin with the summary
+    notify_admin(user, "Loan Analysis Summary", summary)
+    logging.debug("Admin notification sent.")
+
+    # Inquiry mode prompt
     time.sleep(3)
     send_messenger_message(messenger_id, {"text": "You are now talking to Finzo AI. Feel free to ask any questions about refinancing and loans!"})
     logging.debug("Inquiry mode prompt sent.")
@@ -765,6 +769,7 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
     user.state = STATES['WAITING_INPUT']  # Transition to FAQ mode
     db.session.commit()
     logging.debug("Transitioned to FAQ mode (WAITING_INPUT).")
+
 
 
 def handle_waiting_input(user: User, messenger_id: str, user_input: str):
