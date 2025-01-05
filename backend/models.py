@@ -41,9 +41,6 @@ class User(db.Model):
     current_rate = db.Column(db.Float)
     new_rate = db.Column(db.Float)
 
-    # Cash-Out fields
-    temp_cashout_amount = db.Column(db.Float)  # Added field
-
     # New field for tracking last interaction
     last_interaction = db.Column(db.DateTime, default=datetime.utcnow)  # Add this line
 
