@@ -9,8 +9,9 @@ import json
 from flask import Blueprint, request, jsonify
 from backend.extensions import db
 from backend.models import User, Lead, BankRate
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
+import time
+
 
 
 # Initialize Blueprint
