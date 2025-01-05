@@ -832,12 +832,12 @@ def handle_waiting_input(user: User, messenger_id: str, user_input: str):
 
 def handle_faq(user: User, messenger_id: str, user_input: str):
     """
-    Handles FAQ queries with enhanced admin contact detection and fallback GPT responses.
+    Handles FAQ queries with admin contact detection and fallback GPT responses.
     """
     logging.debug("Entering handle_faq function.")
 
     # Debug logs for user state and calculation data
-    logging.debug(f"User Data: Name: {user.name}, Phone: {user.phone_number}")
+    logging.debug(f"User Data - Name: {user.name}, Phone: {user.phone_number}")
     logging.debug(f"Monthly Savings: RM{user.monthly_savings:,.2f}")
     logging.debug(f"Yearly Savings: RM{user.yearly_savings:,.2f}")
     logging.debug(f"Total Savings: RM{user.total_savings:,.2f}")
@@ -856,14 +856,16 @@ def handle_faq(user: User, messenger_id: str, user_input: str):
     # Check for admin-related queries (case-insensitive)
     user_input_lower = user_input.lower()
     if any(keyword in user_input_lower for keyword in admin_keywords):
-        # Directly send admin contact details
+        # Send admin contact details immediately
         admin_message = (
             "📞 You can contact our admin directly via WhatsApp: [Click Here](https://wa.me/60126181683)\n\n"
             "Let us know if you need more assistance!"
         )
         send_messenger_message(messenger_id, {"text": admin_message})
         logging.debug("Admin contact details sent immediately.")
-        return  # Skip GPT processing
+
+        # No further processing required
+        return
 
     # Process general FAQ queries using GPT if no admin-related keywords matched
     try:
@@ -883,17 +885,17 @@ def handle_faq(user: User, messenger_id: str, user_input: str):
             }
         ]
 
-        # Request GPT response
+        # GPT request
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=conversation,
             temperature=0.7
         )
 
-        # Extract and send the GPT-generated response
+        # Extract GPT-generated response
         faq_response = response.choices[0].message.content.strip()
         send_messenger_message(messenger_id, {"text": faq_response})
-        logging.debug("FAQ response sent via GPT.")
+        logging.debug(f"FAQ response sent: {faq_response}")
 
     except Exception as e:
         # Log error and provide fallback response
@@ -903,7 +905,7 @@ def handle_faq(user: User, messenger_id: str, user_input: str):
             "Please contact admin directly at [Click Here](https://wa.me/60126181683) for assistance."
         )
         send_messenger_message(messenger_id, {"text": fallback_response})
-        logging.debug("Fallback response sent to user due to GPT error.")
+        logging.debug("Fallback response sent due to GPT error.")
 
     # Update user state to allow further questions
     user.state = STATES['WAITING_INPUT']
@@ -911,8 +913,8 @@ def handle_faq(user: User, messenger_id: str, user_input: str):
     logging.debug("User state updated to WAITING_INPUT.")
 
     # Notify admin about the FAQ query
-    notify_admin(user, f"FAQ query received: {user_input}")
-    logging.debug("Admin notified about FAQ query.")
+    notify_admin(user, "FAQ Query Received")
+    logging.debug(f"Admin notified about FAQ query: {user_input}")
 
 
 # Admin Notification Function
@@ -920,33 +922,38 @@ def notify_admin(user: User, event_name: str):
     """
     Sends a notification to the admin about a new lead with key details.
     """
-    # Fetch admin ID from environment
+    # Get admin Messenger ID from environment variables
     admin_id = os.getenv("ADMIN_MESSENGER_ID")
     if not admin_id or not admin_id.isdigit():
         logging.warning("No valid ADMIN_MESSENGER_ID set. Skipping notify_admin.")
         return
 
-    # Prepare the optimized admin message
-    admin_summary = (
-        f"📊 {event_name}\n\n"
-        f"👤 *Lead Details:*\n"
-        f"• Name: {user.name or 'N/A'}\n"
-        f"• Contact: {user.phone_number or 'N/A'}\n\n"
-        f"🏦 *Loan Details:*\n"
-        f"• Current Repayment: RM{user.monthly_savings + user.new_rate:,.2f}\n"
-        f"• Remaining Tenure: {user.tenure} years\n"
-        f"• Current Rate: {user.current_interest_rate:.2f}%\n"
-        f"• New Rate: {user.new_rate:.2f}%\n\n"
-        f"💰 *Savings Summary:*\n"
-        f"• Monthly: RM{user.monthly_savings:,.2f}\n"
-        f"• Yearly: RM{user.yearly_savings:,.2f}\n"
-        f"• Total: RM{user.total_savings:,.2f} over {int(user.tenure)} years\n\n"
-        f"🔗 Contact Admin: [WhatsApp](https://wa.me/{user.phone_number})"
-    )
+    try:
+        # Prepare the admin notification message
+        admin_summary = (
+            f"📊 {event_name}\n\n"
+            f"👤 *Lead Details:*\n"
+            f"• Name: {user.name or 'N/A'}\n"
+            f"• Contact: {user.phone_number or 'N/A'}\n\n"
+            f"🏦 *Loan Details:*\n"
+            f"• Remaining Tenure: {user.tenure if user.tenure else 'N/A'} years\n"
+            f"• Current Rate: {user.current_interest_rate:.2f}%\n"
+            f"• New Rate: {user.new_rate:.2f}%\n\n"
+            f"💰 *Savings Summary:*\n"
+            f"• Monthly: RM{user.monthly_savings:,.2f}\n"
+            f"• Yearly: RM{user.yearly_savings:,.2f}\n"
+            f"• Total: RM{user.total_savings:,.2f} over {int(user.tenure) if user.tenure else 'N/A'} years\n\n"
+            f"🔗 Admin Contact: [WhatsApp](https://wa.me/60126181683)"
+        )
 
-    # Send the admin notification
-    send_messenger_message(admin_id, {"text": admin_summary})
-    logging.debug("Admin notification sent with optimized format.")
+        # Send the message to admin
+        send_messenger_message(admin_id, {"text": admin_summary})
+        logging.debug(f"Admin notification sent successfully for event: {event_name}")
+
+    except Exception as e:
+        # Log the error if any issues occur
+        logging.error(f"Error in notify_admin: {e}")
+")
 
 
 # Unhandled State Handler
