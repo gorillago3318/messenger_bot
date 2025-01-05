@@ -516,15 +516,18 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
     """
     logging.debug("Entering handle_path_a_calculate function.")
 
+    # Retrieve user inputs
     balance = user.outstanding_balance
     interest = user.current_interest_rate
     tenure = user.remaining_tenure
 
+    # Validate inputs
     if balance is None or interest is None or tenure is None:
         send_messenger_message(messenger_id, {"text": "I'm missing data. Type 'restart' or re-enter details."})
         logging.error("Missing data for Path A calculation.")
         return
 
+    # Perform calculations
     new_rate = get_current_bank_rate(balance)
     current_monthly = calculate_monthly_payment(balance, interest, tenure)
     new_monthly = calculate_monthly_payment(balance, new_rate, tenure)
@@ -533,16 +536,16 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
     yearly_savings = monthly_savings * 12
     total_savings = monthly_savings * tenure * 12
 
+    # Update user attributes in database
     user.monthly_savings = monthly_savings
     user.yearly_savings = yearly_savings
     user.total_savings = total_savings
     user.tenure = tenure
     user.current_interest_rate = interest
     user.new_rate = new_rate
-
     db.session.commit()
 
-    # Send calculation summary
+    # Generate summary message
     summary = (
         f"🏦 Current Loan:\n"
         f"• Monthly Payment: RM{current_monthly:,.2f}\n"
@@ -557,16 +560,31 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
         f"Finzo AI is analyzing your refinance details to determine if it’s beneficial. Please hold on for a moment."
     )
 
-    # **Correction:** Remove the nested "message" key
+    # Send summary to user
     send_messenger_message(messenger_id, {"text": summary})
     logging.debug("Path A calculation summary sent.")
 
-    # Invoke handle_convince once to send the convince message and cash-out prompt
+    # Notify admin
     notify_admin(user, "Loan Analysis Summary", summary)
+    logging.debug("Admin notification sent.")
+
+    # Generate GPT convincing message
+    savings_data = {
+        'monthly_savings': monthly_savings,
+        'yearly_savings': yearly_savings,
+        'total_savings': total_savings,
+        'tenure': tenure,
+        'current_rate': interest,
+        'new_rate': new_rate
+    }
+    convincing_msg = generate_convincing_message(savings_data)
+    send_messenger_message(messenger_id, {"text": convincing_msg})
+    logging.debug("GPT convincing message sent.")
+
+    # Inquiry mode prompt
     time.sleep(3)
     send_messenger_message(messenger_id, {"text": "You are now talking to Finzo AI. Feel free to ask any questions about refinancing and loans!"})
-
-    logging.debug("handle_convince manually invoked after Path A calculation.")
+    logging.debug("Inquiry mode prompt sent.")
 
 # Path B Handlers
 def handle_path_b_original_amount(user: User, messenger_id: str, user_input: str):
@@ -710,20 +728,33 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
         f"• Yearly: RM{yearly_savings:,.2f}\n"
         f"• Total: RM{total_savings:,.2f} over {int(remain_tenure)} years\n\n"
         f"Finzo AI is analyzing your refinance details to determine if it’s beneficial. Please hold on for a moment."
-
     )
 
-    # **Correction:** Remove the nested "message" key
+    # Send calculation summary to user
     send_messenger_message(messenger_id, {"text": summary})
     logging.debug("Path B calculation summary sent.")
 
-    # Invoke handle_convince once to send the convince message and cash-out prompt
+    # Notify admin with the same summary
     notify_admin(user, "Loan Analysis Summary", summary)
+    logging.debug("Admin notification sent.")
+
+    # Generate GPT convincing message
+    savings_data = {
+        'monthly_savings': monthly_savings,
+        'yearly_savings': yearly_savings,
+        'total_savings': total_savings,
+        'tenure': remain_tenure,
+        'current_rate': guessed_rate,
+        'new_rate': new_rate
+    }
+    convincing_msg = generate_convincing_message(savings_data)
+    send_messenger_message(messenger_id, {"text": convincing_msg})
+    logging.debug("GPT convincing message sent.")
+
+    # Inquiry mode prompt after 3 seconds
     time.sleep(3)
     send_messenger_message(messenger_id, {"text": "You are now talking to Finzo AI. Feel free to ask any questions about refinancing and loans!"})
-
-    logging.debug("handle_convince manually invoked after Path B calculation.")
-
+    logging.debug("Inquiry mode prompt sent.")
 
 def handle_waiting_input(user: User, messenger_id: str, user_input: str):
     """
