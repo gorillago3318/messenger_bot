@@ -6,6 +6,7 @@ import logging
 import requests
 import openai
 import json
+import time
 from flask import Blueprint, request, jsonify
 from backend.extensions import db
 from backend.models import User, Lead, BankRate
@@ -272,8 +273,9 @@ def generate_convincing_message(savings_data: dict) -> str:
                 "content": (
                     "You are Finzo AI Assistant, a friendly and professional consultant specializing in refinancing solutions. "
                     "Focus first on presenting the user's potential savings clearly and confidently. Then, explain why refinancing is an opportunity many homeowners overlook. "
-                    "Highlight that banks benefit from borrowers continuing to pay higher interest rates, but refinancing empowers users to save more and invest in their future, a holiday getaway or even upgrade of lifestyle. "
-                    "Keep the tone approachable, helpful, and reassuring, positioning yourself as a knowledgeable partner in financial improvement. Avoid greetings and closings and keep it within 1800 characters."
+                    "Highlight that banks benefit from borrowers continuing to pay higher interest rates, but refinancing empowers users to save more and invest in their future, a holiday getaway, or even an upgrade of lifestyle. "
+                    "Keep the tone approachable, helpful, and reassuring, positioning yourself as a knowledgeable partner in financial improvement. "
+                    "The response should be concise, persuasive, and **less than 2000 characters**. Avoid greetings and closings."
                 )
             },
             {
@@ -296,7 +298,13 @@ def generate_convincing_message(savings_data: dict) -> str:
             temperature=0.7
         )
 
-        return savings_message + response.choices[0].message.content.strip()
+        # Check length of generated message and adjust if necessary
+        generated_message = response.choices[0].message.content.strip()
+        if len(savings_message + generated_message) > 2000:
+            logging.warning("Generated message exceeds 2000 characters. Truncating.")
+            return (savings_message + generated_message)[:2000]
+
+        return savings_message + generated_message
 
     except Exception as e:
         logging.error(f"Error generating convincing message: {e}")
@@ -305,6 +313,7 @@ def generate_convincing_message(savings_data: dict) -> str:
             f"RM{savings_data.get('yearly_savings', 0):,.2f} annually, and RM{savings_data.get('total_savings', 0):,.2f} over {savings_data.get('tenure', 0)} years. "
             "Feel free to reach out if you need more information or assistance at https://wa.me/60126181683."
         )
+
 
 
 def generate_faq_response_with_gpt(user_input: str) -> str:
@@ -753,6 +762,10 @@ def handle_convince(user: User, messenger_id: str, user_input: str = ""):
     convincing_msg = generate_convincing_message(savings_data)
     send_messenger_message(messenger_id, {"text": convincing_msg})
     logging.debug("Convincing message sent.")
+
+    # Wait for 5 seconds before sending the cash-out prompt
+    time.sleep(5)
+    logging.debug("Waiting for 5 seconds before sending the cash-out prompt.")
 
     # Prepare the Cash-Out Prompt with quick replies
     cashout_message = (
