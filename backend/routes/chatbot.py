@@ -510,7 +510,7 @@ def handle_path_a_tenure(user: User, messenger_id: str, user_input: str):
     logging.debug("Remaining tenure collected and Path A calculation initiated.")
 
 
-ddef handle_path_a_calculate(user: User, messenger_id: str, *args):
+def handle_path_a_calculate(user: User, messenger_id: str, *args):
     """
     Handles the calculation step in Path A after gathering all necessary inputs.
     """
