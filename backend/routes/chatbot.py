@@ -1155,8 +1155,11 @@ def send_messenger_message(recipient_id, message):
             if len(message) > 2000:
                 logging.warning(f"Message exceeds 2000 characters, splitting into chunks.")
                 message_chunks = split_message(message)
-                # Send each chunk as a separate message
-                for chunk in message_chunks:
+                for i, chunk in enumerate(message_chunks):
+                    # Check the length of each chunk
+                    logging.debug(f"Chunk {i+1}: Length = {len(chunk)} characters")
+                    if len(chunk) > 2000:
+                        raise ValueError(f"Chunk {i+1} exceeds 2000 characters!")
                     data = {
                         "recipient": {"id": recipient_id},
                         "message": {"text": chunk}
@@ -1197,6 +1200,7 @@ def send_messenger_message(recipient_id, message):
         logging.error(f"Failed to send message: {e}")
     except ValueError as ve:
         logging.error(f"Message formatting error: {ve}")
+
 
 STATE_HANDLERS = {
     STATES['GET_STARTED_YES']: handle_get_started_yes,  # New handler for getting started
