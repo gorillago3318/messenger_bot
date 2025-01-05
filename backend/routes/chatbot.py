@@ -510,7 +510,7 @@ def handle_path_a_tenure(user: User, messenger_id: str, user_input: str):
     logging.debug("Remaining tenure collected and Path A calculation initiated.")
 
 
-def handle_path_a_calculate(user: User, messenger_id: str, *args):
+ddef handle_path_a_calculate(user: User, messenger_id: str, *args):
     """
     Handles the calculation step in Path A after gathering all necessary inputs.
     """
@@ -527,25 +527,32 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
         logging.error("Missing data for Path A calculation.")
         return
 
-    # Perform calculations
-    new_rate = get_current_bank_rate(balance)
-    current_monthly = calculate_monthly_payment(balance, interest, tenure)
-    new_monthly = calculate_monthly_payment(balance, new_rate, tenure)
+    try:
+        # Perform calculations
+        new_rate = get_current_bank_rate(balance)
+        current_monthly = calculate_monthly_payment(balance, interest, tenure)
+        new_monthly = calculate_monthly_payment(balance, new_rate, tenure)
 
-    monthly_savings = current_monthly - new_monthly
-    yearly_savings = monthly_savings * 12
-    total_savings = monthly_savings * tenure * 12
+        monthly_savings = current_monthly - new_monthly
+        yearly_savings = monthly_savings * 12
+        total_savings = monthly_savings * tenure * 12
 
-    # Update user attributes in database
-    user.monthly_savings = monthly_savings
-    user.yearly_savings = yearly_savings
-    user.total_savings = total_savings
-    user.tenure = tenure
-    user.current_interest_rate = interest
-    user.new_rate = new_rate
-    db.session.commit()
+        # Update user attributes in database
+        user.monthly_savings = monthly_savings
+        user.yearly_savings = yearly_savings
+        user.total_savings = total_savings
+        user.tenure = tenure
+        user.current_interest_rate = interest
+        user.new_rate = new_rate
+        db.session.commit()
+        logging.debug("Path A calculation details updated for user.")
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error during Path A calculation: {e}")
+        send_messenger_message(messenger_id, {"text": "An error occurred. Please try again or contact admin."})
+        return
 
-    # Generate summary message
+    # Generate Summary Message
     summary = (
         f"🏦 Current Loan:\n"
         f"• Monthly Payment: RM{current_monthly:,.2f}\n"
@@ -558,40 +565,70 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
         f"• Yearly: RM{yearly_savings:,.2f}\n"
         f"• Total: RM{total_savings:,.2f} over {int(tenure)} years\n\n"
     )
-    logging.debug("Path A calculation summary prepared.")
+    logging.debug("Path A summary prepared.")
 
-    # Generate GPT convincing message
-    savings_data = {
-        'monthly_savings': monthly_savings,
-        'yearly_savings': yearly_savings,
-        'total_savings': total_savings,
-        'tenure': tenure,
-        'current_rate': interest,
-        'new_rate': new_rate
-    }
-    convincing_msg = generate_convincing_message(savings_data)
-    logging.debug("GPT convincing message generated.")
+    # User Message Logic
+    if total_savings < 10_000:
+        if total_savings > 0:
+            send_messenger_message(messenger_id, {
+                "text": "Based on your loan details, refinancing may not be beneficial as the fees incurred could outweigh the savings."
+            })
+        else:
+            send_messenger_message(messenger_id, {
+                "text": "Your loan is already at an optimum level. No changes are needed at this time."
+            })
+        logging.debug("Sent simplified message due to low or no savings.")
+    else:
+        # Convincing message only if savings exceed RM10,000
+        try:
+            savings_data = {
+                'monthly_savings': monthly_savings,
+                'yearly_savings': yearly_savings,
+                'total_savings': total_savings,
+                'tenure': tenure,
+                'current_rate': interest,
+                'new_rate': new_rate
+            }
+            convincing_msg = generate_convincing_message(savings_data)
+            send_long_message(messenger_id, f"{summary}\n\n{convincing_msg}")
+            logging.debug("Sent summary and convincing message for high savings.")
+        except Exception as e:
+            logging.error(f"Error generating convincing message: {e}")
+            send_long_message(messenger_id, summary)
 
-    # Combine summary and convincing messages
-    combined_message = f"{summary}\n\n{convincing_msg}"
-
-    # Send combined message in chunks
-    send_long_message(messenger_id, combined_message)
-    logging.debug("Combined summary and convincing message sent.")
-
-    # Notify admin
-    notify_admin(user, "Loan Analysis Summary")
-    logging.debug("Admin notification sent.")
+    # Admin Notification
+    try:
+        admin_summary = (
+            f"📊 Loan Analysis Summary\n\n"
+            f"👤 Lead Details:\n"
+            f"• Name: {user.name or 'N/A'}\n"
+            f"• Contact: {user.phone_number or 'N/A'}\n\n"
+            f"🏦 Current Loan:\n"
+            f"• Current Monthly Repayment: RM{current_monthly:,.2f}\n"
+            f"• Current Tenure: {tenure} years\n"
+            f"• Current Interest Rate: {interest:.2f}%\n\n"
+            f"💰 After Refinancing:\n"
+            f"• New Monthly Repayment: RM{new_monthly:,.2f}\n"
+            f"• New Interest Rate: {new_rate:.2f}%\n\n"
+            f"📈 Savings Summary:\n"
+            f"• Monthly: RM{monthly_savings:,.2f}\n"
+            f"• Yearly: RM{yearly_savings:,.2f}\n"
+            f"• Total: RM{total_savings:,.2f} over {int(tenure)} years\n"
+        )
+        notify_admin(user, admin_summary)
+        logging.debug("Admin notification sent.")
+    except Exception as e:
+        logging.error(f"Error sending admin notification: {e}")
 
     # Inquiry mode prompt
-    time.sleep(3)
     send_messenger_message(messenger_id, {"text": "You are now talking to Finzo AI. Feel free to ask any questions about refinancing and loans!"})
     logging.debug("Inquiry mode prompt sent.")
 
-    # **State Transition to FAQ Mode**
-    user.state = STATES['WAITING_INPUT']  # Transition to FAQ mode
+    # State transition
+    user.state = STATES['WAITING_INPUT']
     db.session.commit()
-    logging.debug("Transitioned to FAQ mode (WAITING_INPUT).")
+    logging.debug("Transitioned to FAQ mode.")
+
 
 
 # Path B Handlers
@@ -685,7 +722,7 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
     orig_amt = user.original_amount
     orig_tenure = user.original_tenure
     monthly_payment = user.current_monthly_payment
-    yrs_paid = user.years_paid  # Fixed the misplaced variable
+    yrs_paid = user.years_paid
 
     # Validate inputs
     if any(v is None for v in [orig_amt, orig_tenure, monthly_payment, yrs_paid]):
@@ -701,7 +738,7 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
 
         # Get new interest rate based on outstanding balance
         new_rate = get_current_bank_rate(current_outstanding)
-        
+
         # Calculate monthly payments
         current_monthly_calc = calculate_monthly_payment(current_outstanding, guessed_rate, remain_tenure)
         new_monthly_calc = calculate_monthly_payment(current_outstanding, new_rate, remain_tenure)
@@ -722,16 +759,16 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
         db.session.commit()
         logging.debug("Path B calculation details updated for user.")
     except Exception as e:
-        db.session.rollback()  # Roll back changes if any error occurs
+        db.session.rollback()
         logging.error(f"Error during Path B calculation: {e}")
         send_messenger_message(messenger_id, {"text": "An error occurred. Please try again or contact admin."})
         return
 
-    # Generate summary message
+    # Generate Summary Message
     summary = (
         f"🏦 Current Loan:\n"
         f"• Monthly Payment: RM{current_monthly_calc:,.2f}\n"
-        f"• Estimated Interest Rate: {guessed_rate:.2f}%\n\n"
+        f"• Interest Rate: {guessed_rate:.2f}%\n\n"
         f"💰 After Refinancing:\n"
         f"• New Monthly Payment: RM{new_monthly_calc:,.2f}\n"
         f"• New Interest Rate: {new_rate:.2f}%\n\n"
@@ -740,42 +777,57 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
         f"• Yearly: RM{yearly_savings:,.2f}\n"
         f"• Total: RM{total_savings:,.2f} over {int(remain_tenure)} years\n\n"
     )
-    logging.debug("Path B calculation summary prepared.")
+    logging.debug("Path B summary prepared.")
 
-    # Skip GPT processing if savings are low
-    if monthly_savings < 50:
-        low_savings_message = (
-            f"Based on your details, you could save RM{monthly_savings:,.2f} per month. "
-            f"If you'd like more personalized advice, please contact our admin directly!"
-        )
-        send_messenger_message(messenger_id, {"text": low_savings_message})
-        logging.debug("Low savings detected. GPT processing skipped.")
+    # User Message Logic
+    if total_savings < 10_000:
+        if total_savings > 0:
+            send_messenger_message(messenger_id, {
+                "text": "Based on your loan details, refinancing may not be beneficial as the fees incurred could outweigh the savings."
+            })
+        else:
+            send_messenger_message(messenger_id, {
+                "text": "Your loan is already at an optimum level. No changes are needed at this time."
+            })
+        logging.debug("Sent simplified message due to low or no savings.")
     else:
-        # Generate GPT convincing message
-        savings_data = {
-            'monthly_savings': monthly_savings,
-            'yearly_savings': yearly_savings,
-            'total_savings': total_savings,
-            'tenure': remain_tenure,
-            'current_rate': guessed_rate,
-            'new_rate': new_rate
-        }
-
+        # Convincing message only if savings exceed RM10,000
         try:
+            savings_data = {
+                'monthly_savings': monthly_savings,
+                'yearly_savings': yearly_savings,
+                'total_savings': total_savings,
+                'tenure': remain_tenure,
+                'current_rate': guessed_rate,
+                'new_rate': new_rate
+            }
             convincing_msg = generate_convincing_message(savings_data)
-            logging.debug("GPT convincing message generated.")
+            send_long_message(messenger_id, f"{summary}\n\n{convincing_msg}")
+            logging.debug("Sent summary and convincing message for high savings.")
         except Exception as e:
-            logging.error(f"Error generating GPT convincing message: {e}")
-            convincing_msg = "Refinancing could save you a significant amount. Contact us for further assistance."
+            logging.error(f"Error generating convincing message: {e}")
+            send_long_message(messenger_id, summary)
 
-        # Combine summary and convincing messages
-        combined_message = f"{summary}\n\n{convincing_msg}"
-        send_long_message(messenger_id, combined_message)
-        logging.debug("Combined summary and convincing message sent.")
-
-    # Notify admin using unified notify_admin function
+    # Admin Notification
     try:
-        notify_admin(user, "Loan Analysis Summary")
+        admin_summary = (
+            f"📊 Loan Analysis Summary\n\n"
+            f"👤 Lead Details:\n"
+            f"• Name: {user.name or 'N/A'}\n"
+            f"• Contact: {user.phone_number or 'N/A'}\n\n"
+            f"🏦 Current Loan:\n"
+            f"• Current Monthly Repayment: RM{current_monthly_calc:,.2f}\n"
+            f"• Current Tenure: {remain_tenure} years\n"
+            f"• Current Interest Rate: {guessed_rate:.2f}%\n\n"
+            f"💰 After Refinancing:\n"
+            f"• New Monthly Repayment: RM{new_monthly_calc:,.2f}\n"
+            f"• New Interest Rate: {new_rate:.2f}%\n\n"
+            f"📈 Savings Summary:\n"
+            f"• Monthly: RM{monthly_savings:,.2f}\n"
+            f"• Yearly: RM{yearly_savings:,.2f}\n"
+            f"• Total: RM{total_savings:,.2f} over {int(remain_tenure)} years\n"
+        )
+        notify_admin(user, admin_summary)
         logging.debug("Admin notification sent.")
     except Exception as e:
         logging.error(f"Error sending admin notification: {e}")
@@ -784,14 +836,11 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
     send_messenger_message(messenger_id, {"text": "You are now talking to Finzo AI. Feel free to ask any questions about refinancing and loans!"})
     logging.debug("Inquiry mode prompt sent.")
 
-    # State transition to FAQ mode
-    try:
-        user.state = STATES['WAITING_INPUT']
-        db.session.commit()
-        logging.debug("Transitioned to FAQ mode (WAITING_INPUT).")
-    except Exception as e:
-        db.session.rollback()
-        logging.error(f"State transition failed: {e}")
+    # State transition
+    user.state = STATES['WAITING_INPUT']
+    db.session.commit()
+    logging.debug("Transitioned to FAQ mode.")
+
 
 
 def handle_waiting_input(user: User, messenger_id: str, user_input: str):
