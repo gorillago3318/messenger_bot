@@ -1145,29 +1145,53 @@ def send_messenger_message(recipient_id, message):
         url = f"https://graph.facebook.com/v16.0/me/messages?access_token={os.getenv('PAGE_ACCESS_TOKEN')}"
         headers = {"Content-Type": "application/json"}
 
-        # Validate message format
+        # Helper function to split long messages into chunks of 2000 characters
+        def split_message(message_text, max_length=2000):
+            return [message_text[i:i + max_length] for i in range(0, len(message_text), max_length)]
+
+        # Validate message format and handle large message texts
         if isinstance(message, str):
             # Simple text message
-            data = {
-                "recipient": {"id": recipient_id},
-                "message": {"text": message}
-            }
+            if len(message) > 2000:
+                logging.warning(f"Message exceeds 2000 characters, splitting into chunks.")
+                message_chunks = split_message(message)
+                # Send each chunk as a separate message
+                for chunk in message_chunks:
+                    data = {
+                        "recipient": {"id": recipient_id},
+                        "message": {"text": chunk}
+                    }
+                    logging.debug(f"Sending payload: {json.dumps(data, indent=4)}")
+                    resp = requests.post(url, json=data, headers=headers)
+                    logging.debug(f"Response status: {resp.status_code}")
+                    logging.debug(f"Response body: {resp.text}")
+                    resp.raise_for_status()
+            else:
+                # Send the message if it's within the character limit
+                data = {
+                    "recipient": {"id": recipient_id},
+                    "message": {"text": message}
+                }
+                logging.debug(f"Sending payload: {json.dumps(data, indent=4)}")
+                resp = requests.post(url, json=data, headers=headers)
+                logging.debug(f"Response status: {resp.status_code}")
+                logging.debug(f"Response body: {resp.text}")
+                resp.raise_for_status()
+
         elif isinstance(message, dict):
             # Message with quick replies or attachments
             data = {
                 "recipient": {"id": recipient_id},
                 "message": message
             }
+            logging.debug(f"Sending payload: {json.dumps(data, indent=4)}")
+            resp = requests.post(url, json=data, headers=headers)
+            logging.debug(f"Response status: {resp.status_code}")
+            logging.debug(f"Response body: {resp.text}")
+            resp.raise_for_status()
+
         else:
             raise ValueError("Invalid message format!")
-
-        logging.debug(f"Sending payload: {json.dumps(data, indent=4)}")
-
-        # Send the request
-        resp = requests.post(url, json=data, headers=headers)
-        logging.debug(f"Response status: {resp.status_code}")
-        logging.debug(f"Response body: {resp.text}")
-        resp.raise_for_status()
 
     except requests.exceptions.RequestException as e:
         logging.error(f"Failed to send message: {e}")
