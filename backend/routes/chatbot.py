@@ -560,8 +560,8 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
         f"Finzo AI is analyzing your refinance details to determine if it’s beneficial. Please hold on for a moment."
     )
 
-    # Send summary to user
-    send_messenger_message(messenger_id, {"text": summary})
+    # Send summary to user with splitting for long messages
+    send_long_message(messenger_id, summary)
     logging.debug("Path A calculation summary sent.")
 
     # Notify admin
@@ -578,13 +578,19 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
         'new_rate': new_rate
     }
     convincing_msg = generate_convincing_message(savings_data)
-    send_messenger_message(messenger_id, {"text": convincing_msg})
+    send_long_message(messenger_id, convincing_msg)
     logging.debug("GPT convincing message sent.")
 
     # Inquiry mode prompt
     time.sleep(3)
     send_messenger_message(messenger_id, {"text": "You are now talking to Finzo AI. Feel free to ask any questions about refinancing and loans!"})
     logging.debug("Inquiry mode prompt sent.")
+
+    # **State Transition to FAQ Mode**
+    user.state = STATES['WAITING_INPUT']  # Transition to FAQ mode
+    db.session.commit()
+    logging.debug("Transitioned to FAQ mode (WAITING_INPUT).")
+
 
 # Path B Handlers
 def handle_path_b_original_amount(user: User, messenger_id: str, user_input: str):
@@ -712,10 +718,9 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
     user.outstanding_balance = current_outstanding
 
     db.session.commit()
-
     logging.debug("Path B calculation details updated for user.")
 
-    # Send calculation summary
+    # Generate summary message
     summary = (
         f"🏦 Current Loan:\n"
         f"• Monthly Payment: RM{current_monthly_calc:,.2f}\n"
@@ -730,8 +735,8 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
         f"Finzo AI is analyzing your refinance details to determine if it’s beneficial. Please hold on for a moment."
     )
 
-    # Send calculation summary to user
-    send_messenger_message(messenger_id, {"text": summary})
+    # Send summary to user with message splitting
+    send_long_message(messenger_id, summary)
     logging.debug("Path B calculation summary sent.")
 
     # Notify admin with the same summary
@@ -748,13 +753,19 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
         'new_rate': new_rate
     }
     convincing_msg = generate_convincing_message(savings_data)
-    send_messenger_message(messenger_id, {"text": convincing_msg})
+    send_long_message(messenger_id, convincing_msg)
     logging.debug("GPT convincing message sent.")
 
     # Inquiry mode prompt after 3 seconds
     time.sleep(3)
     send_messenger_message(messenger_id, {"text": "You are now talking to Finzo AI. Feel free to ask any questions about refinancing and loans!"})
     logging.debug("Inquiry mode prompt sent.")
+
+    # **State Transition to FAQ Mode**
+    user.state = STATES['WAITING_INPUT']  # Transition to FAQ mode
+    db.session.commit()
+    logging.debug("Transitioned to FAQ mode (WAITING_INPUT).")
+
 
 def handle_waiting_input(user: User, messenger_id: str, user_input: str):
     """
@@ -891,15 +902,25 @@ def notify_admin(user: User, event_name: str, summary: str = None):
         logging.warning("No valid ADMIN_MESSENGER_ID set. Skipping notify_admin.")
         return
 
+    # Admin-specific summary excluding user-facing remarks
     if summary:
-        comparison = (
+        admin_summary = (
             f"📊 {event_name}\n"
             f"Customer: {user.name or 'N/A'}\n"
             f"Contact: {user.phone_number or 'N/A'}\n\n"
-            f"{summary}"  # Ensure summary excludes cash-out details
+            f"🏦 Current Loan:\n"
+            f"• Monthly Payment: RM{user.monthly_savings:,.2f}\n"
+            f"• Interest Rate: {user.current_interest_rate:.2f}%\n\n"
+            f"💰 After Refinancing:\n"
+            f"• New Monthly Payment: RM{user.total_savings / (user.tenure * 12):,.2f}\n"
+            f"• New Interest Rate: {user.new_rate:.2f}%\n\n"
+            f"🎯 Savings:\n"
+            f"• Monthly: RM{user.monthly_savings:,.2f}\n"
+            f"• Yearly: RM{user.yearly_savings:,.2f}\n"
+            f"• Total: RM{user.total_savings:,.2f} over {int(user.tenure)} years"
         )
     else:
-        comparison = (
+        admin_summary = (
             f"📊 {event_name}\n"
             f"Customer: {user.name}\n"
             f"Contact: {user.phone_number}\n"
@@ -907,7 +928,7 @@ def notify_admin(user: User, event_name: str, summary: str = None):
             "No loan calculation details available yet."
         )
 
-    send_messenger_message(admin_id, {"text": comparison})
+    send_messenger_message(admin_id, {"text": admin_summary})
     logging.debug("Admin notification sent.")
 
 
