@@ -561,7 +561,10 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
     logging.debug("Path A calculation summary sent.")
 
     # Invoke handle_convince once to send the convince message and cash-out prompt
-    handle_convince(user, messenger_id)
+    notify_admin(user, "Loan Analysis Summary", summary)
+    time.sleep(3)
+    send_messenger_message(messenger_id, {"text": "You are now talking to Finzo AI. Feel free to ask any questions about refinancing and loans!"})
+
     logging.debug("handle_convince manually invoked after Path A calculation.")
 
 # Path B Handlers
@@ -714,7 +717,10 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
     logging.debug("Path B calculation summary sent.")
 
     # Invoke handle_convince once to send the convince message and cash-out prompt
-    handle_convince(user, messenger_id)
+    notify_admin(user, "Loan Analysis Summary", summary)
+    time.sleep(3)
+    send_messenger_message(messenger_id, {"text": "You are now talking to Finzo AI. Feel free to ask any questions about refinancing and loans!"})
+
     logging.debug("handle_convince manually invoked after Path B calculation.")
 
 
