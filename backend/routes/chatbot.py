@@ -545,7 +545,7 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
     user.new_rate = new_rate
     db.session.commit()
 
-    # 1. Generate User Summary
+    # User Summary
     user_summary = (
         f"🏦 Current Loan:\n"
         f"• Monthly Payment: RM{current_monthly:,.2f}\n"
@@ -558,61 +558,50 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
         f"• Yearly: RM{yearly_savings:,.2f}\n"
         f"• Total: RM{total_savings:,.2f} over {int(tenure)} years\n"
     )
-    send_long_message(messenger_id, user_summary)  # Send User Summary
+    send_long_message(messenger_id, user_summary)
     logging.debug("User summary sent.")
 
-    # 2. Handle Low Savings
+    # Handle Low or No Savings
     if total_savings <= 0:
         send_messenger_message(messenger_id, {"text": "Your loan is already at an optimum level. No changes are needed."})
-        logging.debug("User informed that loan is at optimum level.")
+        logging.debug("User informed loan is at optimum level.")
+        return
     elif total_savings < 10_000:
-        send_messenger_message(messenger_id, {"text": "Savings may not justify refinancing costs. Contact admin for personalized advice!"})
-        logging.debug("User informed savings may not justify refinancing.")
-    else:
-        # 3. Convincing Message (Only for Savings > 10k)
-        convincing_msg = generate_convincing_message({
-            'monthly_savings': monthly_savings,
-            'yearly_savings': yearly_savings,
-            'total_savings': total_savings,
-            'tenure': tenure,
-            'current_rate': interest,
-            'new_rate': new_rate
+        send_messenger_message(messenger_id, {
+            "text": "Based on your loan details, refinancing may not be beneficial as the fees incurred could outweigh the savings."
         })
-        send_long_message(messenger_id, convincing_msg)
-        logging.debug("Convincing message sent for higher savings.")
+        logging.debug("User informed low savings may not justify refinancing.")
+        return
 
-    # 4. Admin Notification (Only Once)
-    if not user.notified_admin:  # Prevent multiple notifications
-        admin_summary = (
-            f"📊 Loan Analysis Summary\n\n"
-            f"👤 Lead Details:\n"
-            f"• Name: {user.name or 'N/A'}\n"
-            f"• Contact: {user.phone_number or 'N/A'}\n\n"
-            f"🏦 Current Loan:\n"
-            f"• Current Monthly Repayment: RM{current_monthly:,.2f}\n"
-            f"• Current Tenure: {tenure} years\n"
-            f"• Current Interest Rate: {interest:.2f}%\n\n"
-            f"💰 After Refinancing:\n"
-            f"• New Monthly Repayment: RM{new_monthly:,.2f}\n"
-            f"• New Interest Rate: {new_rate:.2f}%\n\n"
-            f"📈 Savings Summary:\n"
-            f"• Monthly: RM{monthly_savings:,.2f}\n"
-            f"• Yearly: RM{yearly_savings:,.2f}\n"
-            f"• Total: RM{total_savings:,.2f} over {int(tenure)} years\n"
-        )
-        notify_admin(admin_summary)  # Send to admin
-        user.notified_admin = True  # Prevent duplicate admin notification
+    # Convincing Message Only for Savings > RM10,000
+    savings_data = {
+        'monthly_savings': monthly_savings,
+        'yearly_savings': yearly_savings,
+        'total_savings': total_savings,
+        'tenure': tenure,
+        'current_rate': interest,
+        'new_rate': new_rate
+    }
+    convincing_msg = generate_convincing_message(savings_data)
+    send_long_message(messenger_id, convincing_msg)
+    logging.debug("Convincing message sent.")
+
+    # Admin Notification (Only Once)
+    if not user.notified_admin:
+        notify_admin(user, "Loan Analysis Summary")
+        user.notified_admin = True
         db.session.commit()
-        logging.debug("Admin notified with loan analysis summary.")
+        logging.debug("Admin notified successfully.")
 
-    # 5. Inquiry Prompt
+    # Inquiry mode prompt
     send_messenger_message(messenger_id, {"text": "You are now talking to Finzo AI. Feel free to ask any questions about refinancing and loans!"})
     logging.debug("Inquiry mode prompt sent.")
 
     # Transition to FAQ Mode
     user.state = STATES['WAITING_INPUT']
     db.session.commit()
-    logging.debug("Transitioned to FAQ mode (WAITING_INPUT).")
+    logging.debug("Transitioned to FAQ mode.")
+
 
 
 # Path B Handlers
@@ -748,7 +737,7 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
         send_messenger_message(messenger_id, {"text": "An error occurred. Please try again or contact admin."})
         return
 
-    # Generate User Summary
+    # 1. Generate User Summary
     user_summary = (
         f"🏦 Current Loan:\n"
         f"• Monthly Payment: RM{current_monthly_calc:,.2f}\n"
@@ -793,7 +782,7 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
         send_long_message(messenger_id, user_summary)
 
     # Admin Notification (Prevent Duplication)
-    if not user.notified_admin:
+    if not user.notified_admin:  # Prevent multiple notifications
         try:
             admin_summary = (
                 f"📊 Loan Analysis Summary\n\n"
