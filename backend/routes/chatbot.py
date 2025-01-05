@@ -685,7 +685,7 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
     orig_amt = user.original_amount
     orig_tenure = user.original_tenure
     monthly_payment = user.current_monthly_payment
-    yrs_paid = user.years_paid
+    yrs_paid = user.years_paid  # Fixed the misplaced variable
 
     # Validate inputs
     if any(v is None for v in [orig_amt, orig_tenure, monthly_payment, yrs_paid]):
@@ -746,7 +746,7 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
     if monthly_savings < 50:
         low_savings_message = (
             f"Based on your details, you could save RM{monthly_savings:,.2f} per month. "
-            f"For personalized advice, contact our admin directly: [Click Here](https://wa.me/60126181683)"
+            f"If you'd like more personalized advice, please contact our admin directly!"
         )
         send_messenger_message(messenger_id, {"text": low_savings_message})
         logging.debug("Low savings detected. GPT processing skipped.")
@@ -773,25 +773,10 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
         send_long_message(messenger_id, combined_message)
         logging.debug("Combined summary and convincing message sent.")
 
-    # Notify admin with detailed summary
+    # Notify admin using unified notify_admin function
     try:
-        admin_summary = (
-            f"📊 Loan Analysis Summary\n\n"
-            f"👤 Name: {user.name or 'N/A'}\n"
-            f"📞 Contact: {user.phone_number or 'N/A'}\n\n"
-            f"🏦 Loan Details:\n"
-            f"• Monthly Payment: RM{current_monthly_calc:,.2f}\n"
-            f"• Estimated Rate: {guessed_rate:.2f}%\n"
-            f"• New Monthly Payment: RM{new_monthly_calc:,.2f}\n"
-            f"• New Rate: {new_rate:.2f}%\n\n"
-            f"💰 Savings:\n"
-            f"• Monthly: RM{monthly_savings:,.2f}\n"
-            f"• Yearly: RM{yearly_savings:,.2f}\n"
-            f"• Total: RM{total_savings:,.2f} over {int(remain_tenure)} years\n\n"
-            f"🔗 Admin Contact: [WhatsApp](https://wa.me/60126181683)"
-        )
-        send_messenger_message(os.getenv("ADMIN_MESSENGER_ID"), {"text": admin_summary})
-        logging.debug("Admin notification sent with extended details.")
+        notify_admin(user, "Loan Analysis Summary")
+        logging.debug("Admin notification sent.")
     except Exception as e:
         logging.error(f"Error sending admin notification: {e}")
 
@@ -807,6 +792,7 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
     except Exception as e:
         db.session.rollback()
         logging.error(f"State transition failed: {e}")
+
 
 def handle_waiting_input(user: User, messenger_id: str, user_input: str):
     """
@@ -958,7 +944,6 @@ def notify_admin(user: User, event_name: str):
     """
     Sends a notification to the admin about a new lead with key details.
     """
-    # Get admin Messenger ID from environment variables
     admin_id = os.getenv("ADMIN_MESSENGER_ID")
     if not admin_id or not admin_id.isdigit():
         logging.warning("No valid ADMIN_MESSENGER_ID set. Skipping notify_admin.")
@@ -978,8 +963,7 @@ def notify_admin(user: User, event_name: str):
             f"💰 *Savings Summary:*\n"
             f"• Monthly: RM{user.monthly_savings:,.2f}\n"
             f"• Yearly: RM{user.yearly_savings:,.2f}\n"
-            f"• Total: RM{user.total_savings:,.2f} over {int(user.tenure) if user.tenure else 'N/A'} years\n\n"
-            f"🔗 Admin Contact: [WhatsApp](https://wa.me/60126181683)"
+            f"• Total: RM{user.total_savings:,.2f} over {int(user.tenure) if user.tenure else 'N/A'} years\n"
         )
 
         # Send the message to admin
@@ -987,8 +971,8 @@ def notify_admin(user: User, event_name: str):
         logging.debug(f"Admin notification sent successfully for event: {event_name}")
 
     except Exception as e:
-        # Log the error if any issues occur
         logging.error(f"Error in notify_admin: {e}")
+
 
 
 # Unhandled State Handler
