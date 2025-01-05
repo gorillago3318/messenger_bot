@@ -9,9 +9,8 @@ import json
 from flask import Blueprint, request, jsonify
 from backend.extensions import db
 from backend.models import User, Lead, BankRate
-from datetime import datetime, timedelta
-import time
-
+from datetime import datetime
+from datetime import timedelta
 
 
 # Initialize Blueprint
@@ -83,6 +82,9 @@ STATES = {
     'PATH_B_GATHER_MONTHLY_PAYMENT': 'PATH_B_GATHER_MONTHLY_PAYMENT',
     'PATH_B_GATHER_YEARS_PAID': 'PATH_B_GATHER_YEARS_PAID',
     'PATH_B_CALCULATE': 'PATH_B_CALCULATE',
+    'CASHOUT_OFFER': 'CASHOUT_OFFER',
+    'CASHOUT_GATHER_AMOUNT': 'CASHOUT_GATHER_AMOUNT',
+    'CASHOUT_CALCULATE': 'CASHOUT_CALCULATE',
     'FAQ': 'FAQ',
     'END': 'END',
     'WAITING_INPUT': 'WAITING_INPUT',
@@ -304,6 +306,7 @@ def generate_convincing_message(savings_data: dict) -> str:
             "Feel free to reach out if you need more information or assistance at https://wa.me/60126181683."
         )
 
+
 def generate_faq_response_with_gpt(user_input: str) -> str:
     """
     Uses GPT to generate a response for an unmatched FAQ.
@@ -512,22 +515,19 @@ def handle_path_a_tenure(user: User, messenger_id: str, user_input: str):
 
 def handle_path_a_calculate(user: User, messenger_id: str, *args):
     """
-    Handles the calculation step in Path A with integrated messaging.
+    Handles the calculation step in Path A after gathering all necessary inputs.
     """
     logging.debug("Entering handle_path_a_calculate function.")
 
-    # Retrieve user inputs
     balance = user.outstanding_balance
     interest = user.current_interest_rate
     tenure = user.remaining_tenure
 
-    # Validate inputs
     if balance is None or interest is None or tenure is None:
         send_messenger_message(messenger_id, {"text": "I'm missing data. Type 'restart' or re-enter details."})
         logging.error("Missing data for Path A calculation.")
         return
 
-    # Perform calculations
     new_rate = get_current_bank_rate(balance)
     current_monthly = calculate_monthly_payment(balance, interest, tenure)
     new_monthly = calculate_monthly_payment(balance, new_rate, tenure)
@@ -536,17 +536,17 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
     yearly_savings = monthly_savings * 12
     total_savings = monthly_savings * tenure * 12
 
-    # Update user attributes
     user.monthly_savings = monthly_savings
     user.yearly_savings = yearly_savings
     user.total_savings = total_savings
     user.tenure = tenure
     user.current_interest_rate = interest
     user.new_rate = new_rate
+
     db.session.commit()
 
-    # User Summary
-    user_summary = (
+    # Send calculation summary
+    summary = (
         f"🏦 Current Loan:\n"
         f"• Monthly Payment: RM{current_monthly:,.2f}\n"
         f"• Interest Rate: {interest:.2f}%\n\n"
@@ -556,52 +556,17 @@ def handle_path_a_calculate(user: User, messenger_id: str, *args):
         f"🎯 Your Savings:\n"
         f"• Monthly: RM{monthly_savings:,.2f}\n"
         f"• Yearly: RM{yearly_savings:,.2f}\n"
-        f"• Total: RM{total_savings:,.2f} over {int(tenure)} years\n"
+        f"• Total: RM{total_savings:,.2f} over {int(tenure)} years\n\n"
+        f"Finzo AI is analyzing your refinance details to determine if it’s beneficial. Please hold on for a moment."
     )
-    send_long_message(messenger_id, user_summary)
 
-    # Handle Low or No Savings
-    if total_savings <= 0:
-        send_messenger_message(messenger_id, {"text": "Your loan is already at an optimum level. No changes are needed."})
-        return
-    elif total_savings < 10_000:
-        send_messenger_message(messenger_id, {
-            "text": "Based on your loan details, refinancing may not be beneficial as the fees incurred could outweigh the savings."
-        })
-        return
+    # **Correction:** Remove the nested "message" key
+    send_messenger_message(messenger_id, {"text": summary})
+    logging.debug("Path A calculation summary sent.")
 
-    # Generate and send convincing message only for significant savings
-    savings_data = {
-        'monthly_savings': monthly_savings,
-        'yearly_savings': yearly_savings,
-        'total_savings': total_savings,
-        'tenure': tenure,
-        'current_rate': interest,
-        'new_rate': new_rate
-    }
-    convincing_msg = generate_convincing_message(savings_data)
-    send_long_message(messenger_id, convincing_msg)
-
-    # Send one-time admin notification with complete information
-    if not user.notified_admin:
-        admin_message = (
-            f"📊 New Lead Analysis Summary\n\n"
-            f"👤 Lead Details:\n"
-            f"• Name: {user.name}\n"
-            f"• Contact: {user.phone_number}\n\n"
-            f"{user_summary}"
-        )
-        admin_id = os.getenv("ADMIN_MESSENGER_ID")
-        notify_admin_only(admin_id, admin_message)
-        user.notified_admin = True
-        db.session.commit()
-
-    # Transition to FAQ Mode
-    send_messenger_message(messenger_id, {
-        "text": "You are now talking to Finzo AI. Feel free to ask any questions about refinancing and loans!"
-    })
-    user.state = STATES['WAITING_INPUT']
-    db.session.commit()
+    # Invoke handle_convince once to send the convince message and cash-out prompt
+    handle_convince(user, messenger_id)
+    logging.debug("handle_convince manually invoked after Path A calculation.")
 
 # Path B Handlers
 def handle_path_b_original_amount(user: User, messenger_id: str, user_input: str):
@@ -702,125 +667,273 @@ def handle_path_b_calculate(user: User, messenger_id: str, *args):
         logging.error("Missing data for Path B calculation.")
         return
 
-    try:
-        # Perform loan estimations
-        guessed_rate, current_outstanding, remain_tenure = estimate_loan_details(
-            orig_amt, orig_tenure, monthly_payment, yrs_paid
-        )
+    # Perform loan estimations
+    guessed_rate, current_outstanding, remain_tenure = estimate_loan_details(
+        orig_amt, orig_tenure, monthly_payment, yrs_paid
+    )
 
-        # Get new interest rate based on outstanding balance
-        new_rate = get_current_bank_rate(current_outstanding)
+    # Get new interest rate based on outstanding balance
+    new_rate = get_current_bank_rate(current_outstanding)
+    
+    # Calculate monthly payments
+    current_monthly_calc = calculate_monthly_payment(current_outstanding, guessed_rate, remain_tenure)
+    new_monthly_calc = calculate_monthly_payment(current_outstanding, new_rate, remain_tenure)
 
-        # Calculate monthly payments
-        current_monthly_calc = calculate_monthly_payment(current_outstanding, guessed_rate, remain_tenure)
-        new_monthly_calc = calculate_monthly_payment(current_outstanding, new_rate, remain_tenure)
+    # Calculate savings
+    monthly_savings = current_monthly_calc - new_monthly_calc
+    yearly_savings = monthly_savings * 12
+    total_savings = monthly_savings * remain_tenure * 12
 
-        # Calculate savings
-        monthly_savings = current_monthly_calc - new_monthly_calc
-        yearly_savings = monthly_savings * 12
-        total_savings = monthly_savings * remain_tenure * 12
+    # Update user attributes
+    user.monthly_savings = monthly_savings
+    user.yearly_savings = yearly_savings
+    user.total_savings = total_savings
+    user.tenure = remain_tenure
+    user.current_interest_rate = guessed_rate  # Ensure consistency
+    user.new_rate = new_rate
+    user.outstanding_balance = current_outstanding
 
-        # Update user attributes
-        user.monthly_savings = monthly_savings
-        user.yearly_savings = yearly_savings
-        user.total_savings = total_savings
-        user.tenure = remain_tenure
-        user.current_interest_rate = guessed_rate
-        user.new_rate = new_rate
-        user.outstanding_balance = current_outstanding
-        db.session.commit()
-        logging.debug("Path B calculation details updated for user.")
-    except Exception as e:
-        db.session.rollback()
-        logging.error(f"Error during Path B calculation: {e}")
-        send_messenger_message(messenger_id, {"text": "An error occurred. Please try again or contact admin."})
-        return
+    db.session.commit()
 
-    # 1. Generate User Summary
-    user_summary = (
+    logging.debug("Path B calculation details updated for user.")
+
+    # Send calculation summary
+    summary = (
         f"🏦 Current Loan:\n"
         f"• Monthly Payment: RM{current_monthly_calc:,.2f}\n"
-        f"• Interest Rate: {guessed_rate:.2f}%\n\n"
+        f"• Estimated Interest Rate: {guessed_rate:.2f}%\n\n"
         f"💰 After Refinancing:\n"
         f"• New Monthly Payment: RM{new_monthly_calc:,.2f}\n"
         f"• New Interest Rate: {new_rate:.2f}%\n\n"
         f"🎯 Your Savings:\n"
         f"• Monthly: RM{monthly_savings:,.2f}\n"
         f"• Yearly: RM{yearly_savings:,.2f}\n"
-        f"• Total: RM{total_savings:,.2f} over {int(remain_tenure)} years\n"
+        f"• Total: RM{total_savings:,.2f} over {int(remain_tenure)} years\n\n"
+        f"Finzo AI is analyzing your refinance details to determine if it’s beneficial. Please hold on for a moment."
+
     )
-    logging.debug("Path B summary prepared.")
 
-    # Handle Low or No Savings
-    if total_savings <= 0:
-        send_messenger_message(messenger_id, {"text": "Your loan is already at an optimum level. No changes are needed."})
-        logging.debug("User informed that loan is at optimum level.")
-        return  # Stop further processing
-    elif total_savings < 10_000:
-        send_messenger_message(messenger_id, {
-            "text": "Based on your loan details, refinancing may not be beneficial as the fees incurred could outweigh the savings."
-        })
-        logging.debug("User informed about low savings scenario.")
-        return  # Stop further processing
+    # **Correction:** Remove the nested "message" key
+    send_messenger_message(messenger_id, {"text": summary})
+    logging.debug("Path B calculation summary sent.")
 
-    # Convincing Message Only for Savings > RM10,000
-    try:
-        savings_data = {
-            'monthly_savings': monthly_savings,
-            'yearly_savings': yearly_savings,
-            'total_savings': total_savings,
-            'tenure': remain_tenure,
-            'current_rate': guessed_rate,
-            'new_rate': new_rate
+    # Invoke handle_convince once to send the convince message and cash-out prompt
+    handle_convince(user, messenger_id)
+    logging.debug("handle_convince manually invoked after Path B calculation.")
+
+def handle_convince(user: User, messenger_id: str, user_input: str = ""):
+    """
+    Sends the convincing message and cash-out prompt to the user.
+    """
+    logging.debug("Entering handle_convince function.")
+
+    # Prevent duplicate prompts if already in CASHOUT_OFFER state
+    if user.state == STATES['CASHOUT_OFFER']:
+        logging.debug("Cash-out prompt already sent. Skipping duplicate prompt.")
+        return
+
+    # Update user state to CASHOUT_OFFER BEFORE generating messages
+    user.state = STATES['CASHOUT_OFFER']
+    db.session.commit()
+    logging.debug(f"User state updated to {user.state}")
+
+    # Prepare savings data with default values to prevent NoneType errors
+    savings_data = {
+        'monthly_savings': user.monthly_savings or 0,
+        'yearly_savings': user.yearly_savings or 0,
+        'total_savings': user.total_savings or 0,
+        'tenure': user.remaining_tenure or user.tenure or 0,
+        'current_rate': user.current_interest_rate or 0,
+        'new_rate': user.new_rate or 0
+    }
+
+    logging.debug(f"Savings Data: {savings_data}")
+
+    # Generate the convincing message
+    convincing_msg = generate_convincing_message(savings_data)
+    send_messenger_message(messenger_id, {"text": convincing_msg})
+    logging.debug("Convincing message sent.")
+
+    # Prepare the Cash-Out Prompt with quick replies
+    cashout_message = (
+        "Are you interested in exploring cash-out refinancing options?\n\n"
+        "Cash-out refinancing allows you to access extra funds by tapping into your home equity. "
+        "It’s a flexible way to finance important expenses while consolidating your existing mortgage.\n\n"
+        "You can use the additional funds for purposes such as:\n"
+        "• Home renovations or upgrades\n"
+        "• Education and tuition fees\n"
+        "• Investment opportunities\n"
+        "• Consolidating debts for better financial management\n\n"
+        "Note: According to Bank Negara Malaysia (BNM) guidelines, cash-out refinancing is limited "
+        "to a maximum repayment period of 10 years or up to 70 years of age, whichever comes first."
+    )
+
+    quick_replies = [
+        {"content_type": "text", "title": "Yes, tell me more", "payload": "CASHOUT_YES"},
+        {"content_type": "text", "title": "No, thanks", "payload": "CASHOUT_NO"}
+    ]
+
+    send_messenger_message(messenger_id, {"text": cashout_message, "quick_replies": quick_replies})
+    logging.debug("Cash-out prompt sent.")
+
+def handle_cashout_offer(user: User, messenger_id: str, user_input: str):
+    """
+    Handles the user's response to the cash-out offer.
+    """
+    logging.debug("Entering handle_cashout_offer function.")
+
+    # Validate input
+    if user_input not in ["CASHOUT_YES", "CASHOUT_NO"]:
+        message = {
+            "text": "Please select 'Yes, tell me more' or 'No, thanks'."
         }
-        convincing_msg = generate_convincing_message(savings_data)
-        send_long_message(messenger_id, f"{user_summary}\n\n{convincing_msg}")
-        logging.debug("Sent summary and convincing message for high savings.")
+        send_messenger_message(messenger_id, message)
+        logging.debug("Invalid input for cash-out offer. Re-prompted user.")
+        return
+
+    # Handle user response
+    if user_input == "CASHOUT_YES":
+        user.state = STATES['CASHOUT_GATHER_AMOUNT']
+        db.session.commit()
+        question = (
+            "Great! How much equity would you like to cash out from your property in Ringgit?\n\n "
+            "For example, RM50,000 or 50k."
+        )
+        send_messenger_message(messenger_id, {"text": question})
+        logging.debug("User accepted cash-out offer. Cash-out amount collection initiated.")
+
+    elif user_input == "CASHOUT_NO":
+        user.temp_cashout_amount = 0  # No cash-out
+        user.state = STATES['WAITING_INPUT']
+        db.session.commit()
+        logging.debug("User declined cash-out offer. Updated state to WAITING_INPUT.")
+
+        # Notify admin about declined cash-out offer
+        admin_summary = (
+            f"User Decline Cash-Out Offer\n"
+            f"User Name: {user.name or 'N/A'}\n"
+            f"Phone Number: {user.phone_number or 'N/A'}\n\n"
+            f"Loan Details\n"
+            f"Loan Outstanding: RM{user.outstanding_balance or 0:,.2f}\n"
+            f"Interest Rate: {user.current_interest_rate or 0:.2f}%\n"
+            f"Remaining Tenure: {user.remaining_tenure or 0:.1f} years\n"
+            f"Current Repayment: RM{calculate_monthly_payment(user.outstanding_balance or 0, user.current_interest_rate or 0, user.remaining_tenure or 0):,.2f}\n\n"
+            f"After Refinancing\n"
+            f"New Interest Rate: {user.new_rate or 0:.2f}%\n"
+            f"New Repayment: RM{calculate_monthly_payment(user.outstanding_balance or 0, user.new_rate or 0, user.remaining_tenure or 0):,.2f}\n"
+            f"Monthly Saving: RM{user.monthly_savings or 0:,.2f}\n"
+            f"Yearly Savings: RM{user.yearly_savings or 0:,.2f}\n"
+            f"Total Savings: RM{user.total_savings or 0:,.2f}\n"
+        )
+        notify_admin(user, "User Declined Cash-Out Offer", admin_summary)
+        logging.debug("Admin notified about declined cash-out offer.")
+
+        # FAQ Prompt
+        faq_prompt = (
+            "You are now talking to Finzo AI. You can ask anything regarding refinancing and housing loans.\n\n"
+            "Common questions you might have:\n"
+            "• What documents do I need for refinancing?\n"
+            "• How long does the refinancing process take?\n"
+            "• Are there any fees involved?\n"
+            "• What factors affect my loan approval?"
+        )
+        send_messenger_message(messenger_id, {"text": faq_prompt})
+        logging.debug("FAQ prompt sent after declining cash-out offer.")
+
+def handle_cashout_gather_amount(user: User, messenger_id: str, user_input: str):
+    logging.debug("Entering handle_cashout_gather_amount function.")
+
+    try:
+        # Parse and save cash-out amount
+        cashout_amount = parse_number_with_suffix(user_input)
+        user.temp_cashout_amount = cashout_amount
+        db.session.commit()
+        logging.debug(f"Cash-out amount {cashout_amount} set for user.")
+
+        # Proceed to calculate final repayment and notify admin
+        handle_cashout_calculate(user, messenger_id)
+
     except Exception as e:
-        logging.error(f"Error generating convincing message: {e}")
-        send_long_message(messenger_id, user_summary)
+        logging.error(f"Error gathering cash-out amount: {e}")
+        send_messenger_message(
+            messenger_id,
+            {"text": "I'm sorry, I couldn't process that amount. Please enter a valid cash-out amount in Ringgit (e.g., RM50,000 or 50k)."}
+        )
 
-    # Admin Notification (Prevent Duplication)
-    if not user.notified_admin:  # Prevent multiple notifications
-        try:
-            admin_summary = (
-                f"📊 Loan Analysis Summary\n\n"
-                f"👤 Lead Details:\n"
-                f"• Name: {user.name or 'N/A'}\n"
-                f"• Contact: {user.phone_number or 'N/A'}\n\n"
-                f"🏦 Current Loan:\n"
-                f"• Current Monthly Repayment: RM{current_monthly_calc:,.2f}\n"
-                f"• Current Tenure: {remain_tenure} years\n"
-                f"• Current Interest Rate: {guessed_rate:.2f}%\n\n"
-                f"💰 After Refinancing:\n"
-                f"• New Monthly Repayment: RM{new_monthly_calc:,.2f}\n"
-                f"• New Interest Rate: {new_rate:.2f}%\n\n"
-                f"📈 Savings Summary:\n"
-                f"• Monthly: RM{monthly_savings:,.2f}\n"
-                f"• Yearly: RM{yearly_savings:,.2f}\n"
-                f"• Total: RM{total_savings:,.2f} over {int(remain_tenure)} years\n"
-            )
-            notify_admin(user, admin_summary)
-            user.notified_admin = True  # Prevent duplicates
-            db.session.commit()
-            logging.debug("Admin notification sent.")
-        except Exception as e:
-            logging.error(f"Error sending admin notification: {e}")
+def handle_cashout_calculate(user: User, messenger_id: str, user_input: str = None):
+    """
+    Calculates cash-out refinancing details and sends results to the user and admin.
+    """
+    logging.debug("Entering handle_cashout_calculate function.")
 
-    # Inquiry Prompt
-    send_messenger_message(messenger_id, {"text": "You are now talking to Finzo AI. Feel free to ask any questions about refinancing and loans!"})
-    logging.debug("Inquiry mode prompt sent.")
+    # Get user inputs
+    outstanding_balance = user.outstanding_balance or 0.0
+    remaining_tenure = user.remaining_tenure or 30
+    cashout_amount = user.temp_cashout_amount or 0.0
 
-    # Transition to FAQ Mode
+    # Calculate loan details
+    total_loan = outstanding_balance + cashout_amount
+    main_rate = get_current_bank_rate(total_loan)
+
+    # Calculate installments
+    segment1_tenure = min(remaining_tenure, 35)
+    monthly1 = calculate_monthly_payment(outstanding_balance, main_rate, segment1_tenure)
+    monthly2 = calculate_monthly_payment(cashout_amount, main_rate, 10)
+
+    new_total_monthly = monthly1 + monthly2
+
+    # --- Message for USER ---
+    user_summary = (
+        f"📊 Cash-Out Calculation:\n"
+        f"• Main Loan: RM{outstanding_balance:,.2f} @ {main_rate:.2f}% for {segment1_tenure} yrs => RM{monthly1:,.2f}/month\n"
+        f"• Cash-Out: RM{cashout_amount:,.2f} @ {main_rate:.2f}% for 10 yrs => RM{monthly2:,.2f}/month\n\n"
+        f"💳 Total Monthly Payment: RM{new_total_monthly:,.2f}\n\n"
+        f"Note: This is your updated estimated monthly repayment amount if the refinance and cash-out are approved and accepted."
+    )
+    send_messenger_message(messenger_id, {"text": user_summary})
+    logging.debug("Cash-out calculation summary sent to user.")
+
+    # Transition to WAITING_INPUT
     user.state = STATES['WAITING_INPUT']
     db.session.commit()
-    logging.debug("Transitioned to FAQ mode.")
 
+    # Notify admin about accepted cash-out offer
+    admin_summary = (
+        f"User Accepted Cash Out Offer\n"
+        f"User Name: {user.name or 'N/A'}\n"
+        f"Phone Number: {user.phone_number or 'N/A'}\n\n"
+        f"Loan Details\n"
+        f"Loan Outstanding: RM{outstanding_balance:,.2f}\n"
+        f"Interest Rate: {user.current_interest_rate or 0:.2f}%\n"
+        f"Remaining Tenure: {remaining_tenure:.1f} years\n"
+        f"Current Repayment: RM{calculate_monthly_payment(outstanding_balance, user.current_interest_rate or 0, remaining_tenure):,.2f}\n\n"
+        f"After Refinancing\n"
+        f"New Interest Rate: {main_rate:.2f}%\n"
+        f"New Repayment: RM{monthly1:,.2f} (housing loan only)\n"
+        f"Monthly Saving: RM{user.monthly_savings or 0:,.2f}\n"
+        f"Yearly Savings: RM{user.yearly_savings or 0:,.2f}\n"
+        f"Total Savings: RM{user.total_savings or 0:,.2f}\n\n"
+        f"Cash Out Amount: RM{cashout_amount:,.2f}\n"
+        f"New Repayment: RM{new_total_monthly:,.2f} (Cashout + housing loan)\n"
+    )
+    notify_admin(user, "User Completed Cash-Out Refinance Calculation", admin_summary)
+    logging.debug("Admin notified about completed cash-out refinance calculation.")
+
+    # FAQ Prompt
+    faq_prompt = (
+        "You are now talking to Finzo AI. You can ask anything regarding refinancing and housing loans.\n\n"
+        "Common questions you might have:\n"
+        "• What documents do I need for refinancing?\n"
+        "• How long does the refinancing process take?\n"
+        "• Are there any fees involved?\n"
+        "• What factors affect my loan approval?"
+    )
+    send_messenger_message(messenger_id, {"text": faq_prompt})
+    logging.debug("FAQ prompt sent after cash-out calculation.")
 
 def handle_waiting_input(user: User, messenger_id: str, user_input: str):
     """
-    Handles general user queries after savings calculation.
-
+    Handles general user queries after cash-out calculation using GPT-3.5-turbo.
     """
     logging.debug("Entering handle_waiting_input function.")
 
@@ -877,51 +990,43 @@ def handle_waiting_input(user: User, messenger_id: str, user_input: str):
 
 def handle_faq(user: User, messenger_id: str, user_input: str):
     """
-    Handles FAQ queries with admin contact detection and fallback GPT responses.
+    Handles FAQ queries with enhanced admin contact detection and dynamic responses.
     """
     logging.debug("Entering handle_faq function.")
 
-    # Debug logs for user state and calculation data
-    logging.debug(f"User Data - Name: {user.name}, Phone: {user.phone_number}")
-    logging.debug(f"Monthly Savings: RM{user.monthly_savings:,.2f}")
-    logging.debug(f"Yearly Savings: RM{user.yearly_savings:,.2f}")
-    logging.debug(f"Total Savings: RM{user.total_savings:,.2f}")
-    logging.debug(f"Current Interest Rate: {user.current_interest_rate:.2f}%")
-    logging.debug(f"New Rate: {user.new_rate:.2f}%")
-    logging.debug(f"Remaining Tenure: {user.remaining_tenure} years")
+    # Debug logs for database values
+    logging.debug(f"Monthly Savings: {user.monthly_savings}")
+    logging.debug(f"Yearly Savings: {user.yearly_savings}")
+    logging.debug(f"Total Savings: {user.total_savings}")
+    logging.debug(f"Interest Rate: {user.current_interest_rate}")
+    logging.debug(f"New Rate: {user.new_rate}")
+    logging.debug(f"Remaining Tenure: {user.remaining_tenure}")
 
-    # Admin contact keywords and phrases
+    # Enhanced admin contact detection keywords and patterns
     admin_keywords = [
         'admin', 'agent', 'contact', 'human', 'person', 'representative',
         'staff', 'support', 'help desk', 'helpdesk', 'customer service',
-        'speak to someone', 'talk to someone', 'real person', 'live chat',
-        'how do i contact admin', 'connect me to admin', 'admin details', 'talk to admin'
+        'speak to someone', 'talk to someone', 'real person', 'live chat'
     ]
 
-    # Check for admin-related queries (case-insensitive)
+    # Improved admin contact detection with pattern matching
     user_input_lower = user_input.lower()
-    if any(keyword in user_input_lower for keyword in admin_keywords):
-        # Send admin contact details immediately
-        admin_message = (
-            "📞 You can contact our admin directly via WhatsApp: [Click Here](https://wa.me/60126181683)\n\n"
-            "Let us know if you need more assistance!"
-        )
-        send_messenger_message(messenger_id, {"text": admin_message})
-        logging.debug("Admin contact details sent immediately.")
-
-        # No further processing required
+    if any(keyword in user_input_lower for keyword in admin_keywords) or \
+       any(phrase in user_input_lower for phrase in [
+           'can i speak to', 'want to speak', 'need to speak',
+           'can i talk to', 'want to talk', 'need to talk',
+           'connect me', 'transfer me', 'get in touch'
+       ]):
+        handle_contact_admin(user, messenger_id, user_input)
         return
 
-    # Process general FAQ queries using GPT if no admin-related keywords matched
+    # Use GPT-3.5-turbo for general FAQ responses
     try:
-        # Prepare GPT conversation context
         conversation = [
             {
                 "role": "system",
                 "content": (
-                    "You are Finzo AI Buddy, an expert in refinancing and loan advisory. "
-                    "Answer the user's question accurately and concisely based on refinancing topics. "
-                    "Avoid suggesting external sources and only focus on Finzo-related details."
+                    "You are Finzo AI Buddy, an expert in refinancing and loan advisory. Answer the user's question accurately and concisely."
                 )
             },
             {
@@ -930,52 +1035,59 @@ def handle_faq(user: User, messenger_id: str, user_input: str):
             }
         ]
 
-        # GPT request
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=conversation,
             temperature=0.7
         )
 
-        # Extract GPT-generated response
         faq_response = response.choices[0].message.content.strip()
-        send_messenger_message(messenger_id, {"text": faq_response})
-        logging.debug(f"FAQ response sent: {faq_response}")
-
     except Exception as e:
-        # Log error and provide fallback response
         logging.error(f"Error generating FAQ response with GPT-3.5-turbo: {e}")
-        fallback_response = (
-            "I'm sorry, I couldn't process your request. "
-            "Please contact admin directly at [Click Here](https://wa.me/60126181683) for assistance."
-        )
-        send_messenger_message(messenger_id, {"text": fallback_response})
-        logging.debug("Fallback response sent due to GPT error.")
+        faq_response = "I'm sorry, I couldn't process your request. Please try again later or contact admin at https://wa.me/60126181683."
 
-    # Update user state to allow further questions
+    send_messenger_message(messenger_id, {"text": faq_response})
+    logging.debug("FAQ response sent.")
+
+
+    # Update session state
     user.state = STATES['WAITING_INPUT']
     db.session.commit()
-    logging.debug("User state updated to WAITING_INPUT.")
 
-    # Notify admin about the FAQ query
-    notify_admin(user, "FAQ Query Received")
-    logging.debug(f"Admin notified about FAQ query: {user_input}")
-
+    # Notify admin
+    notify_admin(user, f"FAQ query received: {user_input}")
+    logging.debug("Admin notified about FAQ query.")
 
 # Admin Notification Function
-def notify_admin_only(admin_id: str, message: str):
+def notify_admin(user: User, event_name: str, summary: str = None):
     """
-    Simplified function that only sends messages to admin without any user messaging logic.
+    Sends an admin notification with loan comparison details.
     """
-    try:
-        if not admin_id or not admin_id.isdigit():
-            logging.warning("No valid ADMIN_MESSENGER_ID set.")
-            return
-        
-        send_messenger_message(admin_id, {"text": message})
-        logging.debug("Admin notification sent successfully.")
-    except Exception as e:
-        logging.error(f"Error sending admin notification: {e}")
+    admin_id = os.getenv("ADMIN_MESSENGER_ID")
+    if not admin_id or not admin_id.isdigit():
+        logging.warning(f"No valid ADMIN_MESSENGER_ID set. Skipping notify_admin.")
+        return
+
+    if summary:
+        # If a summary is provided, include it in the admin notification
+        comparison = (
+            f"📊 {event_name}\n"
+            f"Customer: {user.name or 'N/A'}\n"
+            f"Contact: {user.phone_number or 'N/A'}\n\n"
+            f"{summary}"
+        )
+    else:
+        # Basic notification without summary
+        comparison = (
+            f"📊 {event_name}\n"
+            f"Customer: {user.name}\n"
+            f"Contact: {user.phone_number}\n"
+            f"State: {user.state}\n"
+            "No loan calculation details available yet."
+        )
+
+    send_messenger_message(admin_id, {"text": comparison})
+    logging.debug("Admin notification sent.")
 
 # Unhandled State Handler
 def handle_unhandled_state(user: User, messenger_id: str, user_input: str):
@@ -1062,22 +1174,34 @@ def send_messenger_message(recipient_id, message):
     except ValueError as ve:
         logging.error(f"Message formatting error: {ve}")
 
-# Update State Handlers
 STATE_HANDLERS = {
-    STATES['GET_STARTED_YES']: handle_get_started_yes,
-    STATES['CONTACT_ADMIN']: handle_contact_admin,
+    STATES['GET_STARTED_YES']: handle_get_started_yes,  # New handler for getting started
+    STATES['CONTACT_ADMIN']: handle_contact_admin,      # New handler for contacting admin
+
+    # Name and Phone Collection
     STATES['NAME_COLLECTION']: handle_name_collection,
     STATES['PHONE_COLLECTION']: handle_phone_collection,
     STATES['PATH_SELECTION']: handle_path_selection,
+
+    # Path A
     STATES['PATH_A_GATHER_BALANCE']: handle_path_a_balance,
     STATES['PATH_A_GATHER_INTEREST']: handle_path_a_interest,
     STATES['PATH_A_GATHER_TENURE']: handle_path_a_tenure,
     STATES['PATH_A_CALCULATE']: handle_path_a_calculate,
+
+    # Path B
     STATES['PATH_B_GATHER_ORIGINAL_AMOUNT']: handle_path_b_original_amount,
     STATES['PATH_B_GATHER_ORIGINAL_TENURE']: handle_path_b_original_tenure,
     STATES['PATH_B_GATHER_MONTHLY_PAYMENT']: handle_path_b_monthly_payment,
     STATES['PATH_B_GATHER_YEARS_PAID']: handle_path_b_years_paid,
     STATES['PATH_B_CALCULATE']: handle_path_b_calculate,
+
+    # After calculations
+    STATES['CASHOUT_OFFER']: handle_cashout_offer,
+    STATES['CASHOUT_GATHER_AMOUNT']: handle_cashout_gather_amount,
+    STATES['CASHOUT_CALCULATE']: handle_cashout_calculate,
+
+    # Additional States
     STATES['WAITING_INPUT']: handle_waiting_input,
     STATES['FAQ']: handle_faq,
     STATES['END']: handle_unhandled_state
@@ -1178,18 +1302,6 @@ def process_message():
     except Exception as e:
         logging.error(f"Error in process_message: {e}")
         return jsonify({"status": "error", "message": "Internal server error"}), 500
-
-def send_long_message(messenger_id, text):
-    """
-    Splits long messages into chunks and sends them sequentially.
-    Facebook Messenger API supports only up to 2000 characters per message.
-    """
-    MAX_LENGTH = 2000  # Facebook's message limit
-    chunks = [text[i:i+MAX_LENGTH] for i in range(0, len(text), MAX_LENGTH)]
-
-    for chunk in chunks:
-        send_messenger_message(messenger_id, {"text": chunk})
-        time.sleep(1)  # Small delay to avoid hitting rate limits
     
 def check_user_idle(user):
     # Assume user.last_interaction is a datetime field in the User model
@@ -1226,6 +1338,7 @@ def reset_user(user: User):
     user.original_tenure = None
     user.current_monthly_payment = None
     user.years_paid = None
+    user.temp_cashout_amount = None
     user.monthly_savings = None
     user.yearly_savings = None
     user.total_savings = None
